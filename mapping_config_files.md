@@ -2,7 +2,7 @@
 
 Mapping configuration files are Excel files that contain all required configuration information for mapping from a source dataset (eg. NWSS) to a target dataset (eg. ODM v2). Each mapping file can have multiple tabs, one or more that defines some basic mappings from source to target slots (typically the tab is named `maps`), one or more separate tabs configuring how wide columns are mapped (typically the tab is named `wide`), and one or more separate tabs configuring mapping of enumerations (typically called `enums`). While these tabs in mapping configuration files are usually named `maps`, `wide`, and `enums`, they can be given any name, as long as the names are provided when running the appropriate scripts.
 
-This document describes the structure of these configuration files.
+This document describes the structure of these configuration files. To see an example mapping configuration file see [data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx](data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx)
 
 ## Multi Values
 
