@@ -14,7 +14,7 @@ The columns `capacity_mgd`, `collection_storage_temp`, and `collection_storage_t
 | 1          | 2024-06-01 | sa       | sTemp   | cel   | sin         | 4        |
 | 1          | 2024-06-01 | sa       | stoTim  | hours | sin         | 12:25:00 |
 
-The first row is the mapping (or pivoting/melting) of `capactiy_mgd`, the second of `collection_storage_temp`, and the third of `collection_storage_time`. The values under the new columns `specimen`, `measure`, `unit`, and `aggregation` are predefined constants in the mapping, whereas the value in the `value` column is copied from each of the wide columns. All of this can be configured, as desribed in [Configuring Wide Columns](#configuring-wide-columns) below.
+In the above example, `major_lab_method` gets mapped unchanged to all rows as `protocolID` and `test_result_date` to `aDateEnd`. The first row is the wide-to-long mapping (or pivoting/melting) of `capactiy_mgd`, the second of `collection_storage_temp`, and the third of `collection_storage_time`. The values under the new columns `specimen`, `measure`, `unit`, and `aggregation` are predefined constants in the mapping, whereas the value in the `value` column is copied from each of the wide columns. All of this can be configured, as desribed in [Configuring Wide Columns](#configuring-wide-columns) below.
 
 With the LinkML Mapper, we can only have one output row for each input row. This makes it difficult to handle wide columns. In order to deal with this, we create multiple Mapping specs, one for each wide column. Running each mapping on the same table can then result in multiple output rows (one per Mapping spec) for a single input row. We then concatenate the outputs into a single output table.
 
