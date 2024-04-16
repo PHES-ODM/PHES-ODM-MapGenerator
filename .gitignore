@@ -1,6 +1,5 @@
 # NWSS input and output
 /gen/
-!/gen/*/mappers/
 
 .DS_Store
 
