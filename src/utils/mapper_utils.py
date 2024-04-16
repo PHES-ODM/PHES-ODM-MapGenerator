@@ -1,0 +1,215 @@
+"""
+Utility functions for LinkML Mapper
+"""
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+from typing import Dict, List, Union, Any, Optional
+import pandas as pd
+import re
+
+from linkml_runtime import SchemaView
+
+from utils.general_utils import get_logger
+from utils.schema_utils import get_enum_name_for_slot
+
+logger = get_logger(__name__)
+
+# Regular expression for matching strings that refer to a source slot. Usually meaning to
+# copy the value found in the source slot to a different target slot. This is in the form
+# {{sourceSlotName}}.
+VARIABLE_REGEX = r"^{{([^}]*)}}$"
+
+class WideSpecColumns:
+    # Names for the wide columns CSV config file (see expand_wide_derivations)
+    SOURCE_CLASS = "wideSourceClass"
+    TARGET_CLASS = "wideTargetClass"
+    ROW_NUMBER = "wideRowNumber"
+    TARGET_SLOT = "wideTargetSlot"
+    TARGET_VALUE = "wideTargetValue"
+    OTHER_SLOTS = "wideOtherSlots"
+    
+    GROUP = "wideGroup"
+    
+    # Only used when the wide schema also includes details for mapping enumeration values
+    SOURCE_VALUE = "wideSourceValue"
+    SOURCE_SLOT = "wideSourceSlot"
+    
+    # Notes added to the wide-column spec sheet. This column gets ignored.
+    NOTES = "wideNotes"
+    
+def get_variable_reference(v: Any) -> Optional[str]:
+    if not isinstance(v, str):
+        return None
+    match = re.search(VARIABLE_REGEX, v)
+    return None if match is None else match[1]
+
+def select_required_enum_derivations(class_derivation: Dict, enum_derivations: Dict, schema: SchemaView, mirror_missing_enum_derivations: bool = True) -> Dict:
+    """Select all the enumeration derivations required by the specified class derivation.
+    
+    To select the enum derivations we go through each slot derivation and get the derivation's populated_from field. 
+    The populated_from field is a slot in the source schema for the class, so we extract the slot's definition. 
+    If the slot definition has a range that's an enum, we keep the enum derivation for that range.
+
+    Args:
+        class_name (str): The class 
+        class_derivation (Dict): A single class derivation dictionary.
+        enum_derivations (Dict): All available enum derivations. We will select only the required ones from this.
+        schema (SchemaView): The source schema.
+        mirror_missing_enum_derivations (bool): If True, then if a categorical variable is found in class_derivation
+            that does not have an existing enum derivation, then we create a basic enum derivation where all values
+            are mirrored (ie. the enum values are copied over unchanged).
+
+    Returns:
+        Dict: A dictionary that is the same as enum_derivations but where only the required enum derivations are included.
+    """
+    class_name = class_derivation["populated_from"]
+    selected_derivations = {}
+    
+    class_definition = schema.get_class(class_name)
+    if class_definition is None:
+        raise ValueError(f"Class {class_name} does not exist!")
+    
+    # Go through all slot derivations and get the populated_from field. If the populated_from field
+    # is an enumeration in the source schema, then we keep its enum derivation.
+    for slot_derivation in class_derivation["slot_derivations"].values():
+        if "populated_from" not in slot_derivation:
+            continue
+        source_slot_name = slot_derivation["populated_from"]
+        
+        # Get the enum name for the slot
+        enum_name = get_enum_name_for_slot(class_name, source_slot_name, schema)
+        if enum_name is None:
+            continue
+        
+        # Try to get the enum derivation for the enum name. If an enum derivation exists then we keep it.
+        derivations = [k for k, v in enum_derivations.items() if v["populated_from"] == enum_name]
+        if len(derivations) > 1:
+            raise RuntimeError(f"Found multiple target enum derivations {derivations} populating from the same source enum {enum_name} (from source slot {source_slot_name}). This is not allowed by LinkML Mapper!")
+        if mirror_missing_enum_derivations and len(derivations) == 0:
+            logger.warning(f"No enum derivation found for {enum_name} in select_required_enum_derivations, creating a mirrored enum derivation")
+            target_enum_name = f"{enum_name}[=mirrored=]"
+            selected_derivations[target_enum_name] = {
+                "name" :  target_enum_name,
+                "mirror_source" : True,
+                "populated_from" : enum_name,
+            }
+        else:
+            for derivation_name in derivations:
+                selected_derivations[derivation_name] = enum_derivations[derivation_name]
+        
+    return selected_derivations
+
+def expand_wide_derivations(source_class_name: str, target_class_name: str, slot_derivations: Dict, custom_wide_dfs: Union[List[pd.DataFrame], pd.DataFrame]) -> List[Dict]:
+    """Using custom wide DataFrames and an already calculated slot_derivations, see if there are any
+    custom wide-to-long columns for the current source class to target class slot_derivations. If there are,
+    then create multiple new slot_derivations (for multiple mappers) based on the original slot_derivations, each new 
+    derivation includes a single wide-to-long column mapping.
+    
+    Later on, when we map the data, we run each wide-to-long mapping separately.
+    This takes care of each wide-to-long column. We then concatenate the mapped data of
+    each separate mapping.
+
+    Args:
+        source_class_name (str): The source class (table) name that the slot_derivations is for.
+        target_class_name (str): The target class (table) name that the slot_derivations is for.
+        slot_derivations (Dict): The slot_derivations before any wide-to-long derivations are added.
+            We will make a copy of this and modify each copy for each wide-to-long column.
+        custom_wide_dfs (Union[List[pd.DataFrame], pd.DataFrame]): The DataFrame(s) containing all the
+            information required for wide-to-long mappings.
+
+    Returns:
+        Dict: A list of dictionaries of the following form:
+            {
+                "source_class" : source_class_name,
+                "target_class" : wide_target_class_name,
+                "class_derivation" : new_class_derivation
+            }
+            The wide_target_class_name is the target_class_name with an additional modifier added in square brackets, that specify
+            the column used for the wide-to-long mappings (eg. protocolSteps[extractionVolMl]),
+            and new_class_derivation is a copy of slot_derivations with the wide-to-long derivations
+            added. If there are no wide-to-long columns for the specified source to target
+            classes, then an empty List is returned.
+    """
+    results = []
+    
+    if isinstance(custom_wide_dfs, pd.DataFrame):
+        custom_wide_dfs = [custom_wide_dfs]
+    
+    # We have custom wide information. For wide information, we create multiple
+    # mapper configs, one for each wide column.
+    for custom_wide_number, custom_wide_df in enumerate(custom_wide_dfs):
+        # Select all rows matching the source class and target class
+        custom_wide_df = custom_wide_df[(custom_wide_df[WideSpecColumns.SOURCE_CLASS] == source_class_name) & (custom_wide_df[WideSpecColumns.TARGET_CLASS] == target_class_name)]
+        if len(custom_wide_df.index) == 0:
+            continue
+        
+        # Sort by the ROW_NUMBER column. We use "stable" sort, this preserves the order
+        # for already-sorted rows (eg. if all row numbers are 0, then sorting preserves
+        # the existing order of the rows). This ensures that if a later row overwrites the
+        # target slot of a previous row, that the later row actually does occur later in the
+        # input configuration file. This makes more sense from a user-point of view.
+        custom_wide_df = custom_wide_df.sort_values(WideSpecColumns.ROW_NUMBER, kind="stable")
+        
+        # Group by ROW_NUMBER and iterate. We make one class derivation per group.
+        for group_number, rows_df in custom_wide_df.groupby(WideSpecColumns.ROW_NUMBER):
+            # Make a copy of the full slot derivation we previously calculated. We'll
+            # modify it with the current wide info
+            cur_slot_derivations = slot_derivations.copy()
+            
+            # Each row in the rows group defines a target column and a target value to set in the
+            # target class.
+            # source_slots keeps a record of all the source slots we populated from (ie. copied over
+            # to the target). It is for naming purposes only, we include all source slots used
+            # in the mapper spec file name (see wide_target_class_name).
+            source_slots = []
+            for row_number, row in rows_df.iterrows():
+                target_slot = row[WideSpecColumns.TARGET_SLOT]
+                target_value = row[WideSpecColumns.TARGET_VALUE]
+                
+                # We always need a target slot specified                
+                if not target_slot or pd.isna(target_slot):
+                    raise ValueError(f"{WideSpecColumns.TARGET_SLOT} is empty in row {row_number}")
+
+                source_slot_variable = get_variable_reference(target_value)
+                if source_slot_variable is not None:
+                    # target_value is of the form {{sourceSlot}}, where sourceSlot is the name
+                    # of a column in the source class. So we populate from sourceSlot to the
+                    # target slot.                    
+                    source_slots.append(source_slot_variable)
+                    # The value is "<sourceSlot>", so we populate from source_column
+                    cur_slot_derivations[target_slot] = {
+                        "name" : target_slot,
+                        "populated_from" : source_slot_variable,
+                    }
+                else:
+                    # The value is a constant, so we populate with the constant using expr
+                    if pd.isna(target_value):
+                        target_value = ""
+                    # @TODO: Once LinkML-Map repo has been updated to recognize "constant"
+                    # in a slot derivation, comment out the "expr" key and add the "constant" key.
+                    # Using "constant" is MUCH faster than "expr"
+                    cur_slot_derivations[target_slot] = {
+                        "name" : target_slot,
+                        "expr" : f"'{target_value}'",
+                        # "constant" : target_value,
+                    }
+                    
+            # Create a new unique name for the target class. Target class names
+            # can have the real target class followed by an optional modifier in
+            # square brackets.
+            source_slot_names = "-".join(sorted(source_slots))
+            wide_target_class_name = f"{target_class_name}[{custom_wide_number:03n},{group_number:04n}={source_slot_names}]"
+            class_derivation = {
+                "name" : wide_target_class_name,
+                "populated_from" : source_class_name,
+                "slot_derivations" : cur_slot_derivations,
+            }
+            results.append({
+                "source_class" : source_class_name,
+                "target_class" : wide_target_class_name,
+                "class_derivation" : class_derivation
+            })
+        
+    return results
