@@ -78,7 +78,7 @@ If `customData` is specified then we do not populated directly from a single `so
 
 ## Wide tabs
 
-The `wide` tab(s) specify how to pivot wide-columns. For details on what pivoting wide columns means, see the [Wide Columns Example](wide_columns.md) document.
+The `wide` tab(s) specify how to pivot wide-columns. For details on what pivoting wide columns means, see the [Wide Columns Example](wide_columns_example.md) document.
 
 There can be multiple `wide` tabs, which are specified on the command-line when running the appropriate scripts. Any row that is completely empty is ignored.
 
