@@ -70,7 +70,7 @@ cd src
 python3 make_mappers_cli.py --source_schema "../data/nwss_reporting/linkml/nwss_reporting.yaml" \
     --target_schema "../data/odm_v2/linkml/odm_v2.yaml" \
     --mapping_config_file "../data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx" \
-    --maps_sheet "maps" \
+    --maps_sheets "maps" \
     --wide_sheets "wide" \
     --enums_sheets "enums" \
     --output_dir "../gen/nwss_reporting_to_v2"
