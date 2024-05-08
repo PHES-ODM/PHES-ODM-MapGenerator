@@ -32,6 +32,7 @@ class MappingColumns:
     TARGET_CLASS = "targetClass"
     TARGET_SLOT = "targetSlot"
     TARGET_VALUE = "targetValue"
+    EXPR_VALUE = "exprValue"
     CUSTOM_DATA = "customData"
     
     # These columns should only be present in the enums tabs of the mapping files
@@ -77,14 +78,17 @@ def extract_class_derivations(maps_df: pd.DataFrame, source_schema: SchemaView) 
         source_slot = row[MappingColumns.SOURCE_SLOT]
         target_class = row[MappingColumns.TARGET_CLASS]
         target_slot = row[MappingColumns.TARGET_SLOT]
-        custom_value = row[MappingColumns.CUSTOM_DATA]
+        custom_data = row[MappingColumns.CUSTOM_DATA]
+        expr_value = row[MappingColumns.EXPR_VALUE]
         
-        # Make sure the row's source class and source slot exist in the source schema
+        if pd.isna(custom_data):
+            custom_data = None
+        if pd.isna(expr_value):
+            expr_value = None
+        
+        # Make sure the row's source class exists in the source schema
         if source_class not in source_schema.all_classes():
             logger.error(f"Found source class {source_class} in mapping data but class does not exist in source schema, ignoring row")
-            continue
-        if source_slot not in source_schema.class_slots(source_class):
-            logger.error(f"Found source slot {source_slot} (in class {source_class}) in mapping data that does not exist in the source schema, ignoring row")
             continue
         
         # Get the dictionary for the source_class. Within this dictionary are keys from each target class.
@@ -99,14 +103,28 @@ def extract_class_derivations(maps_df: pd.DataFrame, source_schema: SchemaView) 
                 "populated_from" : source_class,
                 "slot_derivations" : {},
             }
-        class_derivation = source_class_derivations[target_class]
-        if class_derivation["populated_from"] != source_class:
-            raise ValueError(f"Class derivation from source class {source_class} to target class {target_class} exists but does not have matching populated_from field (expected {source_class} but found {class_derivations['populated_from']})")
+        slot_derivations = source_class_derivations[target_class]["slot_derivations"]
         
-        # Add the slot derivation, for populating target_slot from source_slot
-        slot_derivations = class_derivation["slot_derivations"]
-        if pd.isna(custom_value) or custom_value == "":
-            # Add the slot derivation for target_slot
+        if custom_data or expr_value:
+            new_dict = {
+                "name" : target_slot,
+            }
+            # The MappingColumns.CUSTOM_DATA field is set for the current row. This is a dictionary that we merge to the target_slot derivation.
+            if custom_data:
+                new_dict.update(json.loads(custom_data))
+            if expr_value:
+                new_dict["expr"] = expr_value
+            if target_slot in slot_derivations:
+                # The slot derivation for target_slot already exists (ie. it was added in a previous row of maps_df). Here we make sure
+                # that the slot derivation for target_slot will be left unchanged.
+                if slot_derivations[target_slot] != new_dict:
+                    raise ValueError(f"Target slot {target_slot} for source class {source_class} and target class {target_class} already exists in slot_derivations but has different custom fields (expected {new_dict} but found {slot_derivations[target_slot]})")
+            slot_derivations[target_slot] = new_dict
+        else:
+            # Add the slot derivation for target_slot (populating from source_slot)
+            if source_slot not in source_schema.class_slots(source_class):
+                logger.error(f"Found source slot {source_slot} (in class {source_class}) in mapping data that does not exist in the source schema, ignoring row")
+                continue
             if target_slot in slot_derivations:
                 if "populated_from" not in slot_derivations[target_slot]:
                     raise ValueError(f"Target slot {target_slot} for source class {source_class} and target class {target_class} already exists in slot_derivations but has different populated_from fields (expected {source_slot} but found Empty)")
@@ -116,18 +134,6 @@ def extract_class_derivations(maps_df: pd.DataFrame, source_schema: SchemaView) 
                 "name" : target_slot,
                 "populated_from" : source_slot
             }
-        else:
-            # The MappingColumns.CUSTOM_DATA field is set for the current row. This is a dictionary that we merge to the target_slot derivation.
-            new_dict = {
-                "name" : target_slot,
-            }
-            new_dict.update(json.loads(custom_value))
-            if target_slot in slot_derivations:
-                # The slot derivation for target_slot already exists (ie. it was added in a previous row of maps_df). Here we make sure
-                # that the slot derivation for target_slot will be left unchanged.
-                if slot_derivations[target_slot] != new_dict:
-                    raise ValueError(f"Target slot {target_slot} for source class {source_class} and target class {target_class} already exists in slot_derivations but has different custom fields (expected {new_dict} but found {slot_derivations[target_slot]})")
-            slot_derivations[target_slot] = new_dict
     
     return all_class_derivations
 
@@ -321,7 +327,7 @@ def prepare_maps_df(maps_file: Union[str, Path]) -> pd.DataFrame:
 
     maps_df = expand_multi_rows(maps_df, [MappingColumns.TARGET_CLASS, MappingColumns.TARGET_SLOT])
     
-    keep_columns = [MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.SOURCE_VALUE, MappingColumns.TARGET_CLASS, MappingColumns.TARGET_SLOT, MappingColumns.TARGET_VALUE, MappingColumns.CUSTOM_DATA]
+    keep_columns = [MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.SOURCE_VALUE, MappingColumns.TARGET_CLASS, MappingColumns.TARGET_SLOT, MappingColumns.TARGET_VALUE, MappingColumns.EXPR_VALUE, MappingColumns.CUSTOM_DATA]
     maps_df = maps_df[keep_columns]
     
     return maps_df.copy()
