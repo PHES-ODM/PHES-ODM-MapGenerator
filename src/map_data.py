@@ -72,12 +72,12 @@ class TrackingColumns:
 
 # Change the logging level of the Transformer. For very large datasets we will get way too many WARNINGs in
 # the output.
-# for logger_name in [ 
-#                     "linkml_map.transformer.object_transformer", 
-#                     "linkml_map.transformer.transformer" 
-#                     ]:
-#     trlogger = logging.getLogger(logger_name)
-#     trlogger.setLevel("ERROR")
+for logger_name in [ 
+                    "linkml_map.transformer.object_transformer", 
+                    "linkml_map.transformer.transformer" 
+                    ]:
+    trlogger = logging.getLogger(logger_name)
+    trlogger.setLevel("ERROR")
 
 def load_data(data_dir: Union[str, Path], schema: Union[str, SchemaView]) -> Dict[str, List[Dict]]:
     """Load all data files (CSV, TSV, and TXT files) from disk in a format compatible with the
@@ -177,8 +177,8 @@ def add_row_number_slot(schema: SchemaView):
         slot_definition.slots.append(TrackingColumns.ROW_NUMBER)
         
     schema.schema.slots[TrackingColumns.ROW_NUMBER] = SlotDefinition(name=TrackingColumns.ROW_NUMBER, from_schema = schema.schema.id)
-    
-def run_mapper(data: Dict[str, List], session: Session, data_output_dir: Union[str, Path], mapper_file: Union[str, Path], target_schema: SchemaView, file_index: Optional[int] = None) -> Dict[str, List[Dict]]:
+
+def run_mapper(data: Dict[str, List], session: Session, data_output_dir: Union[str, Path], mapper_file: Union[str, Path], target_schema: SchemaView, file_index: Optional[int] = None, unrestricted_eval: bool = False) -> Dict[str, List[Dict]]:
     """Run the mapper on the specified data using the specified mapper YAML file and save the
     results to disk.
 
@@ -195,6 +195,8 @@ def run_mapper(data: Dict[str, List], session: Session, data_output_dir: Union[s
             mapper_file. It is required if we run the mapper more than once with the same
             mapper_file, as it ensures that the filename of the output is different for each run
             (assuming we properly use unique file_index values for each run).
+        unrestricted_eval (Optional[bool]): If True then run expr code in slot derivations in unrestricted mode
+            (ie. allow any Python code to execute).
 
     Returns:
         Dict[str, List[Dict]]: The mapped data, where the keys are the output class names and the
@@ -203,7 +205,7 @@ def run_mapper(data: Dict[str, List], session: Session, data_output_dir: Union[s
     # Load the mapper spec
     with open(mapper_file, "r") as f:
         mapper_spec = yaml.safe_load(f)
-    
+        
     # Add a slot derivation to all class derivations to copy over the row number from the source table to target table.
     # This allows us to sort the output by the input row number to retain a nice ordering. (We delete the row
     # number column in the final output after sorting)
@@ -213,6 +215,7 @@ def run_mapper(data: Dict[str, List], session: Session, data_output_dir: Union[s
     logger.info(f"Mapping data with mapper spec {mapper_file}")
     trans_tic = datetime.now()
     session.set_object_transformer(mapper_spec)
+    session.object_transformer.unrestricted_eval = unrestricted_eval
     mapped_data = session.transform(data)
     logger.info(f"Mapped in {datetime.now() - trans_tic} (for mapper spec {mapper_file})")
     
@@ -349,7 +352,8 @@ def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Pat
     # After loading the mapper spec we also add a slot derivation for all classes to copy the row number slot to
     # the output (see add_row_number_derivation)
     add_row_number_slot(source_schema)
-    add_row_number_slot(target_schema)
+    if target_schema:
+        add_row_number_slot(target_schema)
 
     # Read all the data from disk.
     data = load_data(data_dir, source_schema)
@@ -392,7 +396,8 @@ def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Pat
             "data_output_dir": data_output_dir,
             "session": session, 
             "mapper_file": mapper_file,
-            "target_schema": target_schema
+            "target_schema": target_schema,
+            "unrestricted_eval": True,
         } for file_num, mapper_file in enumerate(mapper_files)]
         map_args.extend(cur_args)
     
@@ -443,6 +448,7 @@ if __name__ == "__main__":
             # mapper_dir = "../gen/odm_v1_to_v2/mappers"
             # data_dir = "../gen/odm_v1_to_v2/cleaned_data"
             # output_dir = "../gen/odm_v1_to_v2/mapped_data"
+            # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
 
             # NWSS to v2
             dictionary_type = "reporting"
@@ -450,9 +456,9 @@ if __name__ == "__main__":
             mapper_dir = f"../gen/nwss_{dictionary_type}_to_v2/mappers"
             data_dir = f"../gen/nwss_{dictionary_type}_to_v2/cleaned_data"
             output_dir = f"../gen/nwss_{dictionary_type}_to_v2/mapped_data"
-            
-            max_processes = 1
             target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
+
+            max_processes = 1
     else:
         args = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         args.add_argument("--source_schema", type=str, help="LinkML Schema file for the source", required=True)
