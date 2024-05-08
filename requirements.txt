@@ -1,3 +1,6 @@
 pandas>=2.2
 linkml>=1.5
 linkml-map>=0.1.0
+
+pyyaml
+linkml-runtime
