@@ -44,7 +44,7 @@ The class name from the source dataset. If the `sourceClass` column for a row is
 
 ### sourceSlot
 
-The slot in the source dataset that we are copying from. If the `sourceSlot` column for a row is empty then it takes on the value from the previous row where `sourceSlot` is set.
+The slot in the source dataset that we are copying from (ie. this becomes the `populated_from` field in the mapping specification). If the `sourceSlot` column for a row is empty then it takes on the value from the previous row where `sourceSlot` is set. If `exprValue` or `customData` are set then `sourceSlot` is ignored.
 
 ### sourceValue
 
@@ -64,17 +64,29 @@ The slot in the `targetClass` in the target dataset that we are populating (from
 
 The value to set in the `targetSlot` in the `targetClass`. If `sourceValue` is empty then this should be set to `{{sourceSlot}}`, where 'sourceSlot' is replaced with the value found in the row's `sourceSlot` column. If `sourceValue` is set (and therefore represents a source enumeration value), then `targetValue` equals the value we map the `sourceValue` to.
 
+### exprValue
+
+An optional value, that if set is assigned to the `expr` slot of the slot derivation. The `expr` slot allows custom code to calcualte a value, that is then assigned to the `targetSlot`. The custom code can be in the LinkML expression language or it can be Python code. For Python code the source class can be referenced with the `src` object variable and the result should be saved in the `target` variable. For example, the following will return the value of the `sample_type` slot if it is set, or if not set the value of `source_type`, or an empty string if neither are set:
+
+```python
+def a_or_b(a, b):
+    if a:
+        return a
+    if b:
+        return b
+    return ""
+target = a_or_b(src.sample_type, src.source_type)
+```
+
 ### customData
 
 An optional value, in the form of a JSON string. The dictionary in the slot derivation for this row gets updated with the values in this column. For example, the following value in `customData` will set the `expr` key in the slot derivation for the `targetSlot` in , resulting in `0` if both either slot `dashboard_ignore` or slot `analysis_ignore` in the source dataset are equal to `yes`:
 
 ```json
 {
-    "expr" : "(str({dashboard_ignore}) == 'yes') + (str({analysis_ignore}) == 'yes') == 0"
+    "expr" : "(str(dashboard_ignore) == 'yes') + (str(analysis_ignore) == 'yes') == 0"
 }
 ```
-
-If `customData` is specified then we do not populated directly from a single `sourceSlot`, however, a `sourceSlot` must still be specified. Typically it will be one of the slots used in the `customData` (eg. we could use `dashboard_ignore` or `analysis_ignore` for the `sourceSlot` with the example above).
 
 ## Wide tabs
 
