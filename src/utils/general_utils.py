@@ -94,7 +94,7 @@ def read_data_frame(file: str, **kwargs) -> pd.DataFrame:
         sep = "\t"
     else:
         sep = ","
-    df = pd.read_csv(file, sep=sep, **kwargs)
+    df = pd.read_csv(file, sep=sep, low_memory=False, **kwargs)
     return df
 
 def strip_whitespace(df: pd.DataFrame) -> pd.DataFrame:
