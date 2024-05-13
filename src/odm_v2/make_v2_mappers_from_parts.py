@@ -375,7 +375,7 @@ def save_all_mappers(class_derivations: Dict, enum_derivations: Dict, schema: Sc
 if __name__ == "__main__":
     if "get_ipython" in globals():
         class opts:
-            prepared_parts_file = "../../gen/odm_v1_to_v2/dictionary/parts_prepared.csv"
+            prepared_parts_file = "../../gen/odm_v1_to_v2/configs/parts_prepared.csv"
             data_output_dir = "../../gen/odm_v1_to_v2/mapped_data"
             mapper_dir = "../../gen/odm_v1_to_v2/mappers"
             source_schema = "../../data/odm_v1/linkml/odm_v1.yaml"

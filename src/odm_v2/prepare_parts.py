@@ -133,8 +133,8 @@ def prepare_parts(parts_file: str, output_file: str, map_columns: Optional[Dict[
 if __name__ == "__main__":
     if "get_ipython" in globals():
         class opts:
-            parts_file = "../../gen/odm_v1_to_v2/dictionary/parts.csv"
-            output_file = "../../gen/odm_v1_to_v2/dictionary/parts_prepared.csv"
+            parts_file = "../../gen/odm_v1_to_v2/configs/parts.csv"
+            output_file = "../../gen/odm_v1_to_v2/configs/parts_prepared.csv"
     else:
         args = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         args.add_argument("--parts_file", type=str, help="Input CSV ODM v2 parts file to prepare for v1 to v2 mapping", required=True)
