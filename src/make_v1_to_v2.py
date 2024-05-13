@@ -53,18 +53,18 @@ def make_v1_to_v2(output_dir: Union[str, Path], v2_data_dictionary: Union[str, P
     """
     # Some paths, best to use the defaults
     output_dir = Path(output_dir)
-    dictionary_dir = output_dir / "dictionary"
+    configs_dir = output_dir / "configs"
     mapper_dir = output_dir / "mappers"
-    prepared_parts_file = dictionary_dir / "parts_prepared.csv"
+    prepared_parts_file = configs_dir / "parts_prepared.csv"
 
     # Clean up directories (ie. delete old csv, tsv, and yaml files)
-    clear_dirs([dictionary_dir, mapper_dir])
+    clear_dirs([configs_dir, mapper_dir])
 
     # Extract the required sheets from the ODM v2 data dictionary
-    extract_sheets(v2_data_dictionary, ["parts"], dictionary_dir, output_names=["parts"], na_values = { "parts" : { "partID" : "" }})
+    extract_sheets(v2_data_dictionary, ["parts"], configs_dir, output_names=["parts"], na_values = { "parts" : { "partID" : "" }})
 
     # Prepare the parts file from the ODM v2 data dictionary, for mapping from the source format
-    prepare_parts(dictionary_dir / "parts.csv", output_file=prepared_parts_file, map_columns=map_columns)
+    prepare_parts(configs_dir / "parts.csv", output_file=prepared_parts_file, map_columns=map_columns)
 
     # Make all mapper configurations. Each config maps from one source table to one v2 table.
     make_mappers(mapper_dir=mapper_dir, prepared_parts_file=prepared_parts_file, source_schema_file=source_schema, max_mapping_only=max_mapping_only, custom_wide_dir=wide_dir)
