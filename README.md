@@ -59,6 +59,10 @@ A separate mapper specification (YAML) file is created for each mapping from a s
 
 For more details on the steps performed by this script, see [make_v1_to_v2.md](make_v1_to_v2.md).
 
+## Mapping Files
+
+Mapping files are Excel files that contain all required information for mapping from a source dataset (eg. NWSS) to a target dataset (eg. ODM v2). Mapping files can specify basic mappings, such as one-to-one copying, combining multiple fields into a single date/time/time-zone, as well as more complex mappings such as wide-to-long column mappings. See the [Mapping Config Files](mapping_config_files.md) section for instructions on how to modify or create your own mapping files.
+
 ## General CLI
 
 In order to map from a source dataset to a target dataset, the following are required:
@@ -126,10 +130,6 @@ python3 make_mappers_cli.py --source_schema "../data/nwss_reporting/linkml/nwss_
     --excel_enums_sheets "enums" \
     --output_dir "../gen/nwss_reporting_to_v2"
 ```
-
-## Mapping Files
-
-Mapping files are Excel files that contain all required information for mapping from a source dataset (eg. NWSS) to a target dataset (eg. ODM v2). Mapping files can specify basic mappings, such as one-to-one copying, combining multiple fields into a single date/time/time-zone, as well as more complex mappings such as wide-to-long column mappings. See the [Mapping Config Files](mapping_config_files.md) section for instructions on how to modify or create your own mapping files.
 
 ## Mapping Data
 
