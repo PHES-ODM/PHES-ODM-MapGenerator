@@ -69,6 +69,9 @@ def extract_class_derivations(maps_df: pd.DataFrame, source_schema: SchemaView) 
                     ...
                 }
     """
+    if maps_df is None:
+        return {}
+    
     # This dictionary has a separate key for each source class. Within each source class there is a key for each target class
     # that forms the actual class derivation
     all_class_derivations: Dict[str, Dict[str, Dict]] = {}
@@ -88,7 +91,7 @@ def extract_class_derivations(maps_df: pd.DataFrame, source_schema: SchemaView) 
         
         # Make sure the row's source class exists in the source schema
         if source_class not in source_schema.all_classes():
-            logger.error(f"Found source class {source_class} in mapping data but class does not exist in source schema, ignoring row")
+            logger.error(f"Found source class '{source_class}' in mapping data but class does not exist in source schema, ignoring row")
             continue
         
         # Get the dictionary for the source_class. Within this dictionary are keys from each target class.
@@ -118,18 +121,18 @@ def extract_class_derivations(maps_df: pd.DataFrame, source_schema: SchemaView) 
                 # The slot derivation for target_slot already exists (ie. it was added in a previous row of maps_df). Here we make sure
                 # that the slot derivation for target_slot will be left unchanged.
                 if slot_derivations[target_slot] != new_dict:
-                    raise ValueError(f"Target slot {target_slot} for source class {source_class} and target class {target_class} already exists in slot_derivations but has different custom fields (expected {new_dict} but found {slot_derivations[target_slot]})")
+                    raise ValueError(f"Target slot '{target_slot}' in target class '{target_class}' from source class '{source_class}' already exists in slot_derivations but has different custom fields (expected '{new_dict}' but found '{slot_derivations[target_slot]}')")
             slot_derivations[target_slot] = new_dict
         else:
             # Add the slot derivation for target_slot (populating from source_slot)
             if source_slot not in source_schema.class_slots(source_class):
-                logger.error(f"Found source slot {source_slot} (in class {source_class}) in mapping data that does not exist in the source schema, ignoring row")
+                logger.error(f"Found source slot {source_slot} (in source class '{source_class}') in mapping data that does not exist in the source schema, ignoring row")
                 continue
             if target_slot in slot_derivations:
                 if "populated_from" not in slot_derivations[target_slot]:
-                    raise ValueError(f"Target slot {target_slot} for source class {source_class} and target class {target_class} already exists in slot_derivations but has different populated_from fields (expected {source_slot} but found Empty)")
+                    raise ValueError(f"Target slot '{target_slot}' in target class '{target_class}' from source class '{source_class}' already exists in slot_derivations but has different populated_from fields (expected source slot '{source_slot}' but found Empty)")
                 if slot_derivations[target_slot]["populated_from"] != source_slot:
-                    raise ValueError(f"Target slot {target_slot} for source class {source_class} and target class {target_class} already exists in slot_derivations but has different populated_from fields (expected {source_slot} but found {slot_derivations[target_slot]['populated_from']})")
+                    raise ValueError(f"Target slot '{target_slot}' in target class '{target_class}' from source class '{source_class}' already exists in slot_derivations but has different populated_from fields (expected source slot '{source_slot}' but found '{slot_derivations[target_slot]['populated_from']}')")
             slot_derivations[target_slot] = {
                 "name" : target_slot,
                 "populated_from" : source_slot
@@ -194,6 +197,9 @@ def extract_enum_derivations(maps_df: pd.DataFrame, source_schema: SchemaView, t
                         "other_source_class" : { ... }
                     }
     """
+    if maps_df is None:
+        return {}
+    
     # all_enum_derivations[source_class][target_class] are all enum derivations for the source
     # class to the target class. 
     # all_enum_derivations[""][""] are all enum derivations where the source class and target class
@@ -276,7 +282,7 @@ def extract_enum_derivations(maps_df: pd.DataFrame, source_schema: SchemaView, t
         enum_derivation = cur_enum_derivations[target_enum_name]
         if enum_derivation["populated_from"] != source_enum_name:
             # raise ValueError(f"Enum derivation for target {target_enum_name} already exists but does not have a matching populated_from field (expected {source_enum_name} but found {enum_derivation['populated_from']})")
-            raise ValueError(f"Enum derivation for source class='{source_class}', target class='{target_class}', target name='{target_enum_name}' already exists but does not have a matching populated_from field (expected '{source_enum_name}' but found '{enum_derivation['populated_from']}')")
+            raise ValueError(f"Enum derivation for source_class='{source_class}', target_class='{target_class}', target_slot='{target_slot}', target_enum_name='{target_enum_name}' already exists but does not have a matching populated_from field (expected '{source_enum_name}' but found '{enum_derivation['populated_from']}')")
         
         # Add the permissible value derivation. Derivation is from source_enum_value to target_enum_value
         # If there is already a permissible value derivation for target_enum_value, then we add the
@@ -285,10 +291,15 @@ def extract_enum_derivations(maps_df: pd.DataFrame, source_schema: SchemaView, t
         # having multiple populated_from values.
         permissible_value_derivations = enum_derivation["permissible_value_derivations"]
         if target_enum_value in permissible_value_derivations:
-            sub_dict = permissible_value_derivations[target_enum_value]
-            if "sources" not in sub_dict:
+            # The target_enum_value already has a derivation.
+            # If source_enum_value is equal to the "populated_from" field, then we do nothing
+            # Otherwise we move "populated_from" to "sources", and also add source_enum_value to "sources"
+            sub_dict = permissible_value_derivations[target_enum_value]            
+            if "sources" not in sub_dict and sub_dict["populated_from"] != source_enum_value:
                 sub_dict["sources"] = [sub_dict["populated_from"]]
-            sub_dict["sources"].append(source_enum_value)
+                del(sub_dict["populated_from"])
+            if "sources" in sub_dict and source_enum_value not in sub_dict["sources"]:
+                sub_dict["sources"].append(source_enum_value)
         else:
             permissible_value_derivations[target_enum_value] = {
                 "name" : target_enum_value,
@@ -429,14 +440,14 @@ def prepare_enums_df(enums_file: Union[str, Path]) -> pd.DataFrame:
 
     return enums_df.copy()
 
-def make_wide_derivations(class_derivation: Dict, custom_wide_dfs: List[pd.DataFrame], class_enum_derivations: List[Dict[str, Dict[str, Dict]]], source_schema: SchemaView, target_schema: SchemaView) -> List[Dict]:
+def make_wide_derivations(class_derivation: Dict, custom_wide_df: pd.DataFrame, class_enum_derivations: List[Dict[str, Dict[str, Dict]]], source_schema: SchemaView, target_schema: SchemaView) -> List[Dict]:
     """Based on the provided class derivation, make a separate class derivation for each wide column specified
-    in custom_wide_dfs. We will also select all the enum derivations required by the new wide derivations from
+    in custom_wide_df. We will also select all the enum derivations required by the new wide derivations from
     class_enum_derivations.
 
     Args:
         class_derivation (Dict): The class derivation that acts as the template for all wide derivations.
-        custom_wide_dfs (List[pd.DataFrame]): The DataFrame containing the wide column information.
+        custom_wide_df (pd.DataFrame): The DataFrame containing the wide column information.
         class_enum_derivations (List[Dict[str, Dict[str, Dict]]]): All known enum derivations. For each element in
             the list, the first key is the source class name, second key is the target class name, all sub-values 
             are the actual enum derivations. An enum_derivation later in the list takes precedence of an
@@ -459,9 +470,9 @@ def make_wide_derivations(class_derivation: Dict, custom_wide_dfs: List[pd.DataF
                 [
                     {
                         "source_class": "nwss",
-                        "target_class": "protocolSteps[000,0002=]",
+                        "target_class": "protocolSteps[000,0002=extraction_method]",
                         "class_derivation": {
-                            "name": "protocolSteps[000,0002=]",
+                            "name": "protocolSteps[000,0002=extraction_method]",
                             "populated_from": "nwss",
                             "slot_derivations": {
                                 "reflink": {
@@ -487,11 +498,11 @@ def make_wide_derivations(class_derivation: Dict, custom_wide_dfs: List[pd.DataF
     source_class_name = class_derivation["populated_from"]
     target_class_name = class_derivation["name"]
         
-    filt = (custom_wide_dfs[MappingColumns.SOURCE_CLASS] == source_class_name) & (custom_wide_dfs[MappingColumns.TARGET_CLASS] == target_class_name)
-    custom_wide_dfs = custom_wide_dfs[filt].copy()
+    filt = (custom_wide_df[MappingColumns.SOURCE_CLASS] == source_class_name) & (custom_wide_df[MappingColumns.TARGET_CLASS] == target_class_name)
+    custom_wide_df = custom_wide_df[filt].copy()
 
     results = []
-    for idx, (_, group_df) in enumerate(custom_wide_dfs.groupby([MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.TARGET_CLASS, WideSpecColumns.GROUP])):
+    for idx, (_, group_df) in enumerate(custom_wide_df.groupby([MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.TARGET_CLASS, WideSpecColumns.GROUP])):
         # Get source class and target class
         source_class = group_df[MappingColumns.SOURCE_CLASS].iloc[0]
         target_class = group_df[MappingColumns.TARGET_CLASS].iloc[0]
@@ -675,7 +686,7 @@ def make_mappers(maps_files: Union[Union[str, Path], List[Union[str, Path]]], wi
                 # Try to make wide derivations. For each wide column in the source class, there will
                 # be a new class derivation for that column. make_wide_derivations will also return
                 # all the required enum derivations in results["enum_derivations"].
-                custom_wide_results = make_wide_derivations(class_derivation=target_class_derivation, custom_wide_dfs=wide_df, class_enum_derivations=[enums_enum_derivations, maps_enum_derivations], source_schema=source_schema, target_schema=target_schema)
+                custom_wide_results = make_wide_derivations(class_derivation=target_class_derivation, custom_wide_df=wide_df, class_enum_derivations=[enums_enum_derivations, maps_enum_derivations], source_schema=source_schema, target_schema=target_schema)
                 if len(custom_wide_results) > 0:
                     has_expanded_wide = True
                     results.extend(custom_wide_results)
@@ -692,7 +703,7 @@ def make_mappers(maps_files: Union[Union[str, Path], List[Union[str, Path]]], wi
                 })
 
     # Go through all the results and create a mapping spec file for each
-    for cur_results in results:
+    for idx, cur_results in enumerate(results):
         target_class = cur_results["target_class"]
         class_derivation = cur_results["class_derivation"]
         source_class = cur_results["source_class"]
@@ -717,8 +728,8 @@ def make_mappers(maps_files: Union[Union[str, Path], List[Union[str, Path]]], wi
         }
         
         # Save mapper specification to disk
-        mapper_file = os.path.join(mapper_dir, f"mapper-{source_class}-{target_class}.yaml")
-        logger.info(f"Saving mapper spec for {source_class} to {target_class}: {mapper_file}")
+        mapper_file = os.path.join(mapper_dir, f"mapper-{source_class}-{target_class}-{idx}.yaml")
+        logger.info(f"Saving mapper spec for '{source_class}' to '{target_class}': {mapper_file}")
         with open(mapper_file, "w") as f:
             yaml.dump(mapper_spec, f, indent=2, sort_keys=False)
 
@@ -726,9 +737,9 @@ if __name__ == "__main__":
     if "get_ipython" in globals():
         dictionary_type = "reporting"
         class opts:
-            maps_files = [f"../gen/nwss_{dictionary_type}_to_v2/dictionary/maps0.csv"]
-            wide_files = [f"../gen/nwss_{dictionary_type}_to_v2/dictionary/wide0.csv"]
-            enums_files = [f"../gen/nwss_{dictionary_type}_to_v2/dictionary/enums0.csv"]
+            maps_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/maps0.csv"]
+            wide_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/wide0.csv"]
+            enums_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/enums0.csv"]
             mapper_dir = f"../gen/nwss_{dictionary_type}_to_v2/mappers"
             source_schema = f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
             target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
@@ -748,8 +759,8 @@ if __name__ == "__main__":
     # Extract the required sheets from the NWSS to ODM 2 mapping file
     from utils.general_utils import extract_sheets
     mapping_config_file = "../data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx"
-    dictionary_dir = f"../gen/nwss_{dictionary_type}_to_v2/dictionary/"
-    extract_sheets(mapping_config_file, ["maps", "wide", "enums"], dictionary_dir, output_names=["maps0", "wide0", "enums0"], na_values={}, default_na_values=[""])
+    configs_dir = f"../gen/nwss_{dictionary_type}_to_v2/configs/"
+    extract_sheets(mapping_config_file, ["maps", "wide", "enums"], configs_dir, output_names=["maps0", "wide0", "enums0"], na_values={}, default_na_values=[""])
 
     make_mappers(maps_files=opts.maps_files, wide_files=opts.wide_files, enums_files=opts.enums_files, mapper_dir=opts.mapper_dir, source_schema=opts.source_schema, target_schema=opts.target_schema)
 
