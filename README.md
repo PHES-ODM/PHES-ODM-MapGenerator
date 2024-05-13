@@ -43,7 +43,7 @@ Currently both ODM v1 to ODM v2 and NWSS to ODM v2 are partially supported (ie. 
 
 ## ODM v1 to ODM v2
 
-Mapping between ODM v1 and v2 involves parsing the ODM v2 Data Dictionary to extract all information pertaining to mapping between slots and enumerations. The script [src/make_v1_to_v2.py](src/make_v1_to_v2.py) will generate all mapping spec (YAML) files to map from ODM v1 to ODM v2. To run the script, execute:
+Generating the LinkML mapping specification files for mapping between ODM v1 and v2 involves parsing the ODM v2 Data Dictionary to extract all information pertaining to mapping between slots and enumerations. Generating the ODM v1 to ODM v2 LinkML mapping specification files is the only mapping between datasets that does not use [Mapping Files](#mapping-files) and the [General CLI](#general-cli). In the future, ODM v1 to ODM v2 will be switched over to use [Mapping Files](#mapping-files). The script [src/make_v1_to_v2.py](src/make_v1_to_v2.py) will generate all mapping spec (YAML) files to map from ODM v1 to ODM v2. To run the script, execute:
 
 ```console
 cd src
@@ -65,11 +65,12 @@ Mapping files are Excel files that contain all required information for mapping 
 
 ## General CLI
 
-In order to map from a source dataset to a target dataset, the following are required:
+In order to generate the LinkML mapping specification files to map from a source dataset to a target dataset, the following are required:
 
 1. The source LinkML schema
 2. The target LinkML schema
 3. Mapping configuration files (with at least one maps datasheet, and optionally any number of wide or enums datasheets)
+4. Optional data in the source dataset, to perform some actual mappings using the generated mapping specification files
 
 The script for the CLI is at [src/make_mappers_cli.py](src/make_mappers_cli.py). Command-line parameters are listed below (see [NWSS to ODM v2](#nwss-to-odm-v2) for an example):
 
