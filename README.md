@@ -59,9 +59,60 @@ A separate mapper specification (YAML) file is created for each mapping from a s
 
 For more details on the steps performed by this script, see [make_v1_to_v2.md](make_v1_to_v2.md).
 
+## General CLI
+
+In order to map from a source dataset to a target dataset, the following are required:
+
+1. The source LinkML schema
+2. The target LinkML schema
+3. Mapping configuration files (with at least one maps datasheet, and optionally any number of wide or enums datasheets)
+
+The script for the CLI is at [src/make_mappers_cli.py](src/make_mappers_cli.py). Command-line parameters are listed below (see [NWSS to ODM v2](#nwss-to-odm-v2) for an example):
+
+**--source_schema** (Required)
+Required full path to the source dataset LinkML schema.
+
+**--target_schema** (Required)
+Required full path to the target dataset LinkML schema.
+
+**--output_dir** (Required)
+The directory to save all generated output to. Various sub-directories will be created:
+
+- *cleaned_data*: Contains all input data, from the source dataset, that has been cleaned from *input_data_dir*. Cleaning of data involves doing some minor cleanup, such as correct capitalization and data types.
+- *configs*: Contains all the maps, wide, and enums configuration files, extracted from *mapping_excel_file*, and copied from *maps_files*, *wide_files*, and *enums_files*
+- *mappers*: Contains all generated [LinkML Map](https://github.com/linkml/linkml-map) schemas to perform the mappings from the source to target datasets.
+- *mapped_data*: Contains the mapped data using the generated LinkML Map schemas and the data found in *input_data_dir*
+
+**--mapping_excel_file** (Optional)
+The Excel mapping configuration file. This can include multiple maps, wide, and enums configuration sheets, with the sheets specified by the *excel_maps_sheets*, *excel_wide_sheets*, and the *excel_enums_sheets* command-line options. Additional configuration sheets that are available in CSV or TSV format can also be specified with the *maps_files*, *wide_files*, and *enums_files* options. At least one *maps* sheet or file must be specified.
+
+**--excel_maps_sheets** (Optional)
+If *mapping_excel_file* is specified, then this option is a list of strings specifying the names of the sheets in the Excel file that are maps configuration sheets. Any number of maps sheets can be specified. These will be used in addition to all maps files specified with *maps_files*.
+
+**--excel_wide_sheets** (Optional)
+If *mapping_excel_file* is specified, then this option is a list of strings specifying the names of the sheets in the Excel file that are wide configuration sheets. Any number of wide sheets can be specified. These will be used in addition to all wide files specified with *wide_files*.
+
+**--excel_enums_sheets** (Optional)
+If *mapping_excel_file* is specified, then this option is a list of strings specifying the names of the sheets in the Excel file that are enum configuration sheets. Any number of enum sheets can be specified. These will be used in addition to all enums files specified with *enums_files*.
+
+**--maps_files** (Optional)
+A list of full paths to any maps configuration files to use, in CSV or TSV format. These will be used in addition to all the maps sheets specified by *mapping_excel_file* and *excel_maps_sheets*.
+
+**--wide_files** (Optional)
+A list of full paths to any wide configuration files to use, in CSV or TSV format. These will be used in addition to all the wide sheets specified by *mapping_excel_file* and *excel_wide_sheets*.
+
+**--enums_files** (Optional)
+A list of full paths to any enums configuration files to use, in CSV or TSV format. These will be used in addition to all the enums sheets specified by *mapping_excel_file* and *excel_enums_sheets*.
+
+**--input_data_dir** (Optional)
+Optional directory containing data files (CSV or TSV) from the source dataset that we want to transform after generating all the LinkML Map spec files. The file names must be the name of the source class (table) that the file is for, followed by any optional text in square brackets. For example, `SiteMeasure[extra text].csv` should contain the data for the `SiteMeasure` table.
+
+**--input_max_rows** (Optional)
+If *input_data_dir* is specified, then only transform at most this many rows in the source dataset files. If 0 or not specified then all rows are transformed. Defaults to 0.
+
 ## NWSS to ODM v2
 
-NWSS has multiple allowable data formats. Until the NWSS mapping spec is complete, you should stick to mapping from the default NWSS reporting data format (other formats include NWSS public metric, NWSS public concentration, and several NWSS restricted formats).
+Mapping NWSS to ODM follows the instructions found in the section [General CLI](#general-cli). NWSS has multiple allowable data formats. Until the NWSS mapping spec is complete, you should stick to mapping from the default NWSS reporting data format (other formats include NWSS public metric, NWSS public concentration, and several NWSS restricted formats).
 
 To generate the NWSS reporting to ODM v2 mapper specs, execute:
 
@@ -69,10 +120,10 @@ To generate the NWSS reporting to ODM v2 mapper specs, execute:
 cd src
 python3 make_mappers_cli.py --source_schema "../data/nwss_reporting/linkml/nwss_reporting.yaml" \
     --target_schema "../data/odm_v2/linkml/odm_v2.yaml" \
-    --mapping_config_file "../data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx" \
-    --maps_sheets "maps" \
-    --wide_sheets "wide" \
-    --enums_sheets "enums" \
+    --mapping_excel_file "../data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx" \
+    --excel_maps_sheets "maps" \
+    --excel_wide_sheets "wide" \
+    --excel_enums_sheets "enums" \
     --output_dir "../gen/nwss_reporting_to_v2"
 ```
 
