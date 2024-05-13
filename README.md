@@ -78,10 +78,10 @@ Required full path to the target dataset LinkML schema.
 **--output_dir** (Required)  
 The directory to save all generated output to. Various sub-directories will be created:
 
-- *cleaned_data*: Contains all input data, from the source dataset, that has been cleaned from *input_data_dir*. Cleaning of data involves doing some minor cleanup, such as correct capitalization and data types. If *input_data_dir* is specified then mapping will be performed on this cleaned data.
+- *cleaned_data*: Contains all input data, from the source dataset, that has been cleaned from *input_data_dir*. Cleaning of data involves doing some minor cleanup, such as correcting capitalization and data types. If *input_data_dir* is specified then mapping will be performed on this cleaned data.
 - *configs*: Contains all the maps, wide, and enums configuration files, extracted from *mapping_excel_file*, and copied from *maps_files*, *wide_files*, and *enums_files*
 - *mappers*: Contains all generated [LinkML Map](https://github.com/linkml/linkml-map) schemas to perform the mappings from the source to target datasets.
-- *mapped_data*: Contains the mapped data using the generated LinkML Map schemas and the data found in *input_data_dir*
+- *mapped_data*: Contains the mapped data using the generated LinkML Map schemas and the data found in the *cleaned_data* directory.
 
 **--mapping_excel_file** (Optional)  
 The Excel mapping configuration file. This can include multiple maps, wide, and enums configuration sheets, with the sheets specified by the *excel_maps_sheets*, *excel_wide_sheets*, and the *excel_enums_sheets* command-line options. Additional configuration sheets that are available in CSV or TSV format can also be specified with the *maps_files*, *wide_files*, and *enums_files* options. At least one *maps* sheet or file must be specified.
