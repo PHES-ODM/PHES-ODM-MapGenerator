@@ -38,13 +38,15 @@ At the moment, only `targetClass` and `targetSlot` in the `maps` tab support mul
 
 The `maps` tab(s) specify the mappings other than wide-column mappings. It provides details on how a slot from the source class is mapped onto a slot from the target class. The simplest of which is to simply copy from one slot to another. The `maps` tab is also where you can specify mappings of enumerations. Any row that is completely empty is ignored. Multiple `maps` tabs are allowed, their names must be specified when running the appropriate scripts. The `maps` tab has the headings described below.
 
+Any row that is completely empty is ignored.
+
 ### sourceClass
 
-The class name from the source dataset. If the `sourceClass` column for a row is empty then it takes on the value from the previous row where `sourceClass` is set.
+The class name from the source dataset.
 
 ### sourceSlot
 
-The slot in the source dataset that we are copying from (ie. this becomes the `populated_from` field in the mapping specification). If the `sourceSlot` column for a row is empty then it takes on the value from the previous row where `sourceSlot` is set. If `exprValue` or `customData` are set then `sourceSlot` is ignored.
+The slot in the source dataset that we are copying from (ie. this becomes the `populated_from` field in the mapping specification). If `exprValue` or `customData` are set then `sourceSlot` is ignored.
 
 ### sourceValue
 
@@ -54,11 +56,11 @@ If not empty, then the value represents a source enumeration value. This enumera
 
 ### targetClass
 
-The class in the target dataset that we are populating (from the `sourceClass` and `sourceSlot`). If the `targetClass` column for a row is empty then it takes on the value from the previous row where `targetClass` is set. This column supports [multi-values](#multi-values).
+The class in the target dataset that we are populating (from the `sourceClass` and `sourceSlot`). This column supports [multi-values](#multi-values).
 
 ### targetSlot
 
-The slot in the `targetClass` in the target dataset that we are populating (from the `sourceClass` and `sourceSlot`). If the `targetSlot` column for a row is empty then it takes on the value from the previous row where `targetSlot` is set. This column supports [multi-values](#multi-values).
+The slot in the `targetClass` in the target dataset that we are populating (from the `sourceClass` and `sourceSlot`). This column supports [multi-values](#multi-values).
 
 ### targetValue
 
@@ -94,17 +96,19 @@ The `wide` tab(s) specify how to pivot wide-columns. For details on what pivotin
 
 There can be multiple `wide` tabs, which are specified on the command-line when running the appropriate scripts. Any row that is completely empty is ignored.
 
+Any row that is completely empty is ignored.
+
 ### wideGroup
 
 This is an optional grouping column. In most cases this can be left blank. However, there are cases where we might want to pivot the same wide-column multiple times (ie. pivoting the same column to have multiple output rows, rather than just one), or even perform different enumeration mappings on the same wide-column. In such a case, we can set the `wideGroup` to values that group the rows in the wide sheet together. All rows with the same value in `wideGroup` (for a given `wideSourceClass`, `wideSourceSlot`, and `wideTargetClass` combination) will be considered a full wide-to-long specification for that slot and will be considered separately from all other rows with a different `wideGroup`.
 
 ### wideSourceClass
 
-This is the class from the source dataset that contains the slot that is a wide-column. If the `wideSourceClass` column for a row is empty then it takes on the value from the previous row where `wideSourceClass` is set.
+This is the class from the source dataset that contains the slot that is a wide-column.
 
 ### wideSourceSlot
 
-This is the slot from the source dataset and source class that is the wide-column to pivot. If the `wideSourceSlot` column for a row is empty then it takes on the value from the previous row where `wideSourceSlot` is set.
+This is the slot from the source dataset and source class that is the wide-column to pivot.
 
 ### wideSourceValue
 
@@ -112,7 +116,7 @@ If not empty, then the value represents a source enumeration value for the `wide
 
 ### wideTargetClass
 
-This is the class in the target dataset that we map the source slot to. If the `wideTargetClass` column for a row is empty then it takes on the value from the previous row where `wideTargetClass` is set.
+This is the class in the target dataset that we map the source slot to.
 
 ### wideTargetValue
 
@@ -156,22 +160,40 @@ All other columns specified will take precedence over any values set/copied in t
 
 The `enums` tab(s) allow specifying enumeration mappings. As with enumeration mappings in the `maps` tab, any enumeration will go through any mapping specified in the configuration file. If there is an enumeration that does not have any data regarding its mapping in the configuration file then it is copied unchanged.
 
-The difference between the `enums` tab and the `maps` tab for enumeration mappings is that in the `enums` tab the actual enumeration name in the LinkML source and target schemas must be used, whereas in the `maps` tab the slot name is used (behind the scenes, we extract the actual enum name based on the slot name).
+Sometimes you may want to include all (or most) enums mappings in the `enums` tab to organize the configuration sheets. Additionally, the `enums` sheet (unlike the other sheets) allows you to specify a source or target enumeration by the actual enumeration name found in the dataset's LinkML schema, which might not be the same as a slot name. For example in NWSS, the slot `pcr_gene_target` is an enumeration of type `vs_pcr_gene_target`. Alternatively, you can stick to specifying the class and slot names rather than enumeration names. In this case, the code will automatically extract the enumeration name from the class and slot names.
 
 Any row that is completely empty is ignored. Multiple `enums` tabs are allowed, their names must be specified when running the appropriate scripts. The `enums` tab has the headings described below.
 
+### sourceClass
+
+If specified, then this is the source class that the enumeration belongs to. It is typically paired with `sourceSlot` to identify the slot that the enumeration mapping is for. If not specified then `sourceEnum` should be used.
+
+### sourceSlot
+
+If specified, then this is the source slot (within the `sourceClass`) that the enumeration mapping is for. If `sourceClass` and `sourceSlot` are not used the `sourceEnum` should be used instead.
+
 ### sourceEnum
 
-The name of the source enumeration to map. If the `sourceEnum` column for a row is empty then it takes on the value from the previous row where `sourceEnum` is set. A `sourceEnum` can only map to a single `targetEnum`, so be sure that `targetEnum` is the same for all rows of the same `sourceEnum`.
+The name of the source enumeration to map. A `sourceEnum` can only map to a single `targetEnum`, so be sure that `targetEnum` is the same for all rows of the same `sourceEnum`.
+
+If `sourceEnum` is not used, then `sourceClass` and `sourceSlot` should be used instead.
 
 ### sourceValue
 
 The enumeration value in the `sourceEnum` that we are mapping from.
 
+### targetClass
+
+@TODO: Not yet implemented
+
+### targetSlot
+
+@TODO: Not yet implemented
+
 ### targetEnum
 
-The name of the target enumeration to map to. It is only possible to map a `sourceEnum` to a single `targetEnum`, so be sure that `targetEnum` is the same for all rows of the same `sourceEnum`. If the `targetEnum` column for a row is empty then it takes on the value from the previous row where `targetEnum` is set.
+The name of the target enumeration to map to. It is only possible to map a `sourceEnum` to a single `targetEnum`, so be sure that `targetEnum` is the same for all rows of the same `sourceEnum`. If `targetEnum` is left blank them a fake target enumeration name is created.
 
 ### targetValue
 
-The enumeration value in the `targetEnum` that we map the `sourceValue` to.
+The enumeration value that we map the `sourceValue` to.
