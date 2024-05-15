@@ -1,7 +1,4 @@
 #%%
-%load_ext autoreload
-%autoreload 2
-
 from pathlib import Path
 from typing import Union, List
 import argparse
