@@ -241,12 +241,14 @@ def extract_enum_derivations(maps_df: pd.DataFrame, source_schema: SchemaView, t
             source_enum_value = ""
 
         # Get source enumeration name, either from the SOURCE_ENUM column or based on the source class and slot
+        source_enum_name = None
         if MappingColumns.SOURCE_ENUM in row.index:
             # Source enum is available in the row, so use it
             source_enum_name = row[MappingColumns.SOURCE_ENUM]
-        else:
+        if not source_enum_name:
             # Get the source enum name based on the range of the slot
             source_enum_name = get_enum_name_for_slot(source_class, source_slot, source_schema)
+
         # Get the target enumeration name, either from the TARGET_ENUM column or based on the target class and slot
         if MappingColumns.TARGET_ENUM in row.index:
             # Target enum name is available in the row, so use it
@@ -329,9 +331,6 @@ def prepare_maps_df(maps_file: Union[str, Path]) -> pd.DataFrame:
     # Drop empty rows
     maps_df = maps_df.dropna(axis=0, how="all")
 
-    # Extend values downward to fill in missing data
-    maps_df = extend_down(maps_df, columns=[MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.TARGET_CLASS, MappingColumns.TARGET_SLOT])
-    
     # @TODO: Remove this once the maps_file is finalized
     if "Complete" in maps_df.columns:
         maps_df = maps_df[maps_df["Complete"] == 1].drop("Complete", axis="columns").reset_index(drop=True)
@@ -376,9 +375,6 @@ def prepare_wide_df(wide_file: Union[str, Path]) -> pd.DataFrame:
         WideSpecColumns.TARGET_VALUE: MappingColumns.TARGET_VALUE,
     })
     
-    # Extend values downward to fill in missing data
-    wide_df = extend_down(wide_df, columns=[MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.TARGET_CLASS])
-
     # @TODO: Remove this once the wide_file is finalized    
     if "Complete" in wide_df.columns:
         wide_df = wide_df[wide_df["Complete"] == 1].drop("Complete", axis="columns").reset_index(drop=True)
@@ -419,21 +415,14 @@ def prepare_enums_df(enums_file: Union[str, Path]) -> pd.DataFrame:
     # Drop empty rows
     enums_df = enums_df.dropna(axis=0, how="all")
     
-    # Extend values downward to fill in missing data
-    enums_df = extend_down(enums_df, columns=[MappingColumns.SOURCE_ENUM, MappingColumns.TARGET_ENUM])
-
     # @TODO: Remove this once the wide_file is finalized    
     if "Complete" in enums_df.columns:
         enums_df = enums_df[enums_df["Complete"] == 1].drop("Complete", axis="columns").reset_index(drop=True)
     
     # Keep only relevant columns, and make sure the columns exist
-    keep_columns = [MappingColumns.SOURCE_SLOT, MappingColumns.SOURCE_ENUM, MappingColumns.SOURCE_VALUE, MappingColumns.TARGET_ENUM, MappingColumns.TARGET_VALUE]
+    keep_columns = [MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.SOURCE_ENUM, MappingColumns.SOURCE_VALUE, MappingColumns.TARGET_CLASS, MappingColumns.TARGET_ENUM, MappingColumns.TARGET_VALUE]
     enums_df[[c for c in keep_columns if c not in enums_df.columns]] = ""
     enums_df = enums_df[keep_columns]
-    
-    # Make other columns empty
-    enums_df[MappingColumns.SOURCE_CLASS] = ""
-    enums_df[MappingColumns.TARGET_CLASS] = ""
     
     for column in enums_df.columns:
         enums_df.loc[pd.isna(enums_df[column]), column] = ""
@@ -618,6 +607,16 @@ def get_class_enum_derivations(source_class: str, target_class: str, class_enum_
         # First get the derivations in cur_derivations[""][""]
         if source_class or target_class:
             d = cur_derivations.get("", {}).get("", {})
+            if len(d) > 0:
+                group.append(d)
+        # Get the derivations in cur_derivations[source_class][""]
+        if source_class:
+            d = cur_derivations.get(source_class, {}).get("", {})
+            if len(d) > 0:
+                group.append(d)
+        # Get the derivations in cur_derivations[""][target_class]
+        if target_class:
+            d = cur_derivations.get("", {}).get(target_class, {})
             if len(d) > 0:
                 group.append(d)
         # Second get the derivations in cur_derivations[source_class][target_class]
