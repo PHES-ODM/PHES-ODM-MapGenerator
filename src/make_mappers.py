@@ -597,11 +597,10 @@ def get_class_enum_derivations(source_class: str, target_class: str, class_enum_
     """
     group = []
     for cur_derivations in class_enum_derivations:
-        # First get the derivations in cur_derivations[""][""]
-        if source_class or target_class:
-            d = cur_derivations.get("", {}).get("", {})
-            if len(d) > 0:
-                group.append(d)
+        # Get the derivations in cur_derivations[""][""]
+        d = cur_derivations.get("", {}).get("", {})
+        if len(d) > 0:
+            group.append(d)
         # Get the derivations in cur_derivations[source_class][""]
         if source_class:
             d = cur_derivations.get(source_class, {}).get("", {})
@@ -612,10 +611,11 @@ def get_class_enum_derivations(source_class: str, target_class: str, class_enum_
             d = cur_derivations.get("", {}).get(target_class, {})
             if len(d) > 0:
                 group.append(d)
-        # Second get the derivations in cur_derivations[source_class][target_class]
-        d = cur_derivations.get(source_class, {}).get(target_class, {})
-        if len(d) > 0:
-            group.append(d)
+        # Get the derivations in cur_derivations[source_class][target_class]
+        if source_class and target_class:
+            d = cur_derivations.get(source_class, {}).get(target_class, {})
+            if len(d) > 0:
+                group.append(d)
     # Merge the list of derivations into a single derivation
     return merge_enum_derivations(group)
 
