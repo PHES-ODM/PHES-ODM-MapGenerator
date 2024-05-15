@@ -183,9 +183,9 @@ if __name__ == "__main__":
 
         # Prepare data
         cleaned_data_dir = output_dir / "cleaned_data"
-        max_processes = 1
         clear_dirs([cleaned_data_dir, mapped_dir])
         files = clean_data_directory(opts.input_data_dir, cleaned_data_dir, schema=opts.source_schema, max_rows=opts.input_max_rows)
 
         # Map the data
+        max_processes = 1
         map(source_schema_file=opts.source_schema, target_schema_file=opts.target_schema, mapper_dir=mapper_dir, data_dir=cleaned_data_dir, data_output_dir=mapped_dir, max_processes=max_processes)
