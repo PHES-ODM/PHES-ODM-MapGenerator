@@ -209,11 +209,13 @@ def extract_enum_derivations(maps_df: pd.DataFrame, source_schema: SchemaView, t
     all_enum_derivations: Dict[str, Dict[str, Dict]] = {}
     for _, row in maps_df.iterrows():
         # Get all the row's data
-        source_class = row[MappingColumns.SOURCE_CLASS]
-        source_slot = row[MappingColumns.SOURCE_SLOT]
+        source_class = row.get(MappingColumns.SOURCE_CLASS, "")
+        source_slot = row.get(MappingColumns.SOURCE_SLOT, "")
+        source_enum_name = row.get(MappingColumns.SOURCE_ENUM, "")
         source_enum_value = row[MappingColumns.SOURCE_VALUE]
-        target_class = row[MappingColumns.TARGET_CLASS]
-        target_slot = row.get(MappingColumns.TARGET_SLOT, None)
+        target_class = row.get(MappingColumns.TARGET_CLASS, "")
+        target_slot = row.get(MappingColumns.TARGET_SLOT, "")
+        target_enum_name = row.get(MappingColumns.TARGET_ENUM, "")
         if not target_slot:
             target_slot = get_copy_to_slot(row)
         target_enum_value = row[MappingColumns.TARGET_VALUE]
@@ -236,29 +238,24 @@ def extract_enum_derivations(maps_df: pd.DataFrame, source_schema: SchemaView, t
         if source_enum_value == EMPTY_PERMISSIBLE_VALUE:
             source_enum_value = ""
 
-        # Get source enumeration name, either from the SOURCE_ENUM column or based on the source class and slot
-        source_enum_name = None
-        if MappingColumns.SOURCE_ENUM in row.index:
-            # Source enum is available in the row, so use it
-            source_enum_name = row[MappingColumns.SOURCE_ENUM]
+        # Get source enumeration name (if empty) based on the source class and slot
         if not source_enum_name:
             # Get the source enum name based on the range of the slot
             source_enum_name = get_enum_name_for_slot(source_class, source_slot, source_schema)
 
-        # Get the target enumeration name, either from the TARGET_ENUM column or based on the target class and slot
-        if MappingColumns.TARGET_ENUM in row.index:
-            # Target enum name is available in the row, so use it
-            target_enum_name = row[MappingColumns.TARGET_ENUM]
-            # If no target enum name is given create a fake name
-            if not target_enum_name:
-                target_enum_name = f"{target_schema.schema.name}_enum_from_{source_enum_name}"
-        else:
+        # Get the target enumeration name based on the target class and slot
+        if target_class and target_slot:
             target_enum_name = get_enum_name_for_slot(target_class, target_slot, target_schema)
             # If there is no target enum name (eg. we're mapping from a source slot that is an enum to a target slot that is not an
             # enum), then we create a unique target enum name to use. Target enum names can be anything, they are just placeholders 
             # (but source enum names must be correct).
             if not target_enum_name:
                 target_enum_name = f"{target_slot}_from_{source_enum_name}"
+        # If no target enum name is given create a fake name
+        if not target_enum_name:
+            target_enum_name = f"{target_schema.schema.name}_enum_from_{source_enum_name}"        
+        if not target_enum_name:
+            raise ValueError(f"At least one of target enumeration or target class/target slot must be specified for enumeration mapping from source class '{source_class}', source slot '{source_slot}', source enum '{source_enum_name}'")
 
         # Get the enum derivations dictionary for the current source_class and target_class
         if source_class not in all_enum_derivations:
@@ -416,7 +413,7 @@ def prepare_enums_df(enums_file: Union[str, Path]) -> pd.DataFrame:
         enums_df = enums_df[enums_df["Complete"] == 1].drop("Complete", axis="columns").reset_index(drop=True)
     
     # Keep only relevant columns, and make sure the columns exist
-    keep_columns = [MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.SOURCE_ENUM, MappingColumns.SOURCE_VALUE, MappingColumns.TARGET_CLASS, MappingColumns.TARGET_ENUM, MappingColumns.TARGET_VALUE]
+    keep_columns = [MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.SOURCE_ENUM, MappingColumns.SOURCE_VALUE, MappingColumns.TARGET_CLASS, MappingColumns.TARGET_SLOT, MappingColumns.TARGET_ENUM, MappingColumns.TARGET_VALUE]
     enums_df[[c for c in keep_columns if c not in enums_df.columns]] = ""
     enums_df = enums_df[keep_columns]
     

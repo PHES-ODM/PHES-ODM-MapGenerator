@@ -184,15 +184,21 @@ The enumeration value in the `sourceEnum` that we are mapping from.
 
 ### targetClass
 
-@TODO: Not yet implemented
+If set, then the target class of the `targetSlot` we are mapping to. We will extract the target enumeration name from the combination of `targetClass` and `targetSlot`. Alternatively, these can be left blank and `targetEnum` can be used instead, to specify the target enumeration explicitly.
+
+If `targetEnum`, `targetClass`, and `targetSlot` are left blank them a fake target enumeration name is created.
 
 ### targetSlot
 
-@TODO: Not yet implemented
+If set, then the target slot within the `targetClass` we are mapping to. We will extract the target enumeration name from the combination of `targetClass` and `targetSlot`. Alternatively, these can be left blank and `targetEnum` can be used instead, to specify the target enumeration explicitly.
+
+If `targetEnum`, `targetClass`, and `targetSlot` are left blank them a fake target enumeration name is created.
 
 ### targetEnum
 
-The name of the target enumeration to map to. It is only possible to map a `sourceEnum` to a single `targetEnum`, so be sure that `targetEnum` is the same for all rows of the same `sourceEnum`. If `targetEnum` is left blank them a fake target enumeration name is created.
+If set, the name of the target enumeration to map to. It is only possible to map a `sourceEnum` to a single `targetEnum`, so be sure that `targetEnum` is the same for all rows of the same `sourceEnum`.
+
+If `targetEnum`, `targetClass`, and `targetSlot` are left blank them a fake target enumeration name is created.
 
 ### targetValue
 
