@@ -229,10 +229,6 @@ def extract_enum_derivations(maps_df: pd.DataFrame, source_schema: SchemaView, t
         if pd.isna(target_enum_value):
             target_enum_value = ""
             
-        # @TODO: Remove this
-        if target_enum_value == "see notes":
-            target_enum_value = ""
-        
         # If both the source enum value and target enum value are empty then this row is not an enumeration, so continue to next loop
         if (pd.isna(source_enum_value) or source_enum_value == "") and (pd.isna(target_enum_value) or target_enum_value == ""):
             continue
