@@ -40,6 +40,15 @@ class WideSpecColumns:
     NOTES = "wideNotes"
     
 def get_variable_reference(v: Any) -> Optional[str]:
+    """Get the variable name that the value references. If the value is in the form {{variableName}} then the string
+    "variableName" will be returned.
+
+    Args:
+        v (Any): The value to get the variable reference from.
+
+    Returns:
+        Optional[str]: The variable that v refers to, or None if it does not refer to a variable.
+    """
     if not isinstance(v, str):
         return None
     match = re.search(VARIABLE_REGEX, v)
