@@ -242,6 +242,8 @@ def extract_enum_derivations(maps_df: pd.DataFrame, source_schema: SchemaView, t
         if not source_enum_name:
             # Get the source enum name based on the range of the slot
             source_enum_name = get_enum_name_for_slot(source_class, source_slot, source_schema)
+            if not source_enum_name:
+                raise ValueError(f"Could not get source enum name from source class '{source_class}' and source slot '{source_slot}'")
 
         # Get the target enumeration name based on the target class and slot
         if target_class and target_slot:
