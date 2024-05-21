@@ -1392,6 +1392,8 @@ slots:
     from_schema: https://onto.phes-odm.org/nwss/reporting
   major_lab_method:
     from_schema: https://onto.phes-odm.org/nwss/reporting
+  major_lab_method_desc:
+    from_schema: https://onto.phes-odm.org/nwss/reporting
   nwss:
     from_schema: https://onto.phes-odm.org/nwss/reporting
 classes:
@@ -1483,6 +1485,7 @@ classes:
     - other_norm_unit
     - quality_flag
     - major_lab_method
+    - major_lab_method_desc
     slot_usage:
       reporting_jurisdiction:
         description: The CDC Epidemiology and Laboratory Capacity (ELC) jurisdiction,
@@ -1939,6 +1942,14 @@ classes:
           be different for the same laboratory if changes made to the laboratory protocol
           rendered concentrations not comparable.
         range: integer
+        required: true
+      major_lab_method_desc:
+        description: "Brief description of the basis for assigning a \u2018major_lab_method\u2019\
+          , e.g., \"this lab uses a lab method distinct from other labs in this reporting\
+          \ jurisdiction\", \"this lab changed lab methods - new concentration method\"\
+          \ or \"lab method is same as other labs in this reporting jurisdiction but\
+          \ performance differs\""
+        range: string
         required: true
   Container:
     from_schema: https://onto.phes-odm.org/nwss/reporting
