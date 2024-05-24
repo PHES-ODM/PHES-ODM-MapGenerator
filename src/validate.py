@@ -17,7 +17,7 @@ from linkml_runtime import SchemaView
 from linkml.validator.report import Severity
 
 from utils.general_utils import get_logger
-from utils.schema_utils import get_range_of_slot
+from utils.schema_utils import get_ranges_of_slot
 
 logger = get_logger(__name__)
 
@@ -62,11 +62,12 @@ def _parse_value(value: Any, cls: str, slot: str, schema: SchemaView) -> Any:
             then the value is returned unchanged.
     """
     # Get the range and cast to string if range is "string" or an enum
-    rng = get_range_of_slot(cls, slot, schema)
-    if rng == "string":
-        return str(value)
-    if rng in schema.all_enums():
-        return str(value)
+    ranges = get_ranges_of_slot(cls, slot, schema, as_list=True)
+    
+    for rng in ranges:
+        # Test if rng is an enum or "string", if it is then return the value as a string
+        if rng == "string" or rng in schema.all_enums():
+            return str(value)
     
     # Try to cast to an integer or float
     return _parse_numeric(value)

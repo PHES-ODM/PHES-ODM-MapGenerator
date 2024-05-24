@@ -19,7 +19,7 @@ from typing import Tuple, List, Union, Optional
 from linkml_runtime import SchemaView
 
 from utils.general_utils import read_data_frame, save_data_frame, get_logger, choose_ignore_case_value, get_class_name_from_file_name
-from utils.schema_utils import get_range_of_slot
+from utils.schema_utils import get_ranges_of_slot
 
 logger = get_logger(__name__)
 
@@ -54,14 +54,16 @@ def fix_data_with_schema(df: pd.DataFrame, class_name: str, schema: SchemaView) 
     #     if slot_name not in class_definition.attributes:
     #         continue
     #     keep_columns.append(slot_name)
-    #     slot_range = get_range_of_slot(class_name, slot_name, schema)
+    #     slot_ranges = get_ranges_of_slot(class_name, slot_name, schema, as_list = True)
         
-    #     # Get enumeration for the slot range, if there is one, and fix up the capitalization of all slot values.
-    #     enum = schema.all_enums().get(str(slot_range), None)
-    #     if enum is not None:
-    #         permissible_values = list(enum.permissible_values.keys())
-    #         lowercase_permissible_values = [v.lower() for v in permissible_values]
-    #         df[slot_name] = df[slot_name].apply(lambda x: choose_ignore_case_value(x, permissible_values, lowercase_permissible_values))
+    #     if slot_ranges:
+    #         for slot_range in slot_ranges:
+    #             # Get enumeration for the slot range, if there is one, and fix up the capitalization of all slot values.
+    #             enum = schema.all_enums().get(str(slot_range), None)
+    #             if enum is not None:
+    #                 permissible_values = list(enum.permissible_values.keys())
+    #                 lowercase_permissible_values = [v.lower() for v in permissible_values]
+    #                 df[slot_name] = df[slot_name].apply(lambda x: choose_ignore_case_value(x, permissible_values, lowercase_permissible_values))
     
     # return df[keep_columns]
     return df
@@ -188,14 +190,18 @@ def clean_data_directory(directory: Union[str, Path], output_dir: Union[str, Pat
 if __name__ == "__main__":
     if "get_ipython" in globals():
         class opts:
-            # directory = Path("../../../../PHES-ODM-Data/odm_v1_data/wwMeasure")
-            # directory = Path("../../../../PHES-ODM-Data/odm_v1_data/centreau_qc/updated")
-            directory = Path("../../../../PHES-ODM-Data/nwss/private_renamed")
+            directory = "../../data/test/output/uncleaned_data"
+            output_dir = "../../data/test/output/cleaned_data"
+
+            # directory = "../../../../PHES-ODM-Data/odm_v1_data/wwMeasure"
+            # directory = "../../../../PHES-ODM-Data/odm_v1_data/centreau_qc/updated"
+            # directory = "../../../../PHES-ODM-Data/nwss/private_renamed"
             file = ""
-            output_dir = Path("../../../../PHES-ODM-Data/nwss/private_cleaned")
+            # output_dir = "../../../../PHES-ODM-Data/nwss/private_cleaned"
             max_rows = 1000
-            # schema = Path("../../data/odm_v1/linkml/odm_v1.yaml")
-            schema = Path("../../data/nwss_reporting/linkml/nwss_reporting.yaml")
+            # schema = "../../data/odm_v1/linkml/odm_v1.yaml"
+            # schema = "../../data/nwss_reporting/linkml/nwss_reporting.yaml"
+            schema = "../../data/test/source.yaml"
     else:
         args = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         args.add_argument("--directory", type=str, help="Clean all csv, txt, and tsv files in this directory. txt files are treated as tab-separated", required=False)

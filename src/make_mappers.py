@@ -17,7 +17,7 @@ import json
 from linkml_runtime import SchemaView
 
 from utils.general_utils import read_data_frame, strip_whitespace, get_logger, order_columns, extend_down, expand_multi_rows, rename_items, EMPTY_PERMISSIBLE_VALUE
-from utils.schema_utils import get_enum_name_for_slot
+from utils.schema_utils import get_enum_names_for_slot, get_enum_name_with_permissible_value
 from utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations, get_variable_reference, WideSpecColumns
 
 logger = get_logger(__name__)
@@ -241,13 +241,18 @@ def extract_enum_derivations(maps_df: pd.DataFrame, source_schema: SchemaView, t
         # Get source enumeration name (if empty) based on the source class and slot
         if not source_enum_name:
             # Get the source enum name based on the range of the slot
-            source_enum_name = get_enum_name_for_slot(source_class, source_slot, source_schema)
-            if not source_enum_name:
+            source_enum_names = get_enum_names_for_slot(source_class, source_slot, source_schema)
+            if not source_enum_names:
                 raise ValueError(f"Slot is not an enumeration for source class '{source_class}' and source slot '{source_slot}' (source_enum_value='{source_enum_value}', target_class='{target_class}', target_slot='{target_slot}', target_enum_value='{target_enum_value}')")
+            # Find the first source enumeration that contains source_enum_value, use it as the source enum
+            source_enum_name = get_enum_name_with_permissible_value(source_enum_names, source_enum_value, source_schema)
+            if not source_enum_name:
+                raise ValueError(f"Could not find an enumeration for source class '{source_class}' and source slot '{source_slot}' that has a enumeration value of '{source_enum_value}'")
 
         # Get the target enumeration name based on the target class and slot
         if target_class and target_slot:
-            target_enum_name = get_enum_name_for_slot(target_class, target_slot, target_schema)
+            target_enum_names = get_enum_names_for_slot(target_class, target_slot, target_schema)
+            target_enum_name = get_enum_name_with_permissible_value(target_enum_names, target_enum_value, target_schema)
             # If there is no target enum name (eg. we're mapping from a source slot that is an enum to a target slot that is not an
             # enum), then we create a unique target enum name to use. Target enum names can be anything, they are just placeholders 
             # (but source enum names must be correct).

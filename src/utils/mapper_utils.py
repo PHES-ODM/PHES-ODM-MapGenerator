@@ -12,7 +12,7 @@ import re
 from linkml_runtime import SchemaView
 
 from utils.general_utils import get_logger
-from utils.schema_utils import get_enum_name_for_slot
+from utils.schema_utils import get_enum_names_for_slot
 
 logger = get_logger(__name__)
 
@@ -88,25 +88,26 @@ def select_required_enum_derivations(class_derivation: Dict, enum_derivations: D
         source_slot_name = slot_derivation["populated_from"]
         
         # Get the enum name for the slot
-        enum_name = get_enum_name_for_slot(class_name, source_slot_name, schema)
-        if enum_name is None:
+        enum_names = get_enum_names_for_slot(class_name, source_slot_name, schema)
+        if enum_names is None:
             continue
         
-        # Try to get the enum derivation for the enum name. If an enum derivation exists then we keep it.
-        derivations = [k for k, v in enum_derivations.items() if v["populated_from"] == enum_name]
-        if len(derivations) > 1:
-            raise RuntimeError(f"Found multiple target enum derivations {derivations} populating from the same source enum {enum_name} (from source slot {source_slot_name}). This is not allowed by LinkML Mapper!")
-        if mirror_missing_enum_derivations and len(derivations) == 0:
-            logger.warning(f"No enum derivation found for {enum_name} in select_required_enum_derivations, creating a mirrored enum derivation")
-            target_enum_name = f"{enum_name}[=mirrored=]"
-            selected_derivations[target_enum_name] = {
-                "name" :  target_enum_name,
-                "mirror_source" : True,
-                "populated_from" : enum_name,
-            }
-        else:
-            for derivation_name in derivations:
-                selected_derivations[derivation_name] = enum_derivations[derivation_name]
+        for enum_name in enum_names:
+            # Try to get the enum derivation for the enum name. If an enum derivation exists then we keep it.
+            derivations = [k for k, v in enum_derivations.items() if v["populated_from"] == enum_name]
+            if len(derivations) > 1:
+                raise RuntimeError(f"Found multiple target enum derivations {derivations} populating from the same source enum {enum_name} (from source slot {source_slot_name}). This is not allowed by LinkML Mapper!")
+            if mirror_missing_enum_derivations and len(derivations) == 0:
+                logger.warning(f"No enum derivation found for {enum_name} in select_required_enum_derivations, creating a mirrored enum derivation")
+                target_enum_name = f"{enum_name}[=mirrored=]"
+                selected_derivations[target_enum_name] = {
+                    "name" :  target_enum_name,
+                    "mirror_source" : True,
+                    "populated_from" : enum_name,
+                }
+            else:
+                for derivation_name in derivations:
+                    selected_derivations[derivation_name] = enum_derivations[derivation_name]
         
     return selected_derivations
 
