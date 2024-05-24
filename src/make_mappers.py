@@ -252,11 +252,15 @@ def extract_enum_derivations(maps_df: pd.DataFrame, source_schema: SchemaView, t
         # Get the target enumeration name based on the target class and slot
         if target_class and target_slot:
             target_enum_names = get_enum_names_for_slot(target_class, target_slot, target_schema)
-            target_enum_name = get_enum_name_with_permissible_value(target_enum_names, target_enum_value, target_schema)
-            # If there is no target enum name (eg. we're mapping from a source slot that is an enum to a target slot that is not an
-            # enum), then we create a unique target enum name to use. Target enum names can be anything, they are just placeholders 
-            # (but source enum names must be correct).
-            if not target_enum_name:
+            if target_enum_names:
+                target_enum_name = get_enum_name_with_permissible_value(target_enum_names, target_enum_value, target_schema)
+                if not target_enum_name:
+                    target_enum_name = target_enum_names[0]
+                    raise ValueError(f"No target enumeration found from {target_enum_names} that has a permissible value='{target_enum_value}' (for target_class='{target_class}', target_slot='{target_slot}')") #. Using target enumeration name '{target_enum_name}'")
+            else:
+                # If there is no target enum name (eg. we're mapping from a source slot that is an enum to a target slot that is not an
+                # enum), then we create a unique target enum name to use. Target enum names can be anything, they are just placeholders 
+                # (but source enum names must be correct).
                 target_enum_name = f"{target_slot}_from_{source_enum_name}"
         # If no target enum name is given create a fake name
         if not target_enum_name:
@@ -577,6 +581,7 @@ def merge_enum_derivations(enum_derivations: List[Dict]) -> Dict:
             elif len(key_matches) == 1:
                 # A derivation for v["populated_from"] already exists in results, so delete it
                 del(results[key_matches[0]])
+                raise ValueError(f"Enum derivation with populated_from='{populated_from}' already exists, can only have one enum derivation per populated_from")
             # Add the current derivation
             results[k] = v
             
