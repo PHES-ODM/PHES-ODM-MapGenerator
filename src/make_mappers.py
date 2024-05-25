@@ -247,7 +247,7 @@ def extract_enum_derivations(maps_df: pd.DataFrame, source_schema: SchemaView, t
             # Find the first source enumeration that contains source_enum_value, use it as the source enum
             source_enum_name = get_enum_name_with_permissible_value(source_enum_names, source_enum_value, source_schema)
             if not source_enum_name:
-                raise ValueError(f"Could not find an enumeration for source class '{source_class}' and source slot '{source_slot}' that has a enumeration value of '{source_enum_value}'")
+                raise ValueError(f"No source enumeration found from {source_enum_names} that has a permissible value='{source_enum_value}' (for source_class='{source_class}', source_slot='{source_slot}')")
 
         # Get the target enumeration name based on the target class and slot
         if target_class and target_slot:
