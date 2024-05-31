@@ -134,6 +134,19 @@ if __name__ == "__main__":
     if "get_ipython" in globals():
         dictionary_type = "reporting"
         class opts:
+            # source_schema = f"../data/test/source.yaml"
+            # target_schema = f"../data/test/target.yaml"
+            # mapping_excel_file = f"../data/test/test-map.xlsx"
+            # excel_maps_sheets = ["maps"]
+            # excel_wide_sheets = []
+            # excel_enums_sheets = ["enums"]
+            # maps_files = []
+            # wide_files = []
+            # enums_files = []
+            # output_dir = f"../data/test/output"
+            # input_data_dir = f"../data/test/output/uncleaned_data"
+            # input_max_rows = None
+            
             source_schema = f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
             target_schema = f"../data/odm_v2/linkml/odm_v2.yaml"
             mapping_excel_file = "../data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx"
@@ -184,7 +197,7 @@ if __name__ == "__main__":
         # Prepare data
         cleaned_data_dir = output_dir / "cleaned_data"
         clear_dirs([cleaned_data_dir, mapped_dir])
-        files = clean_data_directory(opts.input_data_dir, cleaned_data_dir, schema=opts.source_schema, max_rows=opts.input_max_rows)
+        _ = clean_data_directory(opts.input_data_dir, cleaned_data_dir, schema=opts.source_schema, max_rows=opts.input_max_rows)
 
         # Map the data
         max_processes = 1

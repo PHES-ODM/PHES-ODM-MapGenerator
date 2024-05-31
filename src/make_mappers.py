@@ -16,28 +16,11 @@ import json
 
 from linkml_runtime import SchemaView
 
-from utils.general_utils import read_data_frame, strip_whitespace, get_logger, order_columns, extend_down, expand_multi_rows, rename_items, EMPTY_PERMISSIBLE_VALUE
+from utils.general_utils import read_data_frame, strip_whitespace, get_logger, order_columns, expand_multi_rows, EMPTY_PERMISSIBLE_VALUE
 from utils.schema_utils import get_enum_names_for_slot, get_enum_name_with_permissible_value
-from utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations, get_variable_reference, WideSpecColumns
+from utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations, get_variable_reference, MappingColumns, WIDE_SPEC_TARGET_SUFFIX
 
 logger = get_logger(__name__)
-
-class MappingColumns:
-    """Columns used internally that specify the mappings. These are assigned to the columns in the
-    Excel mapping configuration files.
-    """
-    SOURCE_CLASS = "sourceClass"
-    SOURCE_SLOT = "sourceSlot"
-    SOURCE_VALUE = "sourceValue"
-    TARGET_CLASS = "targetClass"
-    TARGET_SLOT = "targetSlot"
-    TARGET_VALUE = "targetValue"
-    EXPR_VALUE = "exprValue"
-    CUSTOM_DATA = "customData"
-    
-    # These columns should only be present in the enums tabs of the mapping files
-    SOURCE_ENUM = "sourceEnum"
-    TARGET_ENUM = "targetEnum"
 
 def extract_class_derivations(maps_df: pd.DataFrame, source_schema: SchemaView) -> Dict[str, Dict[str, Dict]]:
     """Extract all class derivations from DataFraome from the the mapping file.
@@ -357,7 +340,7 @@ def prepare_wide_df(wide_file: Union[str, Path]) -> pd.DataFrame:
 
     Returns:
         pd.DataFrame: The DataFrame with the wide column information. It will contain the columns
-            found in MappingColumns as well as additional columns from WideSpecColumns specifying values used
+            found in MappingColumns, including the wide-specific columns specifying values used
             when pivoting.
     """
     if not wide_file:
@@ -369,30 +352,20 @@ def prepare_wide_df(wide_file: Union[str, Path]) -> pd.DataFrame:
     # Drop empty rows
     wide_df = wide_df.dropna(axis=0, how="all")
 
-    # Rename the existing columns
-    wide_df.columns = rename_items(wide_df.columns, {
-        WideSpecColumns.SOURCE_CLASS: MappingColumns.SOURCE_CLASS,
-        WideSpecColumns.TARGET_CLASS: MappingColumns.TARGET_CLASS,
-        WideSpecColumns.SOURCE_SLOT: MappingColumns.SOURCE_SLOT,
-        # CustomWideColumns.TARGET_SLOT: MappingColumns.TARGET_SLOT,
-        WideSpecColumns.SOURCE_VALUE: MappingColumns.SOURCE_VALUE,
-        WideSpecColumns.TARGET_VALUE: MappingColumns.TARGET_VALUE,
-    })
-    
     # @TODO: Remove this once the wide_file is finalized    
     if "Complete" in wide_df.columns:
         wide_df = wide_df[wide_df["Complete"] == 1].drop("Complete", axis="columns").reset_index(drop=True)
     
-    if WideSpecColumns.OTHER_SLOTS not in wide_df.columns:
-        wide_df[WideSpecColumns.OTHER_SLOTS] = None
+    if MappingColumns.WIDE_OTHER_SLOTS not in wide_df.columns:
+        wide_df[MappingColumns.WIDE_OTHER_SLOTS] = None
     
     # Get rid of NAs in the GROUP column. The pd.groupby function skips NA values, but doesn't
     # skip empty "" values.
-    if WideSpecColumns.GROUP in wide_df:
-        wide_df[WideSpecColumns.GROUP] = wide_df[WideSpecColumns.GROUP].map(lambda x: "" if pd.isna(x) else str(x))
-        wide_df.loc[pd.isna(wide_df[WideSpecColumns.GROUP]), WideSpecColumns.GROUP] = ""
+    if MappingColumns.WIDE_GROUP in wide_df:
+        wide_df[MappingColumns.WIDE_GROUP] = wide_df[MappingColumns.WIDE_GROUP].map(lambda x: "" if pd.isna(x) else str(x))
+        wide_df.loc[pd.isna(wide_df[MappingColumns.WIDE_GROUP]), MappingColumns.WIDE_GROUP] = ""
     else:
-        wide_df[WideSpecColumns.GROUP] = ""
+        wide_df[MappingColumns.WIDE_GROUP] = ""
 
     # Order the columns into a nice order. This isn't necessary but makes it easier to view when debugging.
     wide_df = order_columns(wide_df, [MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.TARGET_CLASS])
@@ -495,7 +468,7 @@ def make_wide_derivations(class_derivation: Dict, custom_wide_df: pd.DataFrame, 
     custom_wide_df = custom_wide_df[filt].copy()
 
     results = []
-    for idx, (_, group_df) in enumerate(custom_wide_df.groupby([MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.TARGET_CLASS, WideSpecColumns.GROUP])):
+    for idx, (_, group_df) in enumerate(custom_wide_df.groupby([MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.TARGET_CLASS, MappingColumns.WIDE_GROUP])):
         # Get source class and target class
         source_class = group_df[MappingColumns.SOURCE_CLASS].iloc[0]
         target_class = group_df[MappingColumns.TARGET_CLASS].iloc[0]
@@ -508,31 +481,27 @@ def make_wide_derivations(class_derivation: Dict, custom_wide_df: pd.DataFrame, 
         group_df = group_df.iloc[[0]].copy()
                 
         # Set the columns in the OTHER_SLOTS field. It is a JSON dictionary of column:value pairs
-        other_slots = group_df[WideSpecColumns.OTHER_SLOTS].iloc[0]
+        other_slots = group_df[MappingColumns.WIDE_OTHER_SLOTS].iloc[0]
         if other_slots and isinstance(other_slots, str):
             other_slots = json.loads(other_slots)
             group_df[list(other_slots.keys())] = list(other_slots.values())
         
-        group_df = group_df.drop([MappingColumns.SOURCE_SLOT, MappingColumns.SOURCE_VALUE, MappingColumns.TARGET_VALUE, WideSpecColumns.NOTES, WideSpecColumns.OTHER_SLOTS, WideSpecColumns.GROUP], axis=1).copy()
-        group_df.columns = rename_items(group_df.columns, {
-            MappingColumns.SOURCE_CLASS: WideSpecColumns.SOURCE_CLASS,
-            # MappingColumns.SOURCE_SLOT: CustomWideColumns.SOURCE_SLOT,
-            MappingColumns.TARGET_CLASS: WideSpecColumns.TARGET_CLASS,
-        })
-                
+        # Keep source class, target class, and all columns that end in WIDE_SPEC_TARGET_SUFFIX (_target)
+        keep_columns = [MappingColumns.SOURCE_CLASS, MappingColumns.TARGET_CLASS]
+        keep_columns = keep_columns + [c for c in group_df.columns if c not in keep_columns and c.endswith(WIDE_SPEC_TARGET_SUFFIX)]
+        group_df = group_df[keep_columns]
+        
         # Pivot the group to long format, keeping id_columns constant for all rows. This is the format that expand_wide_derivations
         # expects (ie. each row in the pivoted table represents the value to place in one column in the output)
-        id_columns = [WideSpecColumns.SOURCE_CLASS, WideSpecColumns.TARGET_CLASS]
-        group_df = group_df.melt(id_vars = id_columns, var_name = WideSpecColumns.TARGET_SLOT, value_name = WideSpecColumns.TARGET_VALUE)
+        id_columns = [MappingColumns.SOURCE_CLASS, MappingColumns.TARGET_CLASS]
+        group_df = group_df.melt(id_vars = id_columns, var_name = MappingColumns.TARGET_SLOT, value_name = MappingColumns.TARGET_VALUE)
+        
+        # Remove the target suffix WIDE_SPEC_TARGET_SUFFIX (_target)
+        group_df[MappingColumns.TARGET_SLOT] = group_df[MappingColumns.TARGET_SLOT].map(lambda x: x.split(WIDE_SPEC_TARGET_SUFFIX)[0])
 
         # ROW_NUMBER is all the same, since group_df provides all the information for outputing a single row (we do one output
         # row at a time)
-        group_df[WideSpecColumns.ROW_NUMBER] = idx
-        
-        # Clean up group_df by only selecting the WideSpecColumns columns
-        group_df = group_df[[WideSpecColumns.SOURCE_CLASS, WideSpecColumns.TARGET_CLASS, WideSpecColumns.ROW_NUMBER, WideSpecColumns.TARGET_SLOT, WideSpecColumns.TARGET_VALUE]]
-        
-        
+        group_df[MappingColumns.WIDE_ROW_NUMBER] = idx
         
         # Create the derivations for pivoting the single column defined by group_df
         cur_results = expand_wide_derivations(source_class_name=source_class_name, target_class_name=target_class_name, slot_derivations=class_derivation["slot_derivations"], custom_wide_dfs=group_df)

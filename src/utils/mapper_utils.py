@@ -21,23 +21,45 @@ logger = get_logger(__name__)
 # {{sourceSlotName}}.
 VARIABLE_REGEX = r"^{{([^}]*)}}$"
 
-class WideSpecColumns:
-    # Names for the wide columns CSV config file (see expand_wide_derivations)
-    SOURCE_CLASS = "wideSourceClass"
-    TARGET_CLASS = "wideTargetClass"
-    ROW_NUMBER = "wideRowNumber"
-    TARGET_SLOT = "wideTargetSlot"
-    TARGET_VALUE = "wideTargetValue"
-    OTHER_SLOTS = "wideOtherSlots"
+WIDE_SPEC_TARGET_SUFFIX = "_target"
+
+class MappingColumns:
+    """Columns used internally that specify the mappings. These are assigned to the columns in the
+    Excel mapping configuration files.
+    """
+    SOURCE_CLASS = "sourceClass"
+    SOURCE_SLOT = "sourceSlot"
+    SOURCE_VALUE = "sourceValue"
+    TARGET_CLASS = "targetClass"
+    TARGET_SLOT = "targetSlot"
+    TARGET_VALUE = "targetValue"
+    EXPR_VALUE = "exprValue"
+    CUSTOM_DATA = "customData"
     
-    GROUP = "wideGroup"
+    # These columns should only be present in the enums tabs of the mapping files
+    SOURCE_ENUM = "sourceEnum"
+    TARGET_ENUM = "targetEnum"
+
+    # For Wide mappings only
+    WIDE_GROUP = "wideGroup"
+    WIDE_ROW_NUMBER = "wideRowNumber"
+    WIDE_OTHER_SLOTS = "wideOtherSlots"
+
+
+# class WideSpecColumns:
+#     # Names for the wide columns CSV config file (see expand_wide_derivations)
+#     SOURCE_CLASS = "wideSourceClass"
+#     TARGET_CLASS = "wideTargetClass"
+#     TARGET_SLOT = "wideTargetSlot"
+#     TARGET_VALUE = "wideTargetValue"
     
-    # Only used when the wide schema also includes details for mapping enumeration values
-    SOURCE_VALUE = "wideSourceValue"
-    SOURCE_SLOT = "wideSourceSlot"
+#     WIDE_GROUP = "wideGroup"
+#     WIDE_ROW_NUMBER = "wideRowNumber"
+#     WIDE_OTHER_SLOTS = "wideOtherSlots"
     
-    # Notes added to the wide-column spec sheet. This column gets ignored.
-    NOTES = "wideNotes"
+#     # Only used when the wide schema also includes details for mapping enumeration values
+#     SOURCE_VALUE = "wideSourceValue"
+#     SOURCE_SLOT = "wideSourceSlot"
     
 def get_variable_reference(v: Any) -> Optional[str]:
     """Get the variable name that the value references. If the value is in the form {{variableName}} then the string
@@ -151,7 +173,7 @@ def expand_wide_derivations(source_class_name: str, target_class_name: str, slot
     # mapper configs, one for each wide column.
     for custom_wide_number, custom_wide_df in enumerate(custom_wide_dfs):
         # Select all rows matching the source class and target class
-        custom_wide_df = custom_wide_df[(custom_wide_df[WideSpecColumns.SOURCE_CLASS] == source_class_name) & (custom_wide_df[WideSpecColumns.TARGET_CLASS] == target_class_name)]
+        custom_wide_df = custom_wide_df[(custom_wide_df[MappingColumns.SOURCE_CLASS] == source_class_name) & (custom_wide_df[MappingColumns.TARGET_CLASS] == target_class_name)]
         if len(custom_wide_df.index) == 0:
             continue
         
@@ -160,10 +182,10 @@ def expand_wide_derivations(source_class_name: str, target_class_name: str, slot
         # the existing order of the rows). This ensures that if a later row overwrites the
         # target slot of a previous row, that the later row actually does occur later in the
         # input configuration file. This makes more sense from a user-point of view.
-        custom_wide_df = custom_wide_df.sort_values(WideSpecColumns.ROW_NUMBER, kind="stable")
+        custom_wide_df = custom_wide_df.sort_values(MappingColumns.WIDE_ROW_NUMBER, kind="stable")
         
         # Group by ROW_NUMBER and iterate. We make one class derivation per group.
-        for group_number, rows_df in custom_wide_df.groupby(WideSpecColumns.ROW_NUMBER):
+        for group_number, rows_df in custom_wide_df.groupby(MappingColumns.WIDE_ROW_NUMBER):
             # Make a copy of the full slot derivation we previously calculated. We'll
             # modify it with the current wide info
             cur_slot_derivations = slot_derivations.copy()
@@ -175,12 +197,12 @@ def expand_wide_derivations(source_class_name: str, target_class_name: str, slot
             # in the mapper spec file name (see wide_target_class_name).
             source_slots = []
             for row_number, row in rows_df.iterrows():
-                target_slot = row[WideSpecColumns.TARGET_SLOT]
-                target_value = row[WideSpecColumns.TARGET_VALUE]
+                target_slot = row[MappingColumns.TARGET_SLOT]
+                target_value = row[MappingColumns.TARGET_VALUE]
                 
                 # We always need a target slot specified                
                 if not target_slot or pd.isna(target_slot):
-                    raise ValueError(f"{WideSpecColumns.TARGET_SLOT} is empty in row {row_number}")
+                    raise ValueError(f"{MappingColumns.TARGET_SLOT} is empty in row {row_number} for wide mapping")
 
                 source_slot_variable = get_variable_reference(target_value)
                 if source_slot_variable is not None:

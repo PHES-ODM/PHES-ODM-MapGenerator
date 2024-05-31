@@ -100,27 +100,27 @@ Any row that is completely empty is ignored.
 
 ### wideGroup
 
-This is an optional grouping column. In most cases this can be left blank. However, there are cases where we might want to pivot the same wide-column multiple times (ie. pivoting the same column to have multiple output rows, rather than just one), or even perform different enumeration mappings on the same wide-column. In such a case, we can set the `wideGroup` to values that group the rows in the wide sheet together. All rows with the same value in `wideGroup` (for a given `wideSourceClass`, `wideSourceSlot`, and `wideTargetClass` combination) will be considered a full wide-to-long specification for that slot and will be considered separately from all other rows with a different `wideGroup`.
+This is an optional grouping column. In most cases this can be left blank. However, there are cases where we might want to pivot the same wide-column multiple times (ie. pivoting the same column to have multiple output rows, rather than just one), or even perform different enumeration mappings on the same wide-column. In such a case, we can set the `wideGroup` to values that group the rows in the wide sheet together. All rows with the same value in `wideGroup` (for a given `sourceClass`, `sourceSlot`, and `targetClass` combination) will be considered a full wide-to-long specification for that slot and will be considered separately from all other rows with a different `wideGroup`.
 
-### wideSourceClass
+### sourceClass
 
 This is the class from the source dataset that contains the slot that is a wide-column.
 
-### wideSourceSlot
+### sourceSlot
 
 This is the slot from the source dataset and source class that is the wide-column to pivot.
 
-### wideSourceValue
+### sourceValue
 
-If not empty, then the value represents a source enumeration value for the `wideSourceSlot`, and we map this enumeration value to the value found in `wideTargetValue`. All rows with the same `wideSourceClass`, `wideSourceSlot`, `wideTargetClass`, and `wideGroup` are used for determining how the enumeration values are mapped for the same source slot. Only the first row in the group is used to determine the values to set in the output row (see [All other columns](#all-other-wide-columns) below for how these values are set).
+If not empty, then the value represents a source enumeration value for the `sourceSlot`, and we map this enumeration value to the value found in `targetValue`. All rows with the same `sourceClass`, `sourceSlot`, `targetClass`, and `wideGroup` are used for determining how the enumeration values are mapped for the same source slot. Only the first row in the group is used to determine the values to set in the output row (see [All other columns](#all-other-wide-columns) below for how these values are set).
 
-### wideTargetClass
+### targetClass
 
 This is the class in the target dataset that we map the source slot to.
 
-### wideTargetValue
+### targetValue
 
-If not empty, then this is the target value that we map enumerations to. If the source slot has the value found in `wideSourceValue`, then we map it to this value.
+If not empty, then this is the target value that we map enumerations to. If the source slot has the value found in `sourceValue`, then we map it to this value.
 
 ### wideOtherSlots
 
@@ -136,7 +136,7 @@ It has identical behavior to the columns found in [All Other Columns](#all-other
 
 Values in `wideOtherSlots` will take precedence over any values set/copied in the `maps` tab or in [All Other Columns](#all-other-wide-columns) in the `wide` tab for the current row.
 
-### wideNotes
+### notes
 
 This is to add additional notes for the row. It is ignored.
 
@@ -146,13 +146,13 @@ Any additional column in the `wide` tab not listed above will specify values to 
 
 For example, given the wide-column spec table below:
 
-| wideSourceClass | wideSourceSlot     | wideSourceValue | wideTargetClass | wideTargetValue | unit  | measure | value                  |
-|-----------------|--------------------|-----------------|-----------------|-----------------|-------|---------|------------------------|
-| nwss            | sewage_travel_time |                 | measures        |                 | hours | sewTrTi | {{sewage_travel_time}} |
+| sourceClass | sourceSlot         | sourceValue | targetClass | targetValue | unit  | measure | value                  |
+|-------------|--------------------|-------------|-------------|-------------|-------|---------|------------------------|
+| nwss        | sewage_travel_time |             | measures    |             | hours | sewTrTi | {{sewage_travel_time}} |
 
 Each output row will have columns `unit` and `measure` set to the constants `hours` and `sewTrTi` (respectively), and the output column `value` will be copied from the `sewage_travel_time` slot.
 
-There are cases where you would want pivoting different wide-columns to result in different output columns (eg. wide columns in which the `wideTargetClass` are different). There are two ways to allow this. Either specify additional slots specific to a single wide-column in `wideOtherSlots`, or create multiple `wide` tabs in the mapping file, with each tab having different output columns. One good approach to organizing your `wide` tabs is to have a different `wide` tab for each `wideTargetClass`.
+There are cases where you would want pivoting different wide-columns to result in different output columns (eg. wide columns in which the `targetClass` are different). There are two ways to allow this. Either specify additional slots specific to a single wide-column in `wideOtherSlots`, or create multiple `wide` tabs in the mapping file, with each tab having different output columns. One good approach to organizing your `wide` tabs is to have a different `wide` tab for each `targetClass`.
 
 All other columns specified will take precedence over any values set/copied in the `maps` tab, but not over any values set/copied in the `wideOtherSlots` column for the current row.
 
