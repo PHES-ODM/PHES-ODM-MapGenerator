@@ -140,15 +140,15 @@ Values in `wideOtherSlots` will take precedence over any values set/copied in th
 
 This is to add additional notes for the row. It is ignored.
 
-### All Other Wide Columns
+### Target Columns
 
-Any additional column in the `wide` tab not listed above will specify values to set for various columns in the target class for each row of the output. The additional column name in the `wide` tab is the target slot name, and the value in that column is the value to set that slot to. These values can be constant values or optionally a string in the form `{{slotName}}` where `slotName` is the name of a slot in the source class to copy the value from. Note that if `slotName` is an enumeration then any enumeration mappings will also be performed when copying from `slotName`.
+Any column in the `wide` tab that ends with the string `_target` specifies a column in the target class that we want to set a value for. The actual column name we set is determined by removing the `_target` suffix. For example, a column named `measure_target` will result in a value in the output row being set for the column `measure`. These values can be constant values or optionally a string in the form `{{slotName}}` where `slotName` is the name of a slot in the source class to copy the value from. Note that if `slotName` is an enumeration then any enumeration mappings will also be performed when copying from `slotName`.
 
 For example, given the wide-column spec table below:
 
-| sourceClass | sourceSlot         | sourceValue | targetClass | targetValue | unit  | measure | value                  |
-|-------------|--------------------|-------------|-------------|-------------|-------|---------|------------------------|
-| nwss        | sewage_travel_time |             | measures    |             | hours | sewTrTi | {{sewage_travel_time}} |
+| sourceClass | sourceSlot         | sourceValue | targetClass | targetValue | unit_target  | measure_target | value_target           |
+|-------------|--------------------|-------------|-------------|-------------|--------------|----------------|------------------------|
+| nwss        | sewage_travel_time |             | measures    |             | hours        | sewTrTi        | {{sewage_travel_time}} |
 
 Each output row will have columns `unit` and `measure` set to the constants `hours` and `sewTrTi` (respectively), and the output column `value` will be copied from the `sewage_travel_time` slot.
 
