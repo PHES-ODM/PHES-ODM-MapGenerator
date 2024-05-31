@@ -549,7 +549,7 @@ def merge_enum_derivations(enum_derivations: List[Dict]) -> Dict:
                 raise RuntimeError(f"Found {len(key_matches)} existing enum derivations for populated_from value='{populated_from}'")
             elif len(key_matches) == 1:
                 # A derivation for v["populated_from"] already exists in results, so delete it
-                del(results[key_matches[0]])
+                # del(results[key_matches[0]])
                 raise ValueError(f"Enum derivation with populated_from='{populated_from}' already exists, can only have one enum derivation per populated_from")
             # Add the current derivation
             results[k] = v
@@ -558,7 +558,7 @@ def merge_enum_derivations(enum_derivations: List[Dict]) -> Dict:
 
 def get_class_enum_derivations(source_class: str, target_class: str, class_enum_derivations: List[Dict]) -> Dict:
     """Retrieve all enum derivations that involve mapping from the source_class to target_class from
-    class_enum_derivations, and merge them with merge_enum_derivations. This can be run on the value
+    class_enum_derivations, and merge them by calling merge_enum_derivations. This can be run on the value
     returned by extract_enum_derivations, which is a dictionary with a top-level key being the source class
     and the second-level key being the target class. The dictionaries nested within the second-level key
     are the actual enum derivations (that apply to the source to target class mappings). That is,

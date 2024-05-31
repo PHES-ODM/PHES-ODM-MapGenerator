@@ -21,6 +21,9 @@ logger = get_logger(__name__)
 # {{sourceSlotName}}.
 VARIABLE_REGEX = r"^{{([^}]*)}}$"
 
+# For wide tab, any column name that ends in WIDE_SPEC_TARGET_SUFFIX will be trimmed of the suffix
+# and used as a column in the output row to set a value for (eg. to a constant or copying from
+# an input column).
 WIDE_SPEC_TARGET_SUFFIX = "_target"
 
 class MappingColumns:
@@ -40,26 +43,10 @@ class MappingColumns:
     SOURCE_ENUM = "sourceEnum"
     TARGET_ENUM = "targetEnum"
 
-    # For Wide mappings only
+    # These columns should only be present in the wide tabs of the mapping files
     WIDE_GROUP = "wideGroup"
     WIDE_ROW_NUMBER = "wideRowNumber"
     WIDE_OTHER_SLOTS = "wideOtherSlots"
-
-
-# class WideSpecColumns:
-#     # Names for the wide columns CSV config file (see expand_wide_derivations)
-#     SOURCE_CLASS = "wideSourceClass"
-#     TARGET_CLASS = "wideTargetClass"
-#     TARGET_SLOT = "wideTargetSlot"
-#     TARGET_VALUE = "wideTargetValue"
-    
-#     WIDE_GROUP = "wideGroup"
-#     WIDE_ROW_NUMBER = "wideRowNumber"
-#     WIDE_OTHER_SLOTS = "wideOtherSlots"
-    
-#     # Only used when the wide schema also includes details for mapping enumeration values
-#     SOURCE_VALUE = "wideSourceValue"
-#     SOURCE_SLOT = "wideSourceSlot"
     
 def get_variable_reference(v: Any) -> Optional[str]:
     """Get the variable name that the value references. If the value is in the form {{variableName}} then the string
