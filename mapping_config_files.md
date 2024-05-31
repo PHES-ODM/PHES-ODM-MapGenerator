@@ -152,7 +152,7 @@ For example, given the wide-column spec table below:
 
 Each output row will have columns `unit` and `measure` set to the constants `hours` and `sewTrTi` (respectively), and the output column `value` will be copied from the `sewage_travel_time` slot.
 
-There are cases where you would want pivoting different wide-columns to result in different output columns (eg. wide columns in which the `targetClass` are different). There are two ways to allow this. Either specify additional slots specific to a single wide-column in `wideOtherSlots`, or create multiple `wide` tabs in the mapping file, with each tab having different output columns. One good approach to organizing your `wide` tabs is to have a different `wide` tab for each `targetClass`.
+Note that all the columns in the example configuration above will apply to every row specified in the configuration. However, it's possible that a target column does not exist for a particular target class (eg. if we also had a row where `targetClass` is equal to `samples` instead of `measures`). There are two ways to deal with this. Either specify additional slots specific to a target class in `wideOtherSlots`, or create multiple `wide` tabs in the mapping file, with each tab having different target columns. One good approach to organizing your `wide` tabs is to have a different `wide` tab for each `targetClass`.
 
 All other columns specified will take precedence over any values set/copied in the `maps` tab, but not over any values set/copied in the `wideOtherSlots` column for the current row.
 
