@@ -82,7 +82,7 @@ target = a_or_b(src.sample_type, src.source_type)
 
 ### customData
 
-An optional value, in the form of a JSON string. The dictionary in the slot derivation for this row gets updated with the values in this column. For example, the following value in `customData` will set the `expr` key in the slot derivation for the `targetSlot` in , resulting in `0` if both either slot `dashboard_ignore` or slot `analysis_ignore` in the source dataset are equal to `yes`:
+An optional value, in the form of a JSON string. The dictionary in the slot derivation for this row gets updated with the values in this column. For example, the following value in `customData` will set the `expr` key in the slot derivation for the `targetSlot`. The slot will be set to `False` if `dashboard_ignore` or `analysis_ignore` in the source dataset are equal to `yes`:
 
 ```json
 {
