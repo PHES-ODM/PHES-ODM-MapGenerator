@@ -53,8 +53,10 @@ def is_wide_target_slot(name: Any) -> bool:
         return False
     return name.endswith(WIDE_SPEC_TARGET_SUFFIX)
 
-def wide_target_slot_name(name: str) -> str:
-    return name.split(WIDE_SPEC_TARGET_SUFFIX)[0]
+def wide_target_slot_name(name: str) -> Optional[str]:
+    if not is_wide_target_slot(name):
+        return None
+    return name[0:-len(WIDE_SPEC_TARGET_SUFFIX)]
 
 def get_variable_reference(v: Any) -> Optional[str]:
     """Get the variable name that the value references. If the value is in the form {{variableName}} then the string
