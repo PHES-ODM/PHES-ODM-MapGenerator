@@ -215,13 +215,9 @@ def expand_wide_derivations(source_class_name: str, target_class_name: str, slot
                     # The value is a constant, so we populate with the constant using expr
                     if pd.isna(target_value):
                         target_value = ""
-                    # @TODO: Once LinkML-Map repo has been updated to recognize "constant"
-                    # in a slot derivation, comment out the "expr" key and add the "constant" key.
-                    # Using "constant" is MUCH faster than "expr"
                     cur_slot_derivations[target_slot] = {
                         "name" : target_slot,
                         "expr" : f"'{target_value}'",
-                        # "constant" : target_value,
                     }
                     
             # Create a new unique name for the target class. Target class names
