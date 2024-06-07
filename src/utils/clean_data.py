@@ -54,7 +54,7 @@ def fix_data_with_schema(df: pd.DataFrame, class_name: str, schema: SchemaView) 
     #     if slot_name not in class_definition.attributes:
     #         continue
     #     keep_columns.append(slot_name)
-    #     slot_ranges = get_ranges_of_slot(class_name, slot_name, schema, as_list = True)
+    #     slot_ranges = get_ranges_of_slot(class_name, slot_name, schema)
         
     #     if slot_ranges:
     #         for slot_range in slot_ranges:
