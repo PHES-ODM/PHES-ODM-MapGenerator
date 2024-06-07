@@ -47,7 +47,15 @@ class MappingColumns:
     WIDE_GROUP = "wideGroup"
     WIDE_ROW_NUMBER = "wideRowNumber"
     WIDE_OTHER_SLOTS = "wideOtherSlots"
-    
+
+def is_wide_target_slot(name: Any) -> bool:
+    if not isinstance(name, str):
+        return False
+    return name.endswith(WIDE_SPEC_TARGET_SUFFIX)
+
+def wide_target_slot_name(name: str) -> str:
+    return name.split(WIDE_SPEC_TARGET_SUFFIX)[0]
+
 def get_variable_reference(v: Any) -> Optional[str]:
     """Get the variable name that the value references. If the value is in the form {{variableName}} then the string
     "variableName" will be returned.
@@ -143,6 +151,7 @@ def expand_wide_derivations(source_class_name: str, target_class_name: str, slot
             {
                 "source_class" : source_class_name,
                 "target_class" : wide_target_class_name,
+                "undecorated_target_class" : target_class_name,
                 "class_derivation" : new_class_derivation
             }
             The wide_target_class_name is the target_class_name with an additional modifier added in square brackets, that specify
@@ -228,7 +237,24 @@ def expand_wide_derivations(source_class_name: str, target_class_name: str, slot
             results.append({
                 "source_class" : source_class_name,
                 "target_class" : wide_target_class_name,
+                "undecorated_target_class" : target_class_name,
                 "class_derivation" : class_derivation
             })
         
     return results
+
+def get_blank_class_derivation(source_class: str, target_class: str) -> Dict:
+    """Create a new LinkML class derivation dictionary with an empty slots derivation.
+
+    Args:
+        source_class (str): The source class (for the "populated_from" field)
+        target_class (str): The target class (for the "name" field)
+
+    Returns:
+        Dict: A blank class derivation populating target_class from source_class.
+    """
+    return {
+        "name" : target_class,
+        "populated_from" : source_class,
+        "slot_derivations" : {},
+    }
