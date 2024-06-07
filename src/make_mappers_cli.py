@@ -98,8 +98,11 @@ def make_mappers_cli(output_dir: Union[str, Path],
     mapper_dir = output_dir / "mappers"
     mapped_dir = output_dir / "mapped_data"
     
+    source_schema_for_mapping_dir = output_dir / "linkml_for_mapping"
+    source_schema_for_mapping = source_schema_for_mapping_dir / os.path.basename(source_schema)
+    
     # Clean up directories (ie. delete old csv, tsv, and yaml files)
-    clear_dirs([configs_dir, mapper_dir, mapped_dir])
+    clear_dirs([configs_dir, mapper_dir, mapped_dir, source_schema_for_mapping_dir])
 
     # Extract the required maps/wide/enums sheets from the mapping config/Excel file
     if mapping_excel_file:
@@ -126,7 +129,7 @@ def make_mappers_cli(output_dir: Union[str, Path],
         logger.error(f"No maps configurations found")
     else:
         # Create the mapper specs
-        make_mappers(maps_files=output_maps_files, wide_files=output_wide_files, enums_files=output_enums_files, mapper_dir=mapper_dir, source_schema=source_schema, target_schema=target_schema)
+        make_mappers(maps_files=output_maps_files, wide_files=output_wide_files, enums_files=output_enums_files, mapper_dir=mapper_dir, source_schema=source_schema, target_schema=target_schema, source_schema_for_mapping=source_schema_for_mapping)
 
     logger.info("Finished!")
 
@@ -146,12 +149,13 @@ if __name__ == "__main__":
             # output_dir = f"../data/test/output"
             # input_data_dir = f"../data/test/output/uncleaned_data"
             # input_max_rows = None
+            # id_config = None
             
             source_schema = f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
             target_schema = f"../data/odm_v2/linkml/odm_v2.yaml"
             mapping_excel_file = "../data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx"
             excel_maps_sheets = ["maps"]
-            excel_wide_sheets = ["wide"]
+            excel_wide_sheets = ["wide", "wide_qualityReports"]
             excel_enums_sheets = ["enums"]
             maps_files = []
             wide_files = []
@@ -159,6 +163,7 @@ if __name__ == "__main__":
             output_dir = Path(f"../gen/nwss_{dictionary_type}_to_v2")
             input_data_dir = "../../../PHES-ODM-Data/nwss/private_renamed/"
             input_max_rows = 10
+            id_config = f"../data/mapping_config_files/id_config.csv"
     else:
         args = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         args.add_argument("--source_schema", type=str, help="Location of the source dataset LinkML schema", required=True)
@@ -174,6 +179,7 @@ if __name__ == "__main__":
         # For mapping after the config files are created:
         args.add_argument("--input_data_dir", type=str, help="Directory containing all the input data to map using the generated mapper config files. If empty then no mapping is performed.", required=False)
         args.add_argument("--input_max_rows", type=int, help="If input_data_dir is set, then the number of rows to map from each input data file. If 0 then map all rows.", default=0, required=False)
+        args.add_argument("--id_config", type=str, help="Configuration file for generating IDs", required=False)
         opts = args.parse_args()
     
     make_mappers_cli(output_dir=opts.output_dir, 
@@ -193,6 +199,7 @@ if __name__ == "__main__":
         output_dir = Path(opts.output_dir)
         mapper_dir = output_dir / "mappers"
         mapped_dir = output_dir / "mapped_data"
+        source_schema_for_mapping = output_dir / "linkml_for_mapping" / os.path.basename(opts.source_schema)
 
         # Prepare data
         cleaned_data_dir = output_dir / "cleaned_data"
@@ -201,4 +208,4 @@ if __name__ == "__main__":
 
         # Map the data
         max_processes = 1
-        map(source_schema_file=opts.source_schema, target_schema_file=opts.target_schema, mapper_dir=mapper_dir, data_dir=cleaned_data_dir, data_output_dir=mapped_dir, max_processes=max_processes)
+        map(source_schema_file=source_schema_for_mapping, target_schema_file=opts.target_schema, mapper_dir=mapper_dir, data_dir=cleaned_data_dir, data_output_dir=mapped_dir, id_config_file=opts.id_config, max_processes=max_processes)
