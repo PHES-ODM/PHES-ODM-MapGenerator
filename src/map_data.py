@@ -48,7 +48,7 @@ python3 map_data.py --source_schema "../data/nwss_reporting/linkml/nwss_reportin
 """
 
 from pathlib import Path
-from typing import Union, Optional, List, Dict
+from typing import Union, Optional, List, Dict, Any
 import os
 import math
 import yaml
@@ -64,6 +64,7 @@ from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model import SlotDefinition
 
 from utils.general_utils import save_data_frame, read_data_frame, get_logger, order_columns, choose_ignore_case_value, get_class_name_from_file_name, clear_dirs
+from utils.auto_id import gen_auto_ids
 
 logger = get_logger(__name__)
 
@@ -79,7 +80,7 @@ for logger_name in [
     trlogger = logging.getLogger(logger_name)
     trlogger.setLevel("ERROR")
 
-def load_data(data_dir: Union[str, Path], schema: Union[str, SchemaView]) -> Dict[str, List[Dict]]:
+def load_data(data_dir: Union[str, Path], schema: Union[str, SchemaView], id_config_file: Union[str, Path]) -> Dict[str, List[Dict]]:
     """Load all data files (CSV, TSV, and TXT files) from disk in a format compatible with the
     LinkML Mapper.
 
@@ -87,6 +88,8 @@ def load_data(data_dir: Union[str, Path], schema: Union[str, SchemaView]) -> Dic
         data_dir (Union[str, Path]): Directory where all data files are located. We load all CSV files
             as well as all TSV and TXT (tab-separated) files.
         schema (Union[str, SchemaView]): The schema that the data should conform to.
+        id_config_file (Union[str, Path]): File containing the configuration for generating IDs. If
+            empty then no ID generation is performed.
 
     Returns:
         Dict[str, List[Dict]]: Dictionary of all data. Keys are the class/table names and values are
@@ -115,6 +118,9 @@ def load_data(data_dir: Union[str, Path], schema: Union[str, SchemaView]) -> Dic
             df = read_data_frame(os.path.join(data_dir, file), keep_default_na=False, na_values=None)
             if df is None or len(df.index) == 0:
                 continue
+            
+            # Add auto-generated IDs
+            gen_auto_ids(id_config_file, schema, class_name, df)
             
             # Make sure all columns exist (except for TrackingColumns.ROW_NUMBER, which we add later)
             class_definition = schema.induced_class(class_name)
@@ -307,7 +313,7 @@ def make_data_splits(data: Dict[str, List], num_splits: int, min_split_size: int
         split_num += 1
     return data_splits
 
-def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Path], mapper_dir: Union[str, Path], data_dir: Union[str, Path], data_output_dir: Optional[Union[str, Path]] = None, max_processes: Optional[int] = 1) -> Dict[str, List[Dict]]:
+def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Path], mapper_dir: Union[str, Path], data_dir: Union[str, Path], data_output_dir: Optional[Union[str, Path]] = None, id_config_file: Union[str, Path] = None, max_processes: Optional[int] = 1) -> Dict[str, List[Dict]]:
     """Run the mapper using all mapper files found in the specified mapper directory and on all 
     data files found in the specified data directory. The results are returned and optionally saved to disk.
     
@@ -327,6 +333,8 @@ def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Pat
             and "extra_stuff" is any extra string (which is ignored).
         data_output_dir (Optional[Union[str, Path]], optional): Directory to save the mapped output to. If None
             then the mapped data are not saved to disk, but are still returned. Defaults to None.
+        id_config_file (Union[str, Path], optional): File containing the configuration for generating IDs. If
+            empty then no ID generation is performed. Defaults to None
         max_processes (Optional[int], optional): Maximum number of processes to use for multi-processing.
             If 1 then no multi-processing will be performed. If None or 0 then the maximum number
             (as obtained by cpu_count()) will be used. Note that for mapping small tables multi-processing
@@ -356,14 +364,14 @@ def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Pat
         add_row_number_slot(target_schema)
 
     # Read all the data from disk.
-    data = load_data(data_dir, source_schema)
+    data = load_data(data_dir, source_schema, id_config_file=id_config_file)
     
     if len(data) == 0:
         logger.warning("No data loaded from disk. Be sure the file names match the source schema table names, that there are files in the directory, and that the files are not empty.")
         return {}
     
     logger.info(f"Data loaded for source tables: {list(data.keys())}")
-
+    
     if max_processes == 1:
         split_data = [data]
     else:
@@ -452,11 +460,12 @@ if __name__ == "__main__":
 
             # NWSS to v2
             dictionary_type = "reporting"
-            source_schema = f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
+            source_schema = f"../gen/nwss_{dictionary_type}_to_v2/linkml_for_mapping/nwss_{dictionary_type}.yaml"
             mapper_dir = f"../gen/nwss_{dictionary_type}_to_v2/mappers"
             data_dir = f"../gen/nwss_{dictionary_type}_to_v2/cleaned_data"
             output_dir = f"../gen/nwss_{dictionary_type}_to_v2/mapped_data"
             target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
+            id_config = f"../data/mapping_config_files/id_config.csv"
 
             max_processes = 1
     else:
@@ -467,7 +476,8 @@ if __name__ == "__main__":
         args.add_argument("--data_dir", type=str, help="Directory containing all of the (cleaned) input data to map. The file names (without extension) correspond to the table name. These files should have been cleaned by clean_v1_data.py", required=True)
         args.add_argument("--output_dir", type=str, help="Directory to save all the mapped data to", required=True)
         args.add_argument("--max_processes", type=int, help="Maximum number of processes to run at a time for mapping the data. If non-positive then the max available processes are used.", default=1, required=False)
+        args.add_argument("--id_config", type=str, help="Configuration file for generating IDs", required=False)
         opts = args.parse_args()
 
     clear_dirs([opts.output_dir])
-    map(source_schema_file=opts.source_schema, target_schema_file=opts.target_schema, mapper_dir=opts.mapper_dir, data_dir=opts.data_dir, data_output_dir=opts.output_dir, max_processes=opts.max_processes)
+    map(source_schema_file=opts.source_schema, target_schema_file=opts.target_schema, mapper_dir=opts.mapper_dir, data_dir=opts.data_dir, data_output_dir=opts.output_dir, id_config_file=opts.id_config, max_processes=opts.max_processes)
