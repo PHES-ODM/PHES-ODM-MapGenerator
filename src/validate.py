@@ -62,12 +62,13 @@ def _parse_value(value: Any, cls: str, slot: str, schema: SchemaView) -> Any:
             then the value is returned unchanged.
     """
     # Get the range and cast to string if range is "string" or an enum
-    ranges = get_ranges_of_slot(cls, slot, schema, as_list=True)
+    ranges = get_ranges_of_slot(cls, slot, schema)
     
-    for rng in ranges:
-        # Test if rng is an enum or "string", if it is then return the value as a string
-        if rng == "string" or rng in schema.all_enums():
-            return str(value)
+    if ranges:
+        for rng in ranges:
+            # Test if rng is an enum or "string", if it is then return the value as a string
+            if rng == "string" or rng in schema.all_enums():
+                return str(value)
     
     # Try to cast to an integer or float
     return _parse_numeric(value)
@@ -169,7 +170,8 @@ if __name__ == "__main__":
             schema = "../data/nwss_reporting/linkml/nwss_reporting.yaml"
             source_class = "nwss"
             # data_source = "../../../PHES-ODM-Data/nwss/private_cleaned/nwss[cdc-nwss-restricted-data-set-final-2024-03-19].csv"
-            data_source = "../../../PHES-ODM-Data/nwss/private_cleaned/nwss[cdc-nwss-restricted-data-set-wastewater-2024-03-19].csv"
+            # data_source = "../../../PHES-ODM-Data/nwss/private_cleaned/nwss[cdc-nwss-restricted-data-set-wastewater-2024-03-19].csv"
+            data_source = "../gen/nwss_reporting_to_v2/cleaned_data/nwss[cdc-nwss-restricted-data-set-wastewater-2024-03-19].csv"
             max_errors = 500
     else:
         args = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
