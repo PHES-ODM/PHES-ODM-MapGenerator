@@ -4,36 +4,6 @@ Mapping configuration files are Excel files that contain all required configurat
 
 This document describes the structure of these configuration files. To see an example mapping configuration file see [data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx](data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx)
 
-## Multi Values
-
-Within certain columns of mapping configuration files it's possible to specify values that can be expanded into multiple rows. These are specified with a semi-colon to separate the values that get expanded. For example, the following:
-
-| sourceSlot       | targetClass         | targetSlot | targetValue          |
-|------------------|---------------------|------------|----------------------|
-| major_lab_method | measures; protocols | protocolID | {{major_lab_method}} |
-
-has multiple values in the `targetClass` column. This will result in two rows where all other column values are kept constant:
-
-| sourceSlot       | targetClass         | targetSlot | targetValue          |
-|------------------|---------------------|------------|----------------------|
-| major_lab_method | measures            | protocolID | {{major_lab_method}} |
-| major_lab_method | protocols           | protocolID | {{major_lab_method}} |
-
-If there are multiple columns that have multi-values, then for the first row we take the first value in all multi-columns, the second row we take the second value in all multi-columns, and so on. If there are not enough values in one of the columns, then we take the last value. For example:
-
-| sourceSlot       | targetClass         | targetSlot                | targetValue          |
-|------------------|---------------------|---------------------------|----------------------|
-| major_lab_method | measures; protocols | protocolID; labProtocolID | {{major_lab_method}} |
-
-Will expand to:
-
-| sourceSlot       | targetClass         | targetSlot                | targetValue          |
-|------------------|---------------------|---------------------------|----------------------|
-| major_lab_method | measures            | protocolID                | {{major_lab_method}} |
-| major_lab_method | protocols           | labProtocolID             | {{major_lab_method}} |
-
-At the moment, only `targetClass` and `targetSlot` in the `maps` tab support multi-values.
-
 ## Maps tab
 
 The `maps` tab(s) specify the mappings other than wide-column mappings. It provides details on how a slot from the source class is mapped onto a slot from the target class. The simplest of which is to simply copy from one slot to another. The `maps` tab is also where you can specify mappings of enumerations. Any row that is completely empty is ignored. Multiple `maps` tabs are allowed, their names must be specified when running the appropriate scripts. The `maps` tab has the headings described below.
@@ -56,11 +26,11 @@ If not empty, then the value represents a source enumeration value. This enumera
 
 ### targetClass
 
-The class in the target dataset that we are populating (from the `sourceClass` and `sourceSlot`). This column supports [multi-values](#multi-values).
+The class in the target dataset that we are populating (from the `sourceClass` and `sourceSlot`).
 
 ### targetSlot
 
-The slot in the `targetClass` in the target dataset that we are populating (from the `sourceClass` and `sourceSlot`). This column supports [multi-values](#multi-values).
+The slot in the `targetClass` in the target dataset that we are populating (from the `sourceClass` and `sourceSlot`).
 
 ### targetValue
 
