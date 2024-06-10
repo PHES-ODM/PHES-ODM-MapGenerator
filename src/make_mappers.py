@@ -9,7 +9,7 @@ mappings.
 import argparse
 import pandas as pd
 from pathlib import Path
-from typing import Union, List, Dict, Optional
+from typing import Union, List, Dict
 import os
 import yaml
 import json
@@ -18,9 +18,9 @@ from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model.meta import SchemaDefinition
 from linkml_runtime.utils.schema_as_dict import schema_as_dict
 
-from utils.general_utils import read_data_frame, strip_whitespace, get_logger, order_columns, expand_multi_rows, EMPTY_PERMISSIBLE_VALUE
+from utils.general_utils import read_data_frame, strip_whitespace, get_logger, order_columns, EMPTY_PERMISSIBLE_VALUE
 from utils.schema_utils import get_enum_names_for_slot, get_enum_name_with_permissible_value
-from utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations, get_variable_reference, MappingColumns, is_wide_target_slot, wide_target_slot_name, get_blank_class_derivation
+from utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations, get_variable_reference, MappingColumns, is_wide_target_slot, is_wide_expr_slot, any_wide_slot_name, get_blank_class_derivation
 from utils.auto_id import add_auto_ids_to_schema
 
 logger = get_logger(__name__)
@@ -332,6 +332,9 @@ def prepare_wide_df(wide_file: Union[str, Path]) -> pd.DataFrame:
     # @TODO: Remove this once the wide_file is finalized    
     if "Complete" in wide_df.columns:
         wide_df = wide_df[wide_df["Complete"] == 1].drop("Complete", axis="columns").reset_index(drop=True)
+
+    # Convert SOURCE_SLOT to strings
+    wide_df[MappingColumns.SOURCE_SLOT] = wide_df[MappingColumns.SOURCE_SLOT].map(lambda x: "" if pd.isna(x) else str(x))
     
     if MappingColumns.WIDE_OTHER_SLOTS not in wide_df.columns:
         wide_df[MappingColumns.WIDE_OTHER_SLOTS] = None
@@ -378,8 +381,8 @@ def prepare_enums_df(enums_file: Union[str, Path]) -> pd.DataFrame:
     enums_df[[c for c in keep_columns if c not in enums_df.columns]] = ""
     enums_df = enums_df[keep_columns]
     
-    for column in enums_df.columns:
-        enums_df.loc[pd.isna(enums_df[column]), column] = ""
+    # Convert entire DataFrame to strings
+    enums_df = enums_df.map(lambda x: "" if pd.isna(x) else str(x))
 
     return enums_df.copy()
 
@@ -464,18 +467,29 @@ def make_wide_derivations(class_derivation: Dict, custom_wide_df: pd.DataFrame, 
         other_slots = json.loads(other_slots)
         custom_wide_df[list(other_slots.keys())] = list(other_slots.values())
     
-    # Keep source class, target class, and all columns that end in WIDE_SPEC_TARGET_SUFFIX (_target)
+    # Keep source class, target class, and all columns that are wide target slots or wide expr slots
     keep_columns = [MappingColumns.SOURCE_CLASS, MappingColumns.TARGET_CLASS]
-    keep_columns = keep_columns + [c for c in custom_wide_df.columns if c not in keep_columns and is_wide_target_slot(c)]
+    keep_columns = keep_columns + [c for c in custom_wide_df.columns if c not in keep_columns and (is_wide_target_slot(c) or is_wide_expr_slot(c))]
     custom_wide_df = custom_wide_df[keep_columns]
     
-    # Pivot the group to long format, keeping id_columns constant for all rows. This is the format that expand_wide_derivations
-    # expects (ie. each row in the pivoted table represents the value to place in one column in the output)
+    # Pivot the group to long format, keeping id_columns constant for all rows.
+    # The pivoted table has a TARGET_VALUE column specifying either the constant value to set or the source slot to copy from (eg. {{slotName}})
+    # as well as an EXPR_VALUE column specifying LinkML expression code to execute for calculating the value of the target slot.
+    # We create the pivoted tables form TARGET_VALUEs and EXPR_VALUEs separated, then concatenate them together
     id_columns = [MappingColumns.SOURCE_CLASS, MappingColumns.TARGET_CLASS]
-    custom_wide_df = custom_wide_df.melt(id_vars = id_columns, var_name = MappingColumns.TARGET_SLOT, value_name = MappingColumns.TARGET_VALUE)
+    wide_target_columns = [c for c in custom_wide_df.columns if is_wide_target_slot(c)]
+    wide_target_df = custom_wide_df.melt(id_vars = id_columns, value_vars=wide_target_columns, var_name = MappingColumns.TARGET_SLOT, value_name = MappingColumns.TARGET_VALUE, ignore_index=False)
+    wide_expr_columns = [c for c in custom_wide_df.columns if is_wide_expr_slot(c)]
+    wide_expr_df = custom_wide_df.melt(id_vars = id_columns, value_vars=wide_expr_columns, var_name = MappingColumns.TARGET_SLOT, value_name = MappingColumns.EXPR_VALUE, ignore_index=False)
     
-    # Remove the target suffix WIDE_SPEC_TARGET_SUFFIX (_target)
-    custom_wide_df[MappingColumns.TARGET_SLOT] = custom_wide_df[MappingColumns.TARGET_SLOT].map(wide_target_slot_name)
+    # Drop expr rows that have an empty expression
+    wide_expr_df = wide_expr_df[~pd.isna(wide_expr_df[MappingColumns.EXPR_VALUE]) | (wide_expr_df[MappingColumns.EXPR_VALUE] == "")]
+    
+    # Combine wide_target_df and wide_expr_df, sort by index
+    custom_wide_df = pd.concat([wide_target_df, wide_expr_df]).sort_index(kind="stable")
+
+    # Get the wide target slot names by trimming of the suffixes (eg. remove _target or _expr)
+    custom_wide_df[MappingColumns.TARGET_SLOT] = custom_wide_df[MappingColumns.TARGET_SLOT].map(any_wide_slot_name)
 
     # ROW_NUMBER is all the same, since group_df provides all the information for outputing a single row (we do one output
     # row at a time)
@@ -716,7 +730,10 @@ if __name__ == "__main__":
         dictionary_type = "reporting"
         class opts:
             maps_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/maps0.csv"]
-            wide_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/wide0.csv"]
+            wide_files = [
+                f"../gen/nwss_{dictionary_type}_to_v2/configs/wide0.csv",
+                f"../gen/nwss_{dictionary_type}_to_v2/configs/wide1.csv"
+                ]
             enums_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/enums0.csv"]
             mapper_dir = f"../gen/nwss_{dictionary_type}_to_v2/mappers"
             source_schema = f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"

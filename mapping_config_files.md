@@ -92,25 +92,11 @@ This is the class in the target dataset that we map the source slot to.
 
 If not empty, then this is the target value that we map enumerations to. If the source slot has the value found in `sourceValue`, then we map it to this value.
 
-### wideOtherSlots
-
-This is a JSON string for a dictionary specifying additional slots, other than those found in [All Other Columns](#all-other-wide-columns) below, to set in the output. The keys are the slot names in the output and the values are the values to set those slots to. For example, the following will create a "notes" slot in the output row with the value found in `pretreatment_specify` from the input row:
-
-```json
-{ 
-    "notes" : "{{pretreatment_specify}}" 
-}
-```
-
-It has identical behavior to the columns found in [All Other Columns](#all-other-wide-columns). Using this method, instead of the method in [All Other Columns](#all-other-wide-columns), ensures that other wide-columns in the same `wide` tab do not have to have a value set for these slots. This will make more sense after reading the [All Other Columns](#all-other-wide-columns) section.
-
-Values in `wideOtherSlots` will take precedence over any values set/copied in the `maps` tab or in [All Other Columns](#all-other-wide-columns) in the `wide` tab for the current row.
-
 ### notes
 
 This is to add additional notes for the row. It is ignored.
 
-### Target Columns
+### Target Columns (_target)
 
 Any column in the `wide` tab that ends with the string `_target` specifies a column in the target class that we want to set a value for. The actual column name we set is determined by removing the `_target` suffix. For example, a column named `measure_target` will result in a value in the output row being set for the column `measure`. These values can be constant values or optionally a string in the form `{{slotName}}` where `slotName` is the name of a slot in the source class to copy the value from. Note that if `slotName` is an enumeration then any enumeration mappings will also be performed when copying from `slotName`.
 
@@ -124,7 +110,27 @@ Each output row will have columns `unit` and `measure` set to the constants `hou
 
 Note that all the columns in the example configuration above will apply to every row specified in the configuration. However, it's possible that a target column does not exist for a particular target class (eg. if we also had a row where `targetClass` is equal to `samples` instead of `measures`). There are two ways to deal with this. Either specify additional slots specific to a target class in `wideOtherSlots`, or create multiple `wide` tabs in the mapping file, with each tab having different target columns. One good approach to organizing your `wide` tabs is to have a different `wide` tab for each `targetClass`.
 
-All other columns specified will take precedence over any values set/copied in the `maps` tab, but not over any values set/copied in the `wideOtherSlots` column for the current row.
+All of these columns specified will take precedence over any values set/copied in the `maps` tab, but not over any values set/copied in the `wideOtherSlots` column for the current row.
+
+### Expression Columns (_expr)
+
+Any column in the `wide` tab that ends with the string `_expr` specifies a column in the target class that we want to set the LinkML expression code for. The actual column name we set is determined by removing the `_expr` suffix.
+
+This works identically to `_target` columns, as described above. Any blank value will be ignored.
+
+### wideOtherSlots
+
+This is a JSON string for a dictionary specifying additional columns and values to set for the current row. These will generally be `_target` columns or `_expr` columns (See [Target Columns (_target)](#target-columns-_target) and [Expression Columns (_expr)](#expression-columns-_expr)) above). For example, the following will set the "notes_target" column of the current row to `{{pretreatment_specify}}`, resulting in the `notes` column being populated from the `pretreatment_specify` column:
+
+```json
+{ 
+    "notes_target" : "{{pretreatment_specify}}" 
+}
+```
+
+Using this method, instead of adding the `notes_target` column to the entire configuration spreadsheet, ensures that all other rows in the same `wide` tab will not have to have a value set for these other slots. If `notes_target` was added to the entire spreadsheet, then all rows will have a blank value set for the `notes` output slot, which might not be the desired behavior.
+
+Values in `wideOtherSlots` will take precedence over any values set/copied in the `maps` tab or in [Target Columns (_target)](#target-columns-_target) and [Expression Columns (_expr)](#expression-columns-_expr)) in the `wide` tab for the current row.
 
 ## Enums Tab
 
