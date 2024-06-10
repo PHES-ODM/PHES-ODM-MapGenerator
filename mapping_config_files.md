@@ -16,7 +16,7 @@ The class name from the source dataset.
 
 ### sourceSlot
 
-The slot in the source dataset that we are copying from (ie. this becomes the `populated_from` field in the mapping specification). If `exprValue` or `customData` are set then `sourceSlot` is ignored.
+The slot in the source dataset that we are copying from (ie. this becomes the `populated_from` field in the mapping specification). If `targetExpr` or `customData` are set then `sourceSlot` is ignored.
 
 ### sourceValue
 
@@ -36,7 +36,7 @@ The slot in the `targetClass` in the target dataset that we are populating (from
 
 The value to set in the `targetSlot` in the `targetClass`. If `sourceValue` is empty then this should be set to `{{sourceSlot}}`, where 'sourceSlot' is replaced with the value found in the row's `sourceSlot` column. If `sourceValue` is set (and therefore represents a source enumeration value), then `targetValue` equals the value we map the `sourceValue` to.
 
-### exprValue
+### targetExpr
 
 An optional value, that if set is assigned to the `expr` slot of the slot derivation. The `expr` slot allows custom code to calcualte a value, that is then assigned to the `targetSlot`. The custom code can be in the LinkML expression language or it can be Python code. For Python code the source class can be referenced with the `src` object variable and the result should be saved in the `target` variable. For example, the following will return the value of the `sample_type` slot if it is set, or if not set the value of `source_type`, or an empty string if neither are set:
 
@@ -96,15 +96,15 @@ If not empty, then this is the target value that we map enumerations to. If the 
 
 This is to add additional notes for the row. It is ignored.
 
-### Target Columns (_target)
+### Target Value Columns (_value)
 
-Any column in the `wide` tab that ends with the string `_target` specifies a column in the target class that we want to set a value for. The actual column name we set is determined by removing the `_target` suffix. For example, a column named `measure_target` will result in a value in the output row being set for the column `measure`. These values can be constant values or optionally a string in the form `{{slotName}}` where `slotName` is the name of a slot in the source class to copy the value from. Note that if `slotName` is an enumeration then any enumeration mappings will also be performed when copying from `slotName`.
+Any column in the `wide` tab that ends with the string `_value` specifies a column in the target class that we want to set a value for. The actual column name we set is determined by removing the `_value` suffix. For example, a column named `measure_value` will result in a value in the output row being set for the column `measure`. These values can be constant values or optionally a string in the form `{{slotName}}` where `slotName` is the name of a slot in the source class to copy the value from. Note that if `slotName` is an enumeration then any enumeration mappings will also be performed when copying from `slotName`.
 
 For example, given the wide-column spec table below:
 
-| sourceClass | sourceSlot         | sourceValue | targetClass | targetValue | unit_target  | measure_target | value_target           |
-|-------------|--------------------|-------------|-------------|-------------|--------------|----------------|------------------------|
-| nwss        | sewage_travel_time |             | measures    |             | hours        | sewTrTi        | {{sewage_travel_time}} |
+| sourceClass | sourceSlot         | sourceValue | targetClass | targetValue | unit_value  | measure_value | value_value            |
+|-------------|--------------------|-------------|-------------|-------------|-------------|---------------|------------------------|
+| nwss        | sewage_travel_time |             | measures    |             | hours       | sewTrTi       | {{sewage_travel_time}} |
 
 Each output row will have columns `unit` and `measure` set to the constants `hours` and `sewTrTi` (respectively), and the output column `value` will be copied from the `sewage_travel_time` slot.
 
@@ -112,25 +112,25 @@ Note that all the columns in the example configuration above will apply to every
 
 All of these columns specified will take precedence over any values set/copied in the `maps` tab, but not over any values set/copied in the `wideOtherSlots` column for the current row.
 
-### Expression Columns (_expr)
+### Target Expression Columns (_expr)
 
 Any column in the `wide` tab that ends with the string `_expr` specifies a column in the target class that we want to set the LinkML expression code for. The actual column name we set is determined by removing the `_expr` suffix.
 
-This works identically to `_target` columns, as described above. Any blank value will be ignored.
+This works identically to `_value` columns, as described above. Any blank value will be ignored.
 
 ### wideOtherSlots
 
-This is a JSON string for a dictionary specifying additional columns and values to set for the current row. These will generally be `_target` columns or `_expr` columns (See [Target Columns (_target)](#target-columns-_target) and [Expression Columns (_expr)](#expression-columns-_expr)) above). For example, the following will set the "notes_target" column of the current row to `{{pretreatment_specify}}`, resulting in the `notes` column being populated from the `pretreatment_specify` column:
+This is a JSON string for a dictionary specifying additional columns and values to set for the current row. These will generally be `_value` columns or `_expr` columns (See [Target Value Columns (_value)](#target-value-columns-_value) and [Target Expression Columns (_expr)](#target-expression-columns-_expr)) above). For example, the following will set the "notes_value" column of the current row to `{{pretreatment_specify}}`, resulting in the `notes` column being populated from the `pretreatment_specify` column:
 
 ```json
 { 
-    "notes_target" : "{{pretreatment_specify}}" 
+    "notes_value" : "{{pretreatment_specify}}" 
 }
 ```
 
-Using this method, instead of adding the `notes_target` column to the entire configuration spreadsheet, ensures that all other rows in the same `wide` tab will not have to have a value set for these other slots. If `notes_target` was added to the entire spreadsheet, then all rows will have a blank value set for the `notes` output slot, which might not be the desired behavior.
+Using this method, instead of adding the `notes_value` column to the entire configuration spreadsheet, ensures that all other rows in the same `wide` tab will not have to have a value set for these other slots. If `notes_value` was added to the entire spreadsheet, then all rows will have a blank value set for the `notes` output slot, which might not be the desired behavior.
 
-Values in `wideOtherSlots` will take precedence over any values set/copied in the `maps` tab or in [Target Columns (_target)](#target-columns-_target) and [Expression Columns (_expr)](#expression-columns-_expr)) in the `wide` tab for the current row.
+Values in `wideOtherSlots` will take precedence over any values set/copied in the `maps` tab or in [Target Value Columns (_value)](#target-value-columns-_value) and [Target Expression Columns (_expr)](#target-expression-columns-_expr)) in the `wide` tab for the current row.
 
 ## Enums Tab
 

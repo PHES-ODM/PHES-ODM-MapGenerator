@@ -20,7 +20,7 @@ from linkml_runtime.utils.schema_as_dict import schema_as_dict
 
 from utils.general_utils import read_data_frame, strip_whitespace, get_logger, order_columns, EMPTY_PERMISSIBLE_VALUE
 from utils.schema_utils import get_enum_names_for_slot, get_enum_name_with_permissible_value
-from utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations, get_variable_reference, MappingColumns, is_wide_target_slot, is_wide_expr_slot, any_wide_slot_name, get_blank_class_derivation
+from utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations, get_variable_reference, MappingColumns, is_wide_target_value_slot, is_wide_target_expr_slot, any_wide_slot_name, get_blank_class_derivation
 from utils.auto_id import add_auto_ids_to_schema
 
 logger = get_logger(__name__)
@@ -68,12 +68,12 @@ def extract_class_derivations(maps_df: pd.DataFrame, source_schema: SchemaView) 
         target_class = row[MappingColumns.TARGET_CLASS]
         target_slot = row[MappingColumns.TARGET_SLOT]
         custom_data = row[MappingColumns.CUSTOM_DATA]
-        expr_value = row[MappingColumns.EXPR_VALUE]
+        target_expr = row[MappingColumns.TARGET_EXPR]
         
         if pd.isna(custom_data):
             custom_data = None
-        if pd.isna(expr_value):
-            expr_value = None
+        if pd.isna(target_expr):
+            target_expr = None
         
         # Make sure the row's source class exists in the source schema
         if source_class not in source_schema.all_classes():
@@ -90,15 +90,15 @@ def extract_class_derivations(maps_df: pd.DataFrame, source_schema: SchemaView) 
             source_class_derivations[target_class] = get_blank_class_derivation(source_class, target_class)
         slot_derivations = source_class_derivations[target_class]["slot_derivations"]
         
-        if custom_data or expr_value:
+        if custom_data or target_expr:
             new_dict = {
                 "name" : target_slot,
             }
             # The MappingColumns.CUSTOM_DATA field is set for the current row. This is a dictionary that we merge to the target_slot derivation.
             if custom_data:
                 new_dict.update(json.loads(custom_data))
-            if expr_value:
-                new_dict["expr"] = expr_value
+            if target_expr:
+                new_dict["expr"] = target_expr
             if target_slot in slot_derivations:
                 # The slot derivation for target_slot already exists (ie. it was added in a previous row of maps_df). Here we make sure
                 # that the slot derivation for target_slot will be left unchanged.
@@ -301,7 +301,7 @@ def prepare_maps_df(maps_file: Union[str, Path]) -> pd.DataFrame:
     if "Complete" in maps_df.columns:
         maps_df = maps_df[maps_df["Complete"] == 1].drop("Complete", axis="columns").reset_index(drop=True)
     
-    keep_columns = [MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.SOURCE_VALUE, MappingColumns.TARGET_CLASS, MappingColumns.TARGET_SLOT, MappingColumns.TARGET_VALUE, MappingColumns.EXPR_VALUE, MappingColumns.CUSTOM_DATA]
+    keep_columns = [MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.SOURCE_VALUE, MappingColumns.TARGET_CLASS, MappingColumns.TARGET_SLOT, MappingColumns.TARGET_VALUE, MappingColumns.TARGET_EXPR, MappingColumns.CUSTOM_DATA]
     maps_df = maps_df[keep_columns]
     
     return maps_df.copy()
@@ -469,21 +469,21 @@ def make_wide_derivations(class_derivation: Dict, custom_wide_df: pd.DataFrame, 
     
     # Keep source class, target class, and all columns that are wide target slots or wide expr slots
     keep_columns = [MappingColumns.SOURCE_CLASS, MappingColumns.TARGET_CLASS]
-    keep_columns = keep_columns + [c for c in custom_wide_df.columns if c not in keep_columns and (is_wide_target_slot(c) or is_wide_expr_slot(c))]
+    keep_columns = keep_columns + [c for c in custom_wide_df.columns if c not in keep_columns and (is_wide_target_value_slot(c) or is_wide_target_expr_slot(c))]
     custom_wide_df = custom_wide_df[keep_columns]
     
     # Pivot the group to long format, keeping id_columns constant for all rows.
     # The pivoted table has a TARGET_VALUE column specifying either the constant value to set or the source slot to copy from (eg. {{slotName}})
-    # as well as an EXPR_VALUE column specifying LinkML expression code to execute for calculating the value of the target slot.
-    # We create the pivoted tables form TARGET_VALUEs and EXPR_VALUEs separated, then concatenate them together
+    # as well as an TARGET_EXPR column specifying LinkML expression code to execute for calculating the value of the target slot.
+    # We create the pivoted tables form TARGET_VALUEs and TARGET_EXPRs separated, then concatenate them together
     id_columns = [MappingColumns.SOURCE_CLASS, MappingColumns.TARGET_CLASS]
-    wide_target_columns = [c for c in custom_wide_df.columns if is_wide_target_slot(c)]
+    wide_target_columns = [c for c in custom_wide_df.columns if is_wide_target_value_slot(c)]
     wide_target_df = custom_wide_df.melt(id_vars = id_columns, value_vars=wide_target_columns, var_name = MappingColumns.TARGET_SLOT, value_name = MappingColumns.TARGET_VALUE, ignore_index=False)
-    wide_expr_columns = [c for c in custom_wide_df.columns if is_wide_expr_slot(c)]
-    wide_expr_df = custom_wide_df.melt(id_vars = id_columns, value_vars=wide_expr_columns, var_name = MappingColumns.TARGET_SLOT, value_name = MappingColumns.EXPR_VALUE, ignore_index=False)
+    wide_expr_columns = [c for c in custom_wide_df.columns if is_wide_target_expr_slot(c)]
+    wide_expr_df = custom_wide_df.melt(id_vars = id_columns, value_vars=wide_expr_columns, var_name = MappingColumns.TARGET_SLOT, value_name = MappingColumns.TARGET_EXPR, ignore_index=False)
     
     # Drop expr rows that have an empty expression
-    wide_expr_df = wide_expr_df[~pd.isna(wide_expr_df[MappingColumns.EXPR_VALUE]) | (wide_expr_df[MappingColumns.EXPR_VALUE] == "")]
+    wide_expr_df = wide_expr_df[~pd.isna(wide_expr_df[MappingColumns.TARGET_EXPR]) | (wide_expr_df[MappingColumns.TARGET_EXPR] == "")]
     
     # Combine wide_target_df and wide_expr_df, sort by index
     custom_wide_df = pd.concat([wide_target_df, wide_expr_df]).sort_index(kind="stable")

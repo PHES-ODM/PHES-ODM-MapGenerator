@@ -14,7 +14,7 @@ from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model.meta import SlotDefinition
 
 from utils.general_utils import get_logger, read_data_frame
-from utils.mapper_utils import get_variable_reference, MappingColumns, is_wide_target_slot
+from utils.mapper_utils import get_variable_reference, MappingColumns, is_wide_target_value_slot
 
 logger = get_logger(__name__)
 
@@ -78,7 +78,7 @@ def add_auto_ids_to_schema(schema: SchemaView, df: pd.DataFrame):
     Args:
         schema (SchemaView): The LinkML schema to add the IDs to.
         df (pd.DataFrame): The DataFrame representing either a "maps" or "wide" sheet of a mapping config file.
-            We will look in various columns (eg. sourceSlot, targetValue, wideOtherSlots, *_target columns) and find
+            We will look in various columns (eg. sourceSlot, targetValue, wideOtherSlots, *_value columns) and find
             any auto IDs (eg. id:organizationID).
     """
     # Look for IDs in sourceSlot, targetValue, wideOtherSlots, *_target
@@ -104,10 +104,10 @@ def add_auto_ids_to_schema(schema: SchemaView, df: pd.DataFrame):
                 if value and is_auto_id(value):
                     add_id_to_schema(schema, source_class, value)
                     
-        # Check all _target columns
-        wide_target_slots = [s for s in df.columns if is_wide_target_slot(s)]
-        if len(wide_target_slots) > 0:
-            for s in wide_target_slots:
+        # Check all _value columns
+        wide_target_value_slots = [s for s in df.columns if is_wide_target_value_slot(s)]
+        if len(wide_target_value_slots) > 0:
+            for s in wide_target_value_slots:
                 value = row.get(s)
                 value = get_variable_reference(value)
                 if value and is_auto_id(value):

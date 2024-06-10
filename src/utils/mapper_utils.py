@@ -21,10 +21,10 @@ logger = get_logger(__name__)
 # {{sourceSlotName}}.
 VARIABLE_REGEX = r"^{{([^}]*)}}$"
 
-# For wide tab, any column name that ends in WIDE_SPEC_TARGET_SUFFIX will be trimmed of the suffix
+# For wide tab, any column name that ends in WIDE_SPEC_VALUE_SUFFIX will be trimmed of the suffix
 # and used as a column in the output row to set a value for (eg. to a constant or copying from
-# an input column).
-WIDE_SPEC_TARGET_SUFFIX = "_target"
+# an input slot such as {{slotName}}).
+WIDE_SPEC_VALUE_SUFFIX = "_value"
 
 # For wide tab, any column that ends in WIDE_SPEC_EXPR_SUFFIX will be trimmed of the suffix
 # and used as an LinkML expr block (ie. code to execute to calcualte the column value)
@@ -40,7 +40,7 @@ class MappingColumns:
     TARGET_CLASS = "targetClass"
     TARGET_SLOT = "targetSlot"
     TARGET_VALUE = "targetValue"
-    EXPR_VALUE = "exprValue"
+    TARGET_EXPR = "targetExpr"
     CUSTOM_DATA = "customData"
     
     # These columns should only be present in the enums tabs of the mapping files
@@ -55,11 +55,11 @@ class MappingColumns:
 def is_wide_slot(name: Any, suffix: str) -> bool:
     """Test if the column name refers to a special wide slot name, such as for a wide target value, wide expr value, etc.
     
-    These are column names that end in a suffix, such as _target, _expr, etc.
+    These are column names that end in a suffix, such as _value, _expr, etc.
 
     Args:
         name (Any): The column name to test.
-        suffix (str): The suffix to test for, such as WIDE_SPEC_TARGET_SUFFIX and WIDE_SPEC_EXPR_SUFFIX.
+        suffix (str): The suffix to test for, such as WIDE_SPEC_VALUE_SUFFIX and WIDE_SPEC_EXPR_SUFFIX.
 
     Returns:
         bool: True if name is a special wide slot name that ends in the specified suffix.
@@ -71,7 +71,7 @@ def is_wide_slot(name: Any, suffix: str) -> bool:
 def wide_slot_name(name: str, suffix: str) -> Optional[str]:
     """Get the name of the special wide slot with the suffix removed. If name does not end in the suffix then None is returned.
     
-    eg. If name is "qualityRepID_target" and suffix is "_target", then "qualityRepID" is returned.
+    eg. If name is "qualityRepID_value" and suffix is "_value", then "qualityRepID" is returned.
 
     Args:
         name (str): The column name to remove the suffix from.
@@ -86,7 +86,7 @@ def wide_slot_name(name: str, suffix: str) -> Optional[str]:
 
 def any_wide_slot_name(name: str) -> Optional[str]:
     """Get the slot that the special wide column name refers to. This removes any recognized special wide slot name suffix
-    from the specified column name. This includes _target and _expr suffixes. If no recognized suffix is present then None
+    from the specified column name. This includes _value and _expr suffixes. If no recognized suffix is present then None
     is returned.
 
     Args:
@@ -97,7 +97,7 @@ def any_wide_slot_name(name: str) -> Optional[str]:
             in a recognized suffix.
     """
     check_suffixes = [
-        WIDE_SPEC_TARGET_SUFFIX,
+        WIDE_SPEC_VALUE_SUFFIX,
         WIDE_SPEC_EXPR_SUFFIX,
     ]
     for suffix in check_suffixes:
@@ -105,31 +105,31 @@ def any_wide_slot_name(name: str) -> Optional[str]:
             return wide_slot_name(name, suffix)
     return None
 
-def is_wide_target_slot(name: Any) -> bool:
-    """Test if the specified wide column name ends in the _target suffix.
+def is_wide_target_value_slot(name: Any) -> bool:
+    """Test if the specified wide column name ends in the _value suffix.
 
     Args:
         name (Any): The column name to test.
 
     Returns:
-        bool: True of the column name ends in the _target suffix, False otherwise.
+        bool: True of the column name ends in the _value suffix, False otherwise.
     """
-    return is_wide_slot(name, WIDE_SPEC_TARGET_SUFFIX)
+    return is_wide_slot(name, WIDE_SPEC_VALUE_SUFFIX)
 
-def wide_target_slot_name(name: str) -> Optional[str]:
-    """Remove the _target suffix from the specified special wide column name. Returns
-    None if it does not end with the _target suffix.
+def wide_target_value_slot_name(name: str) -> Optional[str]:
+    """Remove the _value suffix from the specified special wide column name. Returns
+    None if it does not end with the _value suffix.
 
     Args:
         name (str): The column name to remove the suffix from.
 
     Returns:
-        Optional[str]: The column name with the _target suffix removed, or None if it does
-            not end in the _target suffix.
+        Optional[str]: The column name with the _value suffix removed, or None if it does
+            not end in the _value suffix.
     """
-    return wide_slot_name(name, WIDE_SPEC_TARGET_SUFFIX)
+    return wide_slot_name(name, WIDE_SPEC_VALUE_SUFFIX)
 
-def is_wide_expr_slot(name: Any) -> bool:
+def is_wide_target_expr_slot(name: Any) -> bool:
     """Test if the specified wide column name ends in the _expr suffix.
 
     Args:
@@ -140,7 +140,7 @@ def is_wide_expr_slot(name: Any) -> bool:
     """
     return is_wide_slot(name, WIDE_SPEC_EXPR_SUFFIX)
 
-def wide_expr_slot_name(name: str) -> Optional[str]:
+def wide_target_expr_slot_name(name: str) -> Optional[str]:
     """Remove the _expr suffix from the specified special wide column name. Returns
     None if it does not end with the _expr suffix.
 
@@ -292,7 +292,7 @@ def expand_wide_derivations(source_class_name: str, target_class_name: str, slot
             for row_number, row in rows_df.iterrows():
                 target_slot = row[MappingColumns.TARGET_SLOT]
                 target_value = row[MappingColumns.TARGET_VALUE]
-                target_expr = row[MappingColumns.EXPR_VALUE]
+                target_expr = row[MappingColumns.TARGET_EXPR]
                 
                 # We always need a target slot specified                
                 if not target_slot or pd.isna(target_slot):

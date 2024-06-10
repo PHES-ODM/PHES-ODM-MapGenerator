@@ -1,4 +1,4 @@
-sourceClass,targetClass,wideRowNumber,targetSlot,targetValue,exprValue
+sourceClass,targetClass,wideRowNumber,targetSlot,targetValue,targetExpr
 AssayMethod,protocolSteps,0,measure,exvol,
 AssayMethod,protocolSteps,0,method,,
 AssayMethod,protocolSteps,0,value,{{extractionVolMl}},
