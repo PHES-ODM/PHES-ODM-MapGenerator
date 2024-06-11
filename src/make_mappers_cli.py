@@ -155,7 +155,7 @@ if __name__ == "__main__":
             target_schema = f"../data/odm_v2/linkml/odm_v2.yaml"
             mapping_excel_file = "../data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx"
             excel_maps_sheets = ["maps"]
-            excel_wide_sheets = ["wide", "wide_qualityReports"]
+            excel_wide_sheets = ["wide_measures", "wide_protocolSteps", "wide_qualityReports"]
             excel_enums_sheets = ["enums"]
             maps_files = []
             wide_files = []

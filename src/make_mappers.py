@@ -732,7 +732,8 @@ if __name__ == "__main__":
             maps_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/maps0.csv"]
             wide_files = [
                 f"../gen/nwss_{dictionary_type}_to_v2/configs/wide0.csv",
-                f"../gen/nwss_{dictionary_type}_to_v2/configs/wide1.csv"
+                f"../gen/nwss_{dictionary_type}_to_v2/configs/wide1.csv",
+                f"../gen/nwss_{dictionary_type}_to_v2/configs/wide2.csv",
                 ]
             enums_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/enums0.csv"]
             mapper_dir = f"../gen/nwss_{dictionary_type}_to_v2/mappers"
