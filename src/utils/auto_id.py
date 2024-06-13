@@ -9,6 +9,7 @@ from typing import Any, Union
 import pandas as pd
 import json
 from pathlib import Path
+import re
 
 from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model.meta import SlotDefinition
@@ -142,7 +143,7 @@ def gen_auto_ids(id_config_file: Union[str, Path], schema: SchemaView, cls: str,
             id_type = IDType.random # Default ID type
             if id_config_df is not None:
                 # Get the configuration for the ID slot.
-                config_row = id_config_df[id_config_df[IDConfigColumns.id] == id_slot]
+                config_row = id_config_df[id_config_df[IDConfigColumns.id].map(lambda x: re.fullmatch(x, id_slot) is not None)]
                 if len(config_row.index) > 1:
                     raise ValueError(f"Found multiple rows for ID '{id_slot}' in ID config file")
                 if len(config_row.index) == 1:

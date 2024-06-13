@@ -1,7 +1,9 @@
 id,value,
-id:datasetID,caOnOtt002Uni,
-id:measureRepID,,caOnOttOtt20200802Covn1002
-id:measureSetRepID,,caOnOttOtt20200801Covn1002003
 id:addressID,caOnOtt002,
+id:datasetID,caOnOtt002Uni,
 id:instrumentID,fisHanHan,
+id:measureRepID[0-9]*,,caOnOttOtt20200802Covn1002
+id:measureSetRepID,,caOnOttOtt20200801Covn1002003
 id:polygonID,caOnOtt002UniCaOnOttOtt,
+id:qualityReportID[0-9]*,,
+id:stepID,,
