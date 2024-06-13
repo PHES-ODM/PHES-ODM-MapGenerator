@@ -720,7 +720,7 @@ def make_mappers(maps_files: Union[Union[str, Path], List[Union[str, Path]]], wi
         }
         
         # Save mapper specification to disk
-        mapper_file = os.path.join(mapper_dir, f"mapper-{idx:04n}-{source_class}-{target_class}.yaml")
+        mapper_file = os.path.join(mapper_dir, f"mapper-{idx:010n}-{source_class}-{target_class}.yaml")
         logger.info(f"Saving mapper spec for '{source_class}' to '{target_class}': {mapper_file}")
         with open(mapper_file, "w") as f:
             yaml.dump(mapper_spec, f, indent=2, sort_keys=False)

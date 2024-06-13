@@ -253,7 +253,7 @@ def run_mapper(data: Dict[str, List], session: Session, data_output_dir: Union[s
 
         # Save the mapped data to disk
         if data_output_dir is not None:
-            file_index_tag = f"-{file_index:03d}" if file_index is not None else ""
+            file_index_tag = f"-{file_index:010d}" if file_index is not None else ""
             output_data_file = os.path.join(data_output_dir, f"%s-{target_type}{file_index_tag}.csv" % os.path.splitext(os.path.basename(mapper_file))[0])
             logger.info(f"Saving mapped data file for {target_type} ({len(df.index)} rows): {output_data_file}")
             keep_columns = [c for c in df.columns if c != TrackingColumns.ROW_NUMBER]
