@@ -162,7 +162,7 @@ def add_row_number_derivation(spec: Dict):
     Args:
         spec (Dict): The mapper spec to add a row number slot derivation to all classes.
     """
-    for cls, class_derivation in spec["class_derivations"].items():
+    for class_derivation in spec["class_derivations"].values():
         class_derivation["slot_derivations"][TrackingColumns.ROW_NUMBER] = {
             "name" : TrackingColumns.ROW_NUMBER,
             "populated_from" : TrackingColumns.ROW_NUMBER,
