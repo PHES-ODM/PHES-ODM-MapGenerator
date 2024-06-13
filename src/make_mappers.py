@@ -668,7 +668,7 @@ def make_mappers(maps_files: Union[Union[str, Path], List[Union[str, Path]]], wi
     # Go through all wide mapping data, and create the wide class derivations (one class derivation per wide group)
     results = []
     for wide_df in wide_dfs:
-        for idx, (_, group_df) in enumerate(wide_df.groupby([MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.TARGET_CLASS, MappingColumns.WIDE_GROUP])):
+        for idx, (_, group_df) in enumerate(wide_df.groupby([MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.TARGET_CLASS, MappingColumns.WIDE_GROUP], sort=False)):
             source_class_name = group_df[MappingColumns.SOURCE_CLASS].iloc[0]
             target_class_name = group_df[MappingColumns.TARGET_CLASS].iloc[0]
             class_derivation = all_class_derivations.get(source_class_name, {}).get(target_class_name, None)
@@ -720,7 +720,7 @@ def make_mappers(maps_files: Union[Union[str, Path], List[Union[str, Path]]], wi
         }
         
         # Save mapper specification to disk
-        mapper_file = os.path.join(mapper_dir, f"mapper-{source_class}-{target_class}-{idx}.yaml")
+        mapper_file = os.path.join(mapper_dir, f"mapper-{idx:04n}-{source_class}-{target_class}.yaml")
         logger.info(f"Saving mapper spec for '{source_class}' to '{target_class}': {mapper_file}")
         with open(mapper_file, "w") as f:
             yaml.dump(mapper_spec, f, indent=2, sort_keys=False)
