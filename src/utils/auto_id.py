@@ -156,6 +156,8 @@ def gen_auto_ids(id_config_file: Union[str, Path], schema: SchemaView, cls: str,
                         id_type = IDType.variable
                     else:
                         id_type = IDType.constant
+                else:
+                    logger.warning(f"No configuration found for ID '{id_slot}'. Using default ID type '{id_type}'")
 
             # Generate the IDs (add them to the DataFrame)
             if id_type == IDType.random:
