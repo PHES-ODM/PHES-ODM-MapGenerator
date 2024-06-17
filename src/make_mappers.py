@@ -189,16 +189,21 @@ def extract_enum_derivations(maps_df: pd.DataFrame, source_schema: SchemaView, t
         if variable_match is not None:
             continue
         
-        # @TODO: Remove this: We should load the NWSS Mapping config file without converting NA to NaNs
+        # Convert NA values to ""
+        if pd.isna(source_enum_value):
+            source_enum_value = ""
         if pd.isna(target_enum_value):
             target_enum_value = ""
             
         # If both the source enum value and target enum value are empty then this row is not an enumeration, so continue to next loop
-        if (pd.isna(source_enum_value) or source_enum_value == "") and (pd.isna(target_enum_value) or target_enum_value == ""):
+        if source_enum_value == "" and target_enum_value == "":
             continue
         
+        # Replace EMPTY_PERMISSIBLE_VALUE with ""
         if source_enum_value == EMPTY_PERMISSIBLE_VALUE:
             source_enum_value = ""
+        if target_enum_value == EMPTY_PERMISSIBLE_VALUE:
+            target_enum_value = ""
 
         # Get source enumeration name (if empty) based on the source class and slot
         if not source_enum_name:
