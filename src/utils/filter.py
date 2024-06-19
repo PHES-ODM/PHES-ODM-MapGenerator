@@ -38,8 +38,8 @@ from utils.filter_funcs import call_filter_func
 logger = get_logger(__name__)
 
 class FilterConfigColumns:
-    INPUT_GROUP = "inputGroup"
-    OUTPUT_GROUP = "outputGroup"
+    INPUT_FILTER = "inputFilter"
+    OUTPUT_FILTER = "outputFilter"
     CLASS = "class"
     SLOT = "slot"
     OPERATION = "operation"
@@ -122,8 +122,8 @@ def run_filter(filter_config_file: Union[Path, str], *, data: Dict[str, pd.DataF
     filters = {}
     # Go through each row and perform the filtering
     for _, config_row in config_df.iterrows():
-        input_group = str(config_row[FilterConfigColumns.INPUT_GROUP])
-        output_group = str(config_row[FilterConfigColumns.OUTPUT_GROUP])
+        input_filter = str(config_row[FilterConfigColumns.INPUT_FILTER])
+        output_filter = str(config_row[FilterConfigColumns.OUTPUT_FILTER])
         cls = config_row[FilterConfigColumns.CLASS]
         slot = config_row[FilterConfigColumns.SLOT]
         op = config_row[FilterConfigColumns.OPERATION]
@@ -133,10 +133,10 @@ def run_filter(filter_config_file: Union[Path, str], *, data: Dict[str, pd.DataF
             logger.info(f"Not running filter on class '{cls}', data for class does not exist")
             continue
         
-        logger.info(f"Running input group '{input_group}', output group '{output_group}' with operation '{op}' on class '{cls}', slot '{slot}', and value '{value}'")
+        logger.info(f"Running input filter '{input_filter}', output filter '{output_filter}' with operation '{op}' on class '{cls}', slot '{slot}', and value '{value}'")
         
         # Perform the filtering operation
-        call_filter_func(op, input_group=input_group, output_group=output_group, filters=filters, data=data, cls=cls, slot=slot, value=value)
+        call_filter_func(op, input_name=input_filter, output_name=output_filter, filters=filters, data=data, cls=cls, slot=slot, value=value)
 
     if output_data_dir:
         save_data(data, output_data_dir)
