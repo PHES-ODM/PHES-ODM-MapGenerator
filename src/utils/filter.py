@@ -38,8 +38,8 @@ from utils.filter_funcs import call_filter_func
 logger = get_logger(__name__)
 
 class FilterConfigColumns:
-    INPUT_GROUP = "input_group"
-    OUTPUT_GROUP = "output_group"
+    INPUT_GROUP = "inputGroup"
+    OUTPUT_GROUP = "outputGroup"
     CLASS = "class"
     SLOT = "slot"
     OPERATION = "operation"
