@@ -122,8 +122,8 @@ def do_save(input_group: str, filters: Dict[str, pd.Series], data: Dict[str, pd.
     num_rows = len(data[value])
     logger.info(f"Saved data from group {input_group} to class {cls}, number of rows changed from {init_num_rows} to {num_rows} (Change: {num_rows - init_num_rows})")
 
+# Map specifying which function to call for each operation.
 FILTER_FUNCS = {
     "exclude_equals": do_exclude_equals,
     "save": do_save,
 }
-
