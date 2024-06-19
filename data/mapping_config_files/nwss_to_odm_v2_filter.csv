@@ -1,4 +1,4 @@
-inputGroup,outputGroup,class,slot,operation,value
+inputFilter,outputFilter,class,slot,operation,value
 0,0,measures,measure,exclude_equals,<ignore>
 0,0,measures,method,exclude_equals,<ignore>
 0,0,measures,value,exclude_equals,
