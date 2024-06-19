@@ -11,10 +11,10 @@ group (in `filters`) and a class to apply the filter to (a DataFrame in `data`).
 
 Filtering functions can take the following arguments:
 
-- input_group (str): The input group. We use this as the initial filter.
-- output_group (str): The output group. We save the modified filter, if any, to this group.
 - filters (Dict[str, pd.Series]): All filters. Keys are the groups and values are the boolean filters.
 - data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.
+- input_group (str): The input group. We use this as the initial filter.
+- output_group (str): The output group. We save the modified filter, if any, to this group.
 - cls (str): The class we are applying the filter to.
 - slot (str): The slot (in the class) we are performing the operation on.
 - value (Any): The value, whose meaning depends on which operation we're performing.
@@ -74,14 +74,14 @@ def get_filter_for_group(group: str, filters: Dict[str, pd.Series], data: Dict[s
     filt = filters[group]
     return filt
 
-def do_exclude_equals(input_group: str, output_group: str, filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], cls: str, slot: str, value: Any, **kwargs):
+def do_exclude_equals(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_group: str, output_group: str, cls: str, slot: str, value: Any, **kwargs):
     """Exclude operation. Exclude any row where the slot is equal to the value.
 
     Args:
-        input_group (str): The input group. We use this as the initial filter.
-        output_group (str): The output group. After ANDing the input group we set the output group with the new filter.
         filters (Dict[str, pd.Series]): All filters. Keys are the groups and values are the boolean filters.
         data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.
+        input_group (str): The input group. We use this as the initial filter.
+        output_group (str): The output group. After ANDing the input group we set the output group with the new filter.
         cls (str): The class to create the new filter based on.
         slot (str): The slot. Any row where this slot is equal to value will be excluded.
         value (Any): The value. Any row where the slot is equal to this value will be excluded.
@@ -104,14 +104,14 @@ def do_exclude_equals(input_group: str, output_group: str, filters: Dict[str, pd
     
     set_filter_for_group(filt, output_group, filters)
     
-def do_save(input_group: str, filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], cls: str, value: Any, **kwargs):
+def do_save(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_group: str, cls: str, value: Any, **kwargs):
     """Apply the filter from the input group to the DataFrame for class cls, and save the resulting DataFrame to the class
     specified in value.
 
     Args:
-        input_group (str): The filter to apply to the input DataFrame.
         filters (Dict[str, pd.Series]): All filters. Keys are the groups and values are the boolean filters.
         data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.
+        input_group (str): The filter to apply to the input DataFrame.
         cls (str): The class to apply the filter to (in data)
         value (Any): The class to save the filtered DataFrame to (in data).
     """
