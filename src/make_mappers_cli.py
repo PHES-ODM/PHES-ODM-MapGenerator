@@ -175,6 +175,7 @@ if __name__ == "__main__":
             wide_files = []
             enums_files = []
             output_dir = Path(f"../gen/nwss_{dictionary_type}_to_v2")
+            # For mapping after config files are created:
             input_data_dir = "../../../PHES-ODM-Data/nwss/private_renamed/"
             input_max_rows = 10
             id_config_file = f"../data/mapping_config_files/nwss_to_odm_v2_ids.csv"
@@ -219,8 +220,8 @@ if __name__ == "__main__":
 
         # Prepare data
         cleaned_data_dir = output_dir / "cleaned_data"
-        clear_dirs([cleaned_data_dir, mapped_dir])
-        _ = clean_data_directory(opts.input_data_dir, cleaned_data_dir, schema=opts.source_schema, max_rows=opts.input_max_rows)
+        # clear_dirs([cleaned_data_dir, mapped_dir])
+        # _ = clean_data_directory(opts.input_data_dir, cleaned_data_dir, schema=opts.source_schema, max_rows=opts.input_max_rows)
 
         # Map the data
         max_processes = 1
