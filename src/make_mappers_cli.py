@@ -150,6 +150,20 @@ if __name__ == "__main__":
             # input_data_dir = f"../data/test/output/uncleaned_data"
             # input_max_rows = None
             # id_config = None
+
+            # source_schema = f"../data/clothing/clothing.yaml"
+            # target_schema = f"../data/clothing/clothing_2.yaml"
+            # mapping_excel_file = "../data/clothing/clothing-mapping.xlsx"
+            # excel_maps_sheets = ["maps"]
+            # excel_wide_sheets = None
+            # excel_enums_sheets = ["enums"]
+            # maps_files = []
+            # wide_files = []
+            # enums_files = []
+            # output_dir = f"../data/clothing/output"
+            # input_data_dir = f"../data/clothing/data"
+            # input_max_rows = None
+            # id_config = None
             
             source_schema = f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
             target_schema = f"../data/odm_v2/linkml/odm_v2.yaml"
@@ -163,7 +177,8 @@ if __name__ == "__main__":
             output_dir = Path(f"../gen/nwss_{dictionary_type}_to_v2")
             input_data_dir = "../../../PHES-ODM-Data/nwss/private_renamed/"
             input_max_rows = 10
-            id_config = f"../data/mapping_config_files/id_config.csv"
+            id_config_file = f"../data/mapping_config_files/nwss_to_odm_v2_idconfig.csv"
+            filter_config_file = "../data/mapping_config_files/nwss_to_odm_v2_filter.csv"
     else:
         args = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         args.add_argument("--source_schema", type=str, help="Location of the source dataset LinkML schema", required=True)
@@ -174,12 +189,13 @@ if __name__ == "__main__":
         args.add_argument("--excel_wide_sheets", type=str, nargs="+", help="The sheet(s) in the mapping Excel file (mapping_excel_file) that contain the wide-column configuration.", required=False)
         args.add_argument("--excel_enums_sheets", type=str, nargs="+", help="The sheet(s) in the mapping Excel file (mapping_excel_file) that contain the enums configuration.", required=False)
         args.add_argument("--maps_files", type=str, nargs="+", help="The file(s) that contain the mapping configuration, in addition to what is already extracted from mapping_excel_file.", required=False)
-        args.add_argument("--wide_files", type=str, nargs="+", help="The sheet(s) that contain the wide-column configuration, in addition to what is already extracted from mapping_excel_file.", required=False)
-        args.add_argument("--enums_files", type=str, nargs="+", help="The sheet(s) that contain the enums configuration, in addition to what is already extracted from mapping_excel_file.", required=False)
+        args.add_argument("--wide_files", type=str, nargs="+", help="The file(s) that contain the wide-column configuration, in addition to what is already extracted from mapping_excel_file.", required=False)
+        args.add_argument("--enums_files", type=str, nargs="+", help="The file(s) that contain the enums configuration, in addition to what is already extracted from mapping_excel_file.", required=False)
         # For mapping after the config files are created:
         args.add_argument("--input_data_dir", type=str, help="Directory containing all the input data to map using the generated mapper config files. If empty then no mapping is performed.", required=False)
         args.add_argument("--input_max_rows", type=int, help="If input_data_dir is set, then the number of rows to map from each input data file. If 0 then map all rows.", default=0, required=False)
-        args.add_argument("--id_config", type=str, help="Configuration file for generating IDs", required=False)
+        args.add_argument("--id_config_file", type=str, help="Configuration file for generating IDs", required=False)
+        args.add_argument("--filter_config_file", type=str, help="Configuration file for filtering the final mapped data", required=False)
         opts = args.parse_args()
     
     make_mappers_cli(output_dir=opts.output_dir, 
@@ -208,4 +224,4 @@ if __name__ == "__main__":
 
         # Map the data
         max_processes = 1
-        map(source_schema_file=source_schema_for_mapping, target_schema_file=opts.target_schema, mapper_dir=mapper_dir, data_dir=cleaned_data_dir, data_output_dir=mapped_dir, id_config_file=opts.id_config, max_processes=max_processes)
+        map(source_schema_file=source_schema_for_mapping, target_schema_file=opts.target_schema, mapper_dir=mapper_dir, data_dir=cleaned_data_dir, data_output_dir=mapped_dir, id_config_file=opts.id_config_file, filter_config_file=opts.filter_config_file, max_processes=max_processes)

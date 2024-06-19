@@ -65,8 +65,21 @@ from linkml_runtime.linkml_model import SlotDefinition
 
 from utils.general_utils import save_data_frame, read_data_frame, get_logger, order_columns, choose_ignore_case_value, get_class_name_from_file_name, clear_dirs
 from utils.auto_id import gen_auto_ids
+from utils.filter import run_filter
 
 logger = get_logger(__name__)
+
+# If True, then filter the mapped data after merging all mapped data. If False then filter before merging all mapped data.
+# The end result will be the same.
+FILTER_AFTER_MERGING = False
+
+# During mapping several DataFrames are created, and there may be multiple DataFrames for a single class.
+# If SAVE_UNMERGED_DATA is True (and a data_output_dir is specified) then we save these DataFrames to disk as separate files.
+# If SAVE_UNMERGED_DATA is False then we do not save this data to disk.
+# In all cases (if a data_output_dir is specified), once all mapping is complete, we merge these DataFrames into single DataFrames 
+# for each class, and then save them to disk. Typically, we do not need the unmerged data as it gets saved at the end as the merged data. 
+# This is mainly for debugging purposes, and should typically be set to False if not debugging.
+SAVE_UNMERGED_DATA = False
 
 class TrackingColumns:
     ROW_NUMBER = "(___row_number___)"
@@ -125,9 +138,6 @@ def load_data(data_dir: Union[str, Path], schema: Union[str, SchemaView], id_con
             # Make sure all columns exist (except for TrackingColumns.ROW_NUMBER, which we add later)
             class_definition = schema.induced_class(class_name)
             missing_slots = [s for s in class_definition.attributes if s not in df.columns and s != TrackingColumns.ROW_NUMBER]
-            # @TODO: eval_utils.py (that evaluates "expr" values in mapper specs) raises an exception if any
-            # variable it accesses is None. To avoid this we set missing slots to "" instead of None. (Do a PR with
-            # changes to eval_utils.py to support None variables)
             df[missing_slots] = ""
 
             # Only keep recognized slots
@@ -184,7 +194,7 @@ def add_row_number_slot(schema: SchemaView):
         
     schema.schema.slots[TrackingColumns.ROW_NUMBER] = SlotDefinition(name=TrackingColumns.ROW_NUMBER, from_schema = schema.schema.id)
 
-def run_mapper(data: Dict[str, List], session: Session, data_output_dir: Union[str, Path], mapper_file: Union[str, Path], target_schema: SchemaView, file_index: Optional[int] = None, unrestricted_eval: bool = False) -> Dict[str, List[Dict]]:
+def run_mapper(data: Dict[str, List], session: Session, data_output_dir: Union[str, Path], mapper_file: Union[str, Path], target_schema: SchemaView, file_index: Optional[int] = None, unrestricted_eval: bool = False, filter_config_file: Optional[Union[str, Path]] = None) -> Dict[str, List[Dict]]:
     """Run the mapper on the specified data using the specified mapper YAML file and save the
     results to disk.
 
@@ -203,6 +213,8 @@ def run_mapper(data: Dict[str, List], session: Session, data_output_dir: Union[s
             (assuming we properly use unique file_index values for each run).
         unrestricted_eval (Optional[bool]): If True then run expr code in slot derivations in unrestricted mode
             (ie. allow any Python code to execute).
+        filter_config_file (Optional[Union[str, Path]], optional): The filter configuration file, to filter the
+            final transformed data (eg. remove rows that should be ignored due to missing data). Defaults to None.
 
     Returns:
         Dict[str, List[Dict]]: The mapped data, where the keys are the output class names and the
@@ -246,13 +258,18 @@ def run_mapper(data: Dict[str, List], session: Session, data_output_dir: Union[s
                 df[missing] = None
             df = order_columns(df, all_slots)
         
+        # Filter the data.
+        if not FILTER_AFTER_MERGING and filter_config_file:
+            filtered_data = run_filter(filter_config_file, data={ target_type: df })
+            df = filtered_data[target_type]
+        
         # Keep a copy of the mapped data
         if target_type not in all_mapped_data:
             all_mapped_data[target_type] = []
         all_mapped_data[target_type].append(df)
 
         # Save the mapped data to disk
-        if data_output_dir is not None:
+        if SAVE_UNMERGED_DATA and len(df.index) > 0 and data_output_dir is not None:
             file_index_tag = f"-{file_index:010d}" if file_index is not None else ""
             output_data_file = os.path.join(data_output_dir, f"%s-{target_type}{file_index_tag}.csv" % os.path.splitext(os.path.basename(mapper_file))[0])
             logger.info(f"Saving mapped data file for {target_type} ({len(df.index)} rows): {output_data_file}")
@@ -313,7 +330,7 @@ def make_data_splits(data: Dict[str, List], num_splits: int, min_split_size: int
         split_num += 1
     return data_splits
 
-def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Path], mapper_dir: Union[str, Path], data_dir: Union[str, Path], data_output_dir: Optional[Union[str, Path]] = None, id_config_file: Union[str, Path] = None, max_processes: Optional[int] = 1) -> Dict[str, List[Dict]]:
+def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Path], mapper_dir: Union[str, Path], data_dir: Union[str, Path], data_output_dir: Optional[Union[str, Path]] = None, id_config_file: Optional[Union[str, Path]] = None, filter_config_file: Optional[Union[str, Path]] = None, max_processes: Optional[int] = 1) -> Dict[str, List[Dict]]:
     """Run the mapper using all mapper files found in the specified mapper directory and on all 
     data files found in the specified data directory. The results are returned and optionally saved to disk.
     
@@ -333,8 +350,10 @@ def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Pat
             and "extra_stuff" is any extra string (which is ignored).
         data_output_dir (Optional[Union[str, Path]], optional): Directory to save the mapped output to. If None
             then the mapped data are not saved to disk, but are still returned. Defaults to None.
-        id_config_file (Union[str, Path], optional): File containing the configuration for generating IDs. If
+        id_config_file (Optional[Union[str, Path]], optional): File containing the configuration for generating IDs. If
             empty then no ID generation is performed. Defaults to None
+        filter_config_file (Optional[Union[str, Path]], optional): The filter configuration file, to filter the
+            final transformed data (eg. remove rows that should be ignored due to missing data). Defaults to None.
         max_processes (Optional[int], optional): Maximum number of processes to use for multi-processing.
             If 1 then no multi-processing will be performed. If None or 0 then the maximum number
             (as obtained by cpu_count()) will be used. Note that for mapping small tables multi-processing
@@ -375,8 +394,7 @@ def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Pat
     if max_processes == 1:
         split_data = [data]
     else:
-        # @TODO: Remove min_split_size=1
-        split_data = make_data_splits(data, num_splits=max_processes, min_split_size=1)
+        split_data = make_data_splits(data, num_splits=max_processes)
     
     # Set up the LinkML Mapper Session
     logger.info("Creating Session for mapping")
@@ -406,6 +424,7 @@ def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Pat
             "mapper_file": mapper_file,
             "target_schema": target_schema,
             "unrestricted_eval": True,
+            "filter_config_file": filter_config_file,
         } for file_num, mapper_file in enumerate(mapper_files)]
         map_args.extend(cur_args)
     
@@ -439,7 +458,13 @@ def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Pat
             # Retain the original order by sorting by ROW_NUMBER. ROW_NUMBER was added in code with the integer row number,
             # so that we can sort the output DataFrame by row number.
             # df[TrackingColumns.ROW_NUMBER] = df[TrackingColumns.ROW_NUMBER].astype(int)
-            df = df.sort_values(TrackingColumns.ROW_NUMBER, axis=0, kind="stable").drop(TrackingColumns.ROW_NUMBER, axis=1)
+            df = df.sort_values(TrackingColumns.ROW_NUMBER, axis=0, kind="stable").drop(TrackingColumns.ROW_NUMBER, axis=1).reset_index(drop=True)
+            
+            # Filter the data. 
+            if FILTER_AFTER_MERGING and filter_config_file:
+                filtered_data = run_filter(filter_config_file, data={ target_type: df })
+                df = filtered_data[target_type]
+            
             output_data_file = os.path.join(data_output_dir, f"{target_type}.csv")
             logger.info(f"Saving merged mapped data file for {target_type} ({len(all_df)} source frame(s), {len(df.index)} rows): {output_data_file}")
             save_data_frame(df, output_data_file, index=False)
@@ -457,6 +482,8 @@ if __name__ == "__main__":
             # data_dir = "../gen/odm_v1_to_v2/cleaned_data"
             # output_dir = "../gen/odm_v1_to_v2/mapped_data"
             # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
+            # id_config = None
+            # filter_config_file = None
 
             # NWSS to v2
             dictionary_type = "reporting"
@@ -465,7 +492,8 @@ if __name__ == "__main__":
             data_dir = f"../gen/nwss_{dictionary_type}_to_v2/cleaned_data"
             output_dir = f"../gen/nwss_{dictionary_type}_to_v2/mapped_data"
             target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
-            id_config = f"../data/mapping_config_files/id_config.csv"
+            id_config = f"../data/mapping_config_files/nwss_to_odm_v2_idconfig.csv"
+            filter_config_file = "../data/odm_v2/filter.csv"
 
             max_processes = 1
     else:
@@ -480,4 +508,4 @@ if __name__ == "__main__":
         opts = args.parse_args()
 
     clear_dirs([opts.output_dir])
-    map(source_schema_file=opts.source_schema, target_schema_file=opts.target_schema, mapper_dir=opts.mapper_dir, data_dir=opts.data_dir, data_output_dir=opts.output_dir, id_config_file=opts.id_config, max_processes=opts.max_processes)
+    map(source_schema_file=opts.source_schema, target_schema_file=opts.target_schema, mapper_dir=opts.mapper_dir, data_dir=opts.data_dir, data_output_dir=opts.output_dir, id_config_file=opts.id_config, filter_config_file=opts.filter_config_file, max_processes=opts.max_processes)
