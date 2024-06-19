@@ -492,7 +492,7 @@ if __name__ == "__main__":
             data_dir = f"../gen/nwss_{dictionary_type}_to_v2/cleaned_data"
             output_dir = f"../gen/nwss_{dictionary_type}_to_v2/mapped_data"
             target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
-            id_config = f"../data/mapping_config_files/nwss_to_odm_v2_idconfig.csv"
+            id_config = f"../data/mapping_config_files/nwss_to_odm_v2_ids.csv"
             filter_config_file = "../data/odm_v2/filter.csv"
 
             max_processes = 1

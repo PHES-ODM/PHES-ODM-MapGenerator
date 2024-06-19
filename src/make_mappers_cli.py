@@ -177,7 +177,7 @@ if __name__ == "__main__":
             output_dir = Path(f"../gen/nwss_{dictionary_type}_to_v2")
             input_data_dir = "../../../PHES-ODM-Data/nwss/private_renamed/"
             input_max_rows = 10
-            id_config_file = f"../data/mapping_config_files/nwss_to_odm_v2_idconfig.csv"
+            id_config_file = f"../data/mapping_config_files/nwss_to_odm_v2_ids.csv"
             filter_config_file = "../data/mapping_config_files/nwss_to_odm_v2_filter.csv"
     else:
         args = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
