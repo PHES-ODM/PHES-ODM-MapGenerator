@@ -761,7 +761,7 @@ if __name__ == "__main__":
     # @TODO Remove extract_sheets, this is done in make_mappers_cli.py
     # Extract the required sheets from the NWSS to ODM 2 mapping file
     from utils.general_utils import extract_sheets
-    mapping_config_file = "../data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx"
+    mapping_config_file = "../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx"
     configs_dir = f"../gen/nwss_{dictionary_type}_to_v2/configs/"
     extract_sheets(mapping_config_file, ["maps", "wide", "enums"], configs_dir, output_names=["maps0", "wide0", "enums0"], na_values={}, default_na_values=[""])
 

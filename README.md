@@ -32,7 +32,7 @@ pip3 install -r requirements.txt
 
 ## Getting Familiar
 
-Currently both ODM v1 to ODM v2 and NWSS to ODM v2 are partially supported (ie. they are not yet complete). ODM v1 to ODM v2 involves parsing the ODM v2 data dictionary, whereas NWSS to ODM v2 uses a separate mapping configuration file (located at [data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx](data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx)). Mapping from ODM v1 to ODM v2 will be switched over to use a mapping configuration file in the near future. Therefore, if you're trying to get familiar with this repo and its code it is best to ignore ODM v1 to ODM v2 (including [src/make_v1_to_v2.py](src/make_v1_to_v2.py) and all code in [src/odm_v2](src/odm_v2)) and look at NWSS to ODM v2 instead. The main entrypoint for NWSS to ODM v2 is [src/make_mappers_cli.py](src/make_mappers_cli.py).
+Currently both ODM v1 to ODM v2 and NWSS to ODM v2 are partially supported (ie. they are not yet complete). ODM v1 to ODM v2 involves parsing the ODM v2 data dictionary, whereas NWSS to ODM v2 uses a separate mapping configuration file (located at [data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx](data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)). Mapping from ODM v1 to ODM v2 will be switched over to use a mapping configuration file in the near future. Therefore, if you're trying to get familiar with this repo and its code it is best to ignore ODM v1 to ODM v2 (including [src/make_v1_to_v2.py](src/make_v1_to_v2.py) and all code in [src/odm_v2](src/odm_v2)) and look at NWSS to ODM v2 instead. The main entrypoint for NWSS to ODM v2 is [src/make_mappers_cli.py](src/make_mappers_cli.py).
 
 ## ODM v1 to ODM v2
 
@@ -118,7 +118,7 @@ To generate the NWSS reporting to ODM v2 mapper specs, execute:
 cd src
 python3 make_mappers_cli.py --source_schema "../data/nwss_reporting/linkml/nwss_reporting.yaml" \
     --target_schema "../data/odm_v2/linkml/odm_v2.yaml" \
-    --mapping_excel_file "../data/mapping_config_files/NWSS-to-ODM-dictionary.xlsx" \
+    --mapping_excel_file "../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx" \
     --excel_maps_sheets "maps" \
     --excel_wide_sheets "wide" \
     --excel_enums_sheets "enums" \
