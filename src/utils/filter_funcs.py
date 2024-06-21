@@ -228,13 +228,13 @@ def do_copy_class(data: Dict[str, pd.DataFrame], cls: str, value: str, **kwargs)
 
 # Map specifying which function to call for each operation.
 FILTER_FUNCS = {
-    "drop_duplicates_keep_first": do_drop_duplicates_keep_first,
-    "drop_duplicates_keep_last": do_drop_duplicates_keep_last,
-    "exclude_equals": do_exclude_equals,
     "apply_filter": do_apply_filter,
-    "delete_filter": do_delete_filter,
     "copy_filter": do_copy_filter,
     "copy_class": do_copy_class,
     "delete_class": do_delete_class,
+    "drop_duplicates_keep_first": do_drop_duplicates_keep_first,
+    "drop_duplicates_keep_last": do_drop_duplicates_keep_last,
+    "delete_filter": do_delete_filter,
+    "exclude_equals": do_exclude_equals,
 }
 
