@@ -36,6 +36,8 @@ def call_filter_func(op: str, **kwargs):
         op (str): The operation to call. eg. "exclude_equals". This operation receives
             the keyword arguments in kwargs.
     """
+    if op not in FILTER_FUNCS:
+        raise ValueError(f"Unrecognized filter operation: '{op}'")
     FILTER_FUNCS[op](**kwargs)
 
 def set_named_filter(filt: pd.Series, name: str, filters: Dict[str, pd.Series]):
