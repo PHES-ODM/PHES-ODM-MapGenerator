@@ -135,13 +135,20 @@ def do_exclude_equals(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFram
         value (Any): The value. Any row where the slot is equal to this value will be excluded.
     """
     filt = get_named_filter(input_name, filters, data, cls)
-    
-    # Create the new filter
     df = data[cls]
-    if pd.isna(value) or value == "":
-        cur_filt = pd.isna(df[slot]) | (df[slot] == value)
+    
+    # Convert the value into a list if it isn't already a list
+    if not isinstance(value, list):
+        value = [value]
+        
+    # Calculate the filter that includes any row where the slot is found in value (which is an array).
+    # We will negate this filter and AND it with filt.
+    if len([v for v in value if pd.isna(v) or v == ""]) > 0:
+        # Treat NAs and "" as the same
+        cur_filt = pd.isna(df[slot]) | (df[slot] == "")
     else:
-        cur_filt = df[slot] == value
+        cur_filt = pd.Series([False] * len(filt))
+    cur_filt = cur_filt | df[slot].isin(value)
         
     # Apply the filter
     init_num_rows = filt.sum()
@@ -230,3 +237,4 @@ FILTER_FUNCS = {
     "copy_class": do_copy_class,
     "delete_class": do_delete_class,
 }
+
