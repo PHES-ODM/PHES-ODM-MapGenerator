@@ -2,14 +2,15 @@
 Utility functions for ODM and LinkML.
 """
 
+import sys
+import os
 from pathlib import Path
 import pandas as pd
 from pandas._libs.parsers import STR_NA_VALUES
-import os
 import yaml
 from typing import Union, List, Optional, Any, Dict, Tuple
 import logging
-import sys
+import re
 
 from linkml_runtime import SchemaView
 
@@ -347,3 +348,46 @@ def rename_items(items: List[str], renames: Dict[str, str]) -> List[str]:
     for orig, target in renames.items():
         items[items.index(orig)] = target
     return items
+
+def parse_df_values(df: pd.DataFrame, inline: bool=True) -> pd.DataFrame:
+    """Try to parse and convert all values in the DataFrame as numbers (floats or ints).
+    
+    This is useful if we want to convert strings to numbers.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to parse.
+        inline (bool, optional): If True then modify the DataFrame inline. If False then
+            the orginal DataFrame is left unchanged and a parsed copy is returned. Defaults to True.
+
+    Returns:
+        pd.DataFrame: _description_
+    """
+    if not inline:
+        df = df.copy()
+    for col in df.columns:
+        df[col] = df[col].map(parse_numeric)
+    return df
+    
+def parse_numeric(value: str) -> Any:
+    """Try to parse a string as a numeric (int or float).
+
+    Args:
+        value (str): The string value to convert to an int or float. If it can be converted to
+            an int (ie. a number with no decimal point) then the int is returned. If not then
+            if it can be converted to a float then the float is returned. Otherwise the value
+            is returned unchanged.
+
+    Returns:
+        Any: The numeric value of the string. Either an int or float, or if it can't be converted
+            to numeric then value is returned unchanged.
+    """
+    if not isinstance(value, str) or not re.search(r"[0-9]", value):
+        return value
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        pass
+    try:
+        return float(value)
+    except (TypeError, ValueError, OverflowError):
+        return value
