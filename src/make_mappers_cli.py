@@ -149,21 +149,23 @@ if __name__ == "__main__":
             # output_dir = f"../data/test/output"
             # input_data_dir = f"../data/test/output/uncleaned_data"
             # input_max_rows = None
-            # id_config = None
+            # id_config_file = None
+            # filter_config_file = None
 
-            # source_schema = f"../data/clothing/clothing.yaml"
-            # target_schema = f"../data/clothing/clothing_2.yaml"
-            # mapping_excel_file = "../data/clothing/clothing-mapping.xlsx"
+            # source_schema = f"../data/lights/lights.yaml"
+            # target_schema = f"../data/lights/lights_inventory.yaml"
+            # mapping_excel_file = "../data/lights/lights-mapping.xlsx"
             # excel_maps_sheets = ["maps"]
             # excel_wide_sheets = None
             # excel_enums_sheets = ["enums"]
             # maps_files = []
             # wide_files = []
             # enums_files = []
-            # output_dir = f"../data/clothing/output"
-            # input_data_dir = f"../data/clothing/data"
+            # output_dir = f"../data/lights/output"
+            # input_data_dir = f"../data/lights/data"
             # input_max_rows = None
-            # id_config = None
+            # id_config_file = None
+            # filter_config_file = None
             
             source_schema = f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
             target_schema = f"../data/odm_v2/linkml/odm_v2.yaml"
@@ -220,8 +222,8 @@ if __name__ == "__main__":
 
         # Prepare data
         cleaned_data_dir = output_dir / "cleaned_data"
-        # clear_dirs([cleaned_data_dir, mapped_dir])
-        # _ = clean_data_directory(opts.input_data_dir, cleaned_data_dir, schema=opts.source_schema, max_rows=opts.input_max_rows)
+        clear_dirs([cleaned_data_dir, mapped_dir])
+        _ = clean_data_directory(opts.input_data_dir, cleaned_data_dir, schema=opts.source_schema, max_rows=opts.input_max_rows)
 
         # Map the data
         max_processes = 1
