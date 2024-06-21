@@ -96,7 +96,7 @@ def do_drop_duplicates(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFra
 
     set_named_filter(filt, output_name, filters)
     
-def do_drop_duplicates_keep_first(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, value: Any, **kwargs):
+def do_drop_duplicates_keep_first(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, **kwargs):
     """Drop all duplicates in a class and slot, keeping the first duplicate for each set of duplicates.
 
     Args:
@@ -109,7 +109,7 @@ def do_drop_duplicates_keep_first(filters: Dict[str, pd.Series], data: Dict[str,
     """
     do_drop_duplicates(filters=filters, data=data, input_name=input_name, output_name=output_name, cls=cls, slot=slot, keep_first=True, **kwargs)
 
-def do_drop_duplicates_keep_last(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, value: Any, **kwargs):
+def do_drop_duplicates_keep_last(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, **kwargs):
     """Drop all duplicates in a class and slot, keeping the last duplicate for each set of duplicates.
 
     Args:
@@ -181,6 +181,23 @@ def do_apply_filter(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame]
     num_rows = len(data[value])
     logger.info(f"Saved data from filter {input_name} to class {cls}, number of rows changed from {init_num_rows} to {num_rows} (Change: {num_rows - init_num_rows})")
 
+def do_copy_filter(filters: Dict[str, pd.Series], input_name: str, output_name: str, **kwargs):
+    """Copy a named filter (called input_name) to a new name (output_name). If input_name does not exist
+    then a ValueError exception is thrown. If a filter with name output_name already exists it is overwritten.
+
+    Args:
+        filters (Dict[str, pd.Series]): All filters. Keys are the names and values are the boolean filters.
+        input_name (str): The filter to copy. A filter with this name must already exist.
+        output_name (str): The name to copy the filter to. If a filter with this name already exists it is overwritten.
+
+    Raises:
+        ValueError: A filter with name input_name does not exist.
+    """
+    if input_name not in filters:
+        raise ValueError(f"No filter with name '{input_name}' found.")
+    filt = get_named_filter(input_name, filters, None, None)
+    set_named_filter(filt, output_name, filters)
+
 def do_delete_class(data: Dict[str, pd.DataFrame], cls: str, **kwargs):
     """Delete the class (DataFrame) named cls.
 
@@ -209,6 +226,7 @@ FILTER_FUNCS = {
     "exclude_equals": do_exclude_equals,
     "apply_filter": do_apply_filter,
     "delete_filter": do_delete_filter,
+    "copy_filter": do_copy_filter,
     "copy_class": do_copy_class,
     "delete_class": do_delete_class,
 }
