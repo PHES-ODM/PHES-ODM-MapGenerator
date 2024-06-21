@@ -63,7 +63,7 @@ from linkml_map.session import Session
 from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model import SlotDefinition
 
-from utils.general_utils import save_data_frame, read_data_frame, get_logger, order_columns, choose_ignore_case_value, get_class_name_from_file_name, clear_dirs
+from utils.general_utils import save_data_frame, read_data_frame, get_logger, order_columns, choose_ignore_case_value, get_class_name_from_file_name, clear_dirs, parse_df_values
 from utils.auto_id import gen_auto_ids
 from utils.filter import run_filter
 
@@ -255,8 +255,8 @@ def run_mapper(data: Dict[str, List], session: Session, data_output_dir: Union[s
             class_definition = target_schema.induced_class(target_type)
             all_slots = list(class_definition.attributes.keys())
             unrecognized = [s for s in df.columns if s not in all_slots]
-            # if len(unrecognized) > 0:
-            #     raise ValueError(f"Found unrecognized slots in mapped data for class '{target_type}': {unrecognized}")
+            if len(unrecognized) > 0:
+                raise ValueError(f"Found unrecognized slots in mapped data for class '{target_type}': {unrecognized}")
             missing = [s for s in all_slots if s not in df.columns]
             if len(missing) > 0:
                 df[missing] = None
@@ -460,6 +460,7 @@ def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Pat
         logger.info("Combining and saving DataFrames...")
         for target_type, all_df in all_mapped_data.items():
             df = pd.concat(all_df, axis=0)
+            parse_df_values(df, inline=True)
             # Retain the original order by sorting by ROW_NUMBER. ROW_NUMBER was added in code with the integer row number,
             # so that we can sort the output DataFrame by row number.
             df = sort_mapped_data(df, drop_sorting_column=True)
