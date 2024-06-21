@@ -9,16 +9,16 @@ Filter DataFrames (or data on disk) using configuration files.
 # to output_data_dir. The input file names become the class names (as found in the
 # filtering config file)
 filtered_data = run_filter(filter_config_file="filter_config_file.csv", 
-           data_dir="data/input", 
-           output_data_dir="data/output")
+                           data_dir="data/input", 
+                           output_data_dir="data/output")
            
 # Filter DataFrames.
 data = {
-    "measures" : measure_df,
+    "measures" : measures_df,
     "qualityReports" : qualityReports_df,
 }
 filtered_data = run_filter(filter_config_file="filter_config_file.csv", 
-           data=data)
+                           data=data)
 ```
 """
 import sys
@@ -130,7 +130,7 @@ def run_filter(filter_config_file: Union[Path, str], *, data: Dict[str, pd.DataF
         value = config_row[FilterConfigColumns.VALUE]
         
         if cls and cls not in data:
-            logger.info(f"Not running filter on class '{cls}', data for class does not exist")
+            # logger.info(f"Not running filter on class '{cls}', data for class does not exist")
             continue
         
         logger.info(f"Running input filter '{input_filter}', output filter '{output_filter}' with operation '{op}' on class '{cls}', slot '{slot}', and value '{value}'")
