@@ -462,8 +462,7 @@ def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Pat
             df = pd.concat(all_df, axis=0)
             # Retain the original order by sorting by ROW_NUMBER. ROW_NUMBER was added in code with the integer row number,
             # so that we can sort the output DataFrame by row number.
-            # df[TrackingColumns.ROW_NUMBER] = df[TrackingColumns.ROW_NUMBER].astype(int)
-            df = df.sort_values(TrackingColumns.ROW_NUMBER, axis=0, kind="stable").drop(TrackingColumns.ROW_NUMBER, axis=1).reset_index(drop=True)
+            df = sort_mapped_data(df, drop_sorting_column=True)
             data = { target_type : df }
             
             # Filter the data. 
@@ -481,6 +480,26 @@ def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Pat
     logger.info(f"Finished all mappings in {datetime.now() - tic}")
     
     return all_mapped_data
+
+def sort_mapped_data(df: pd.DataFrame, *, drop_sorting_column: bool) -> pd.DataFrame:
+    """Sort a mapped DataFrame using the sorting column that was injected into the DataFrame before mapping occurred, to
+    maintain the original order of rows and to also ensure the order of the rows match the ordering in the mapping configuration
+    file's wide map configuration.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to sort, which has already undergone mapping. The original DataFrame is left
+            unchanged and a sorted version is returned.
+        drop_sorting_column (bool): If True then drop the sorting column that was injected into the DataFrame. The
+            sorting column should only be dropped if no further sorting of the DataFrame is required.
+
+    Returns:
+        pd.DataFrame: The sorted DataFrame.
+    """
+    df = df.sort_values(TrackingColumns.ROW_NUMBER, axis=0, kind="stable")
+    if drop_sorting_column:
+        df = df.drop(TrackingColumns.ROW_NUMBER, axis=1)
+    df = df.reset_index(drop=True)
+    return df
 
 if __name__ == "__main__":
     if "get_ipython" in globals():
