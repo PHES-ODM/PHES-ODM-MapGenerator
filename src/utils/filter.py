@@ -114,9 +114,15 @@ def run_filter(filter_config_file: Union[Path, str], *, data: Dict[str, pd.DataF
     
     config_df = read_data_frame(filter_config_file, keep_default_na=False)
     config_df = config_df.astype(str)
+    
+    #  Drop empty rows
+    config_df = config_df[config_df.apply(lambda x: (x != "").any(), axis=1)]
+
+    # If no data is provided, then load the data from data_dir
     if data is None:
         data = load_data(data_dir, recognized_classes=list(config_df[FilterConfigColumns.CLASS].unique()))
     else:
+        # Make a shallow copy of the dictionary, since we might be changing it. We return the copy.
         data = data.copy()
     
     filters = {}
