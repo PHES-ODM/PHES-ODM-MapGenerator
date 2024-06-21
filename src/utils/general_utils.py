@@ -61,40 +61,52 @@ def order_columns(df: pd.DataFrame, column_order: List[str]) -> pd.DataFrame:
     return df[columns].copy()
 
 def save_data_frame(df: pd.DataFrame, output_file: Union[str, Path], strip: bool = True, **kwargs):
-    """Save a Pandas DataFrame to disk as a TSV or CSV, using the correct separator for the
-    file extension.
+    """Save a Pandas DataFrame to disk as a TSV, CSV, or YAML file.
 
     Args:
         df (pd.DataFrame): The DataFrame to save.
-        output_file (Union[str, Path]): The output file to save to. If the extension is ".tsv" or ".txt" then tab
-            delimeters are used. Any other extension will have comma delimeters.
+        output_file (Union[str, Path]): The output file to save to. Can have extension ".csv", ".tsv",
+            ".txt", ".yaml", or ".yml". If the extension is ".tsv" or ".txt" then tab delimeters are used.
         strip (bool): If True then strip leading and trailing whitespace from all string values
             in the DataFrame. (Defaults to True)
-        **kwargs: Additional key-word arguments to pass to df.to_csv.
+        **kwargs: Additional key-word arguments to pass to df.to_csv for character-separated formats.
     """
     if strip:
         df = strip_whitespace(df)
     if os.path.dirname(output_file):
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    df.to_csv(output_file, sep="\t" if os.path.splitext(output_file)[1] in [".tsv", ".txt"] else ",", **kwargs)
-    
+    ext = os.path.splitext(output_file)[1]
+    if ext in [".tsv", ".txt", ".csv"]:
+        df.to_csv(output_file, sep="\t" if ext in [".tsv", ".txt"] else ",", **kwargs)
+    elif ext in [".yaml", ".yml"]:
+        with open(output_file, "w") as f:
+            data = { c : list(df[c]) for c in df.columns }
+            yaml.dump(data, f)
+    else:
+        raise ValueError(f"Extension not supported in save_data_frame: {output_file}")
+        
 def read_data_frame(file: str, **kwargs) -> pd.DataFrame:
-    """Read a Pandas DataFrom from disk, using the correct separator based on the file extension.
+    """Read a Pandas DataFrom from disk.
 
     Args:
-        file (str): The file to read. If the extension is ".tsv" or ".txt" then tab
-            delimeters are used. Any other extension will have comma delimeters.
-        **kwargs: Additional key-word arguments passed to pd.read_csv.
+        file (str): The file to read. Supports ".csv", ".tsv", ".txt", ".yaml", and ".yml" files. If the extension
+            is ".tsv" or ".txt" then tab delimeters are used.
+        **kwargs: Additional key-word arguments passed to pd.read_csv for character-separated file formats.
 
     Returns:
         pd.DataFrame: The DataFrame loaded from the file.
     """
     ext = os.path.splitext(file)[1].lower()
-    if ext in [".tsv", ".txt"]:
-        sep = "\t"
-    else:
-        sep = ","
-    df = pd.read_csv(file, sep=sep, low_memory=False, **kwargs)
+    if ext in [".tsv", ".txt", ".csv"]:
+        if ext in [".tsv", ".txt"]:
+            sep = "\t"
+        else:
+            sep = ","
+        df = pd.read_csv(file, sep=sep, low_memory=False, **kwargs)
+    elif ext in [".yaml", ".yml"]:
+        with open(file, "r") as f:
+            data = yaml.safe_load(f)
+        df = pd.DataFrame(data)
     return df
 
 def strip_whitespace(df: pd.DataFrame) -> pd.DataFrame:
