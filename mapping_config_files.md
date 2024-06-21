@@ -50,6 +50,10 @@ def a_or_b(a, b):
 target = a_or_b(src.sample_type, src.source_type)
 ```
 
+If the value of `targetSlot` should be a constant, simply set `targetExpr` to the constant in double quotes (if a string), or enter the value unchanged (if a number or boolean).
+
+If `targetExpr` is set, then `sourceValue` and `targetValue` should be left empty.
+
 ### customData
 
 An optional value, in the form of a JSON string. The dictionary in the slot derivation for this row gets updated with the values in this column. For example, the following value in `customData` will set the `expr` key in the slot derivation for the `targetSlot`. The slot will be set to `False` if `dashboard_ignore` or `analysis_ignore` in the source dataset are equal to `yes`:
