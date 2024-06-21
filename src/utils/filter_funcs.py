@@ -9,7 +9,7 @@ The keys of this dictionary are filter names (which are typically not class name
 done we apply these filters to the DataFrames in the `data` parameter, by specifying a filter name (in the `filters` 
 dictionary) and a class to apply the filter to (a DataFrame in `data`).
 
-Filtering functions can take the following arguments:
+Filtering functions can take the following keyword arguments:
 
 - filters (Dict[str, pd.Series]): All filters. Keys are the filter names and values are the boolean filters.
 - data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.
@@ -18,6 +18,8 @@ Filtering functions can take the following arguments:
 - cls (str): The class we are applying the filter to.
 - slot (str): The slot (in the class) we are performing the operation on.
 - value (Any): The value, whose meaning depends on which operation we're performing.
+
+All the arguments above are optional, to avoid errors each filtering function should also include the parameter **kwargs.
 """
 
 from typing import Dict, Any
@@ -74,6 +76,19 @@ def get_named_filter(name: str, filters: Dict[str, pd.Series], data: Dict[str, p
     return filt
 
 def do_drop_duplicates(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, keep_first: bool, **kwargs):
+    """Drop all duplicates in a class and slot, keeping either the first or last duplicate for each set of duplicates,
+    according to keep_first.
+
+    Args:
+        filters (Dict[str, pd.Series]): All filters. Keys are the names and values are the boolean filters.
+        data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.
+        input_name (str): The input name. We use this as the initial filter.
+        output_name (str): The output name. After ANDing with the input filter we save the resulting filter to this name.
+        cls (str): The class to drop duplicates in.
+        slot (str): The slot in the class to drop duplicates in.
+        keep_first (bool): If True then in each set of duplicates we keep the first duplicate row. If False we
+            keep the last duplicate row.
+    """
     filt = get_named_filter(input_name, filters, data, cls)
 
     df = data[cls]
@@ -82,9 +97,29 @@ def do_drop_duplicates(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFra
     set_named_filter(filt, output_name, filters)
     
 def do_drop_duplicates_keep_first(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, value: Any, **kwargs):
+    """Drop all duplicates in a class and slot, keeping the first duplicate for each set of duplicates.
+
+    Args:
+        filters (Dict[str, pd.Series]): All filters. Keys are the names and values are the boolean filters.
+        data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.
+        input_name (str): The input name. We use this as the initial filter.
+        output_name (str): The output name. After ANDing with the input filter we save the resulting filter to this name.
+        cls (str): The class to drop duplicates in.
+        slot (str): The slot in the class to drop duplicates in.
+    """
     do_drop_duplicates(filters=filters, data=data, input_name=input_name, output_name=output_name, cls=cls, slot=slot, keep_first=True, **kwargs)
 
 def do_drop_duplicates_keep_last(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, value: Any, **kwargs):
+    """Drop all duplicates in a class and slot, keeping the last duplicate for each set of duplicates.
+
+    Args:
+        filters (Dict[str, pd.Series]): All filters. Keys are the names and values are the boolean filters.
+        data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.
+        input_name (str): The input name. We use this as the initial filter.
+        output_name (str): The output name. After ANDing with the input filter we save the resulting filter to this name.
+        cls (str): The class to drop duplicates in.
+        slot (str): The slot in the class to drop duplicates in.
+    """
     do_drop_duplicates(filters=filters, data=data, input_name=input_name, output_name=output_name, cls=cls, slot=slot, keep_first=False, **kwargs)
 
 def do_exclude_equals(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, value: Any, **kwargs):
@@ -151,10 +186,21 @@ def do_delete_class(data: Dict[str, pd.DataFrame], cls: str, **kwargs):
 
     Args:
         data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.
-        cls (str): The class to delete from the data.
+        cls (str): The class to delete from the data. If no such class exists then nothing is changed.
     """
     if cls in data:
         del(data[cls])
+
+def do_copy_class(data: Dict[str, pd.DataFrame], cls: str, value: str, **kwargs):
+    """Copy a class (DataFrame) to a new name in the data.
+
+    Args:
+        data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.        
+        cls (str): The class to copy.
+        value (str): The name to copy the class to. If a DataFrame/class already exists with this name
+            it is overwritten.
+    """
+    data[value] = data[cls].copy()
 
 # Map specifying which function to call for each operation.
 FILTER_FUNCS = {
@@ -163,5 +209,6 @@ FILTER_FUNCS = {
     "exclude_equals": do_exclude_equals,
     "apply_filter": do_apply_filter,
     "delete_filter": do_delete_filter,
+    "copy_class": do_copy_class,
     "delete_class": do_delete_class,
 }
