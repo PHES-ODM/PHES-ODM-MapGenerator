@@ -1,4 +1,6 @@
 #%%
+# %load_ext autoreload
+# %autoreload 2
 """
 Filter DataFrames (or data on disk) using configuration files.
 
@@ -26,13 +28,14 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from typing import Union, Dict, List, Optional
+import yaml
 import pandas as pd
 import argparse
 from pathlib import Path
 import os
 from datetime import datetime
 
-from utils.general_utils import read_data_frame, save_data_frame, get_logger
+from utils.general_utils import read_data_frame, save_data_frame, parse_df_values, get_logger
 from utils.filter_funcs import call_filter_func
 
 logger = get_logger(__name__)
@@ -74,6 +77,10 @@ def load_data(data_dir: Union[Path, str], recognized_classes: Optional[List[str]
             data[file_class] = df
         else:
             data[file_class] = pd.concat([data[file_class], df], ignore_index=True).reset_index(drop=True)
+
+    for df in data.values():
+        parse_df_values(df, inline=True)
+
     return data
 
 def save_data(data: Dict[str, pd.DataFrame], output_data_dir: Union[Path, str]):
@@ -115,8 +122,10 @@ def run_filter(filter_config_file: Union[Path, str], *, data: Dict[str, pd.DataF
     config_df = read_data_frame(filter_config_file, keep_default_na=False)
     config_df = config_df.astype(str)
     
-    #  Drop empty rows
+    # Drop empty rows
     config_df = config_df[config_df.apply(lambda x: (x != "").any(), axis=1)]
+    # Load values as YAML
+    config_df[FilterConfigColumns.VALUE] = config_df[FilterConfigColumns.VALUE].map(yaml.safe_load)
 
     # If no data is provided, then load the data from data_dir
     if data is None:
