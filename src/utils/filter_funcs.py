@@ -73,6 +73,20 @@ def get_named_filter(name: str, filters: Dict[str, pd.Series], data: Dict[str, p
     filt = filters[name]
     return filt
 
+def do_drop_duplicates(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, keep_first: bool, **kwargs):
+    filt = get_named_filter(input_name, filters, data, cls)
+
+    df = data[cls]
+    filt = filt & ~df[slot].duplicated(keep="first" if keep_first else "last")
+
+    set_named_filter(filt, output_name, filters)
+    
+def do_drop_duplicates_keep_first(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, value: Any, **kwargs):
+    do_drop_duplicates(filters=filters, data=data, input_name=input_name, output_name=output_name, cls=cls, slot=slot, keep_first=True, **kwargs)
+
+def do_drop_duplicates_keep_last(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, value: Any, **kwargs):
+    do_drop_duplicates(filters=filters, data=data, input_name=input_name, output_name=output_name, cls=cls, slot=slot, keep_first=False, **kwargs)
+
 def do_exclude_equals(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, value: Any, **kwargs):
     """Exclude operation. Exclude any row where the slot is equal to the value.
 
@@ -103,7 +117,18 @@ def do_exclude_equals(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFram
     
     set_named_filter(filt, output_name, filters)
     
-def do_save(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, cls: str, value: Any, **kwargs):
+def do_delete_filter(filters: Dict[str, pd.Series], input_name: str, **kwargs):
+    """Delete the filter named input_name. After deleting, the filter will no longer exist
+    but can be reacreated by a subsequent row that references the filter by the same name.
+
+    Args:
+        filters (Dict[str, pd.Series]): All filters. Keys are the names and values are the boolean filters.
+        input_name (str): Name of the filter to delete.
+    """
+    if input_name in filters:
+        del(filters[input_name])
+
+def do_apply_filter(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, cls: str, value: Any, **kwargs):
     """Apply the filter from the input name to the DataFrame for class cls, and save the resulting DataFrame to the class
     specified in value.
 
@@ -121,8 +146,22 @@ def do_save(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_
     num_rows = len(data[value])
     logger.info(f"Saved data from filter {input_name} to class {cls}, number of rows changed from {init_num_rows} to {num_rows} (Change: {num_rows - init_num_rows})")
 
+def do_delete_class(data: Dict[str, pd.DataFrame], cls: str, **kwargs):
+    """Delete the class (DataFrame) named cls.
+
+    Args:
+        data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.
+        cls (str): The class to delete from the data.
+    """
+    if cls in data:
+        del(data[cls])
+
 # Map specifying which function to call for each operation.
 FILTER_FUNCS = {
+    "drop_duplicates_keep_first": do_drop_duplicates_keep_first,
+    "drop_duplicates_keep_last": do_drop_duplicates_keep_last,
     "exclude_equals": do_exclude_equals,
-    "save": do_save,
+    "apply_filter": do_apply_filter,
+    "delete_filter": do_delete_filter,
+    "delete_class": do_delete_class,
 }
