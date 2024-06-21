@@ -70,8 +70,9 @@ from utils.filter import run_filter
 logger = get_logger(__name__)
 
 # If True, then filter the mapped data after merging all mapped data. If False then filter before merging all mapped data.
-# The end result will be the same.
-FILTER_AFTER_MERGING = False
+# This should normally be True, since some filtering operations require the entire output table instead of
+# subsets of it (eg. drop_duplicates)
+FILTER_AFTER_MERGING = True
 
 # During mapping several DataFrames are created, and there may be multiple DataFrames for a single class.
 # If SAVE_UNMERGED_DATA is True (and a data_output_dir is specified) then we save these DataFrames to disk as separate files.
@@ -153,7 +154,7 @@ def load_data(data_dir: Union[str, Path], schema: Union[str, SchemaView], id_con
             
             # Reorient the data to a format recognized by the mapper (an array of rows, where
             # each row is a dictionary of the form {column_name:value, ...})
-            cur_data = [{ c: v for c, v in r.items() } for _, r in df.iterrows() ]
+            cur_data = [{ c: v for c, v in r.items() } for _, r in df.iterrows() ]    
             if class_name not in data:
                 data[class_name] = []
             data[class_name].extend(cur_data)
@@ -253,6 +254,9 @@ def run_mapper(data: Dict[str, List], session: Session, data_output_dir: Union[s
         if target_schema is not None:
             class_definition = target_schema.induced_class(target_type)
             all_slots = list(class_definition.attributes.keys())
+            unrecognized = [s for s in df.columns if s not in all_slots]
+            # if len(unrecognized) > 0:
+            #     raise ValueError(f"Found unrecognized slots in mapped data for class '{target_type}': {unrecognized}")
             missing = [s for s in all_slots if s not in df.columns]
             if len(missing) > 0:
                 df[missing] = None
@@ -291,7 +295,8 @@ def _run_mapper_with_kwargs(kwargs: Dict) -> Dict[str, List[Dict]]:
 
 def make_data_splits(data: Dict[str, List], num_splits: int, min_split_size: int=100) -> List[Dict[str, List[Dict]]]:
     """Split the data into multiple smaller data splits, to make it easier to use for multiprocessing.
-    Each split can be used by run_mapper.
+    Each split can be used by run_mapper. Each table is split into up to num_splits splits, depending
+    on how many rows are in each table.
 
     Args:
         data (Dict[str, List]): The data to split. The keys are the source table names and the values
@@ -459,15 +464,19 @@ def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Pat
             # so that we can sort the output DataFrame by row number.
             # df[TrackingColumns.ROW_NUMBER] = df[TrackingColumns.ROW_NUMBER].astype(int)
             df = df.sort_values(TrackingColumns.ROW_NUMBER, axis=0, kind="stable").drop(TrackingColumns.ROW_NUMBER, axis=1).reset_index(drop=True)
+            data = { target_type : df }
             
             # Filter the data. 
             if FILTER_AFTER_MERGING and filter_config_file:
-                filtered_data = run_filter(filter_config_file, data={ target_type: df })
-                df = filtered_data[target_type]
-            
-            output_data_file = os.path.join(data_output_dir, f"{target_type}.csv")
-            logger.info(f"Saving merged mapped data file for {target_type} ({len(all_df)} source frame(s), {len(df.index)} rows): {output_data_file}")
-            save_data_frame(df, output_data_file, index=False)
+                data = run_filter(filter_config_file, data=data)
+
+            # Save data to disk
+            for target_class, target_df in data.items():
+                output_data_file = os.path.join(data_output_dir, f"{target_class}.csv")
+                if os.path.exists(output_data_file):
+                    raise ValueError(f"Output data file already exists: {output_data_file}")
+                logger.info(f"Saving merged mapped data file for {target_class} ({len(all_df)} source frame(s), {len(target_df.index)} rows): {output_data_file}")
+                save_data_frame(target_df, output_data_file, index=False)
 
     logger.info(f"Finished all mappings in {datetime.now() - tic}")
     
@@ -482,6 +491,15 @@ if __name__ == "__main__":
             # data_dir = "../gen/odm_v1_to_v2/cleaned_data"
             # output_dir = "../gen/odm_v1_to_v2/mapped_data"
             # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
+            # id_config = None
+            # filter_config_file = None
+
+            # Lights test
+            # source_schema = f"../data/lights/lights.yaml"
+            # mapper_dir = f"../data/lights/output/mappers"
+            # data_dir = f"../data/lights/data"
+            # output_dir = f"../data/lights/output/mapped_data"
+            # target_schema = "../data/lights/lights_simple.yaml"
             # id_config = None
             # filter_config_file = None
 
