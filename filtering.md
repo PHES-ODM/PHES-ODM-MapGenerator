@@ -11,7 +11,7 @@ In this document, a `class` is the name of a table, which is synonymous with a D
 The following is an example filters configuration. It will drop all rows in the `measures` table where the value in the `measure` or `unit` column is `<ignore>`, or any row that has a `value` of blank or `-1`. It will also perform similar filtering to the `protocolSteps` table.
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
-|-----------|------------|--------------|-----------|--------------|--------------|
+|:----------|:-----------|:-------------|:----------|:-------------|:-------------|
 |0          |0           |measures      |measure    |exclude_equals|<ignore>      |
 |0          |0           |measures      |unit       |exclude_equals|<ignore>      |
 |0          |0           |measures      |value      |exclude_equals|["", -1]      |
@@ -34,7 +34,7 @@ The value found in the `value` column of the configuration is parsed as YAML (no
 ### apply_filter
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
-|-----------|------------|--------------|-----------|--------------|--------------|
+|:----------|:-----------|:-------------|:----------|:-------------|:-------------|
 |0          |            |measures      |           |apply_filter  |measures      |
 
 Apply the filter in `inputFilter` to the DataFrame in `class`, and save the filtered DataFrame to the name in `value`. If a class with the name already exists then it is overwritten.
@@ -42,7 +42,7 @@ Apply the filter in `inputFilter` to the DataFrame in `class`, and save the filt
 ### copy_filter
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
-|-----------|------------|--------------|-----------|--------------|--------------|
+|:----------|:-----------|:-------------|:----------|:-------------|:-------------|
 |0          |1           |              |           |copy_filter   |              |
 
 Copy the filter in `inputFilter` and name the copy `outputFilter`. Once copied it can be used in any subsequent row of the configuration.
@@ -50,7 +50,7 @@ Copy the filter in `inputFilter` and name the copy `outputFilter`. Once copied i
 ### copy_class
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
-|-----------|------------|--------------|-----------|--------------|--------------|
+|:----------|:-----------|:-------------|:----------|:-------------|:-------------|
 |           |            |measures      |           |copy_class    |measures2     |
 
 Copy the class/DataFrame in `class` and save it as the name in `value`. If a class with the same name already exists then it is overwritten. No filter is applied to the DataFrame when copying. To apply an existing filter, the `apply_filter` operation must be performed (either before or after copying the class). After copying the DataFrame it can be used in any subsequent row of the configuration.
@@ -58,7 +58,7 @@ Copy the class/DataFrame in `class` and save it as the name in `value`. If a cla
 ### delete_class
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
-|-----------|------------|--------------|-----------|--------------|--------------|
+|:----------|:-----------|:-------------|:----------|:-------------|:-------------|
 |           |            |measures      |           |delete_class  |              |
 
 Delete the class (DataFrame) specified by `class`.
@@ -66,7 +66,7 @@ Delete the class (DataFrame) specified by `class`.
 ### drop_duplicates_keep_first
 
 |inputFilter|outputFilter|class         |slot        |operation                  |value         |
-|-----------|------------|--------------|------------|---------------------------|--------------|
+|:----------|:-----------|:-------------|:-----------|:--------------------------|:-------------|
 |0          |0           |measures      |measureRepID|drop_duplicates_keep_first |              |
 
 Modify the filter specified by `inputFilter` to drop rows in class `class` where the value in column `slot` is a duplicate. If duplicates are found then only the first duplicate in the set is retained and the others are dropped. The resulting filter is saved in `outputFilter`.
@@ -74,7 +74,7 @@ Modify the filter specified by `inputFilter` to drop rows in class `class` where
 ### drop_duplicates_keep_last
 
 |inputFilter|outputFilter|class         |slot        |operation                  |value         |
-|-----------|------------|--------------|------------|---------------------------|--------------|
+|:----------|:-----------|:-------------|:-----------|:--------------------------|:-------------|
 |0          |0           |measures      |measureRepID|drop_duplicates_keep_last  |              |
 
 Modify the filter specified by `inputFilter` to drop rows in class `class` where the value in column `slot` is a duplicate. If duplicates are found then only the last duplicate in the set is retained and the others are dropped. The resulting filter is saved in `outputFilter`.
@@ -82,7 +82,7 @@ Modify the filter specified by `inputFilter` to drop rows in class `class` where
 ### delete_filter
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
-|-----------|------------|--------------|-----------|--------------|--------------|
+|:----------|:-----------|:-------------|:----------|:-------------|:-------------|
 |0          |            |              |           |delete_filter |              |
 
 Delete the filter specified by `inputFilter`.
@@ -90,7 +90,7 @@ Delete the filter specified by `inputFilter`.
 ### exclude_equals
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
-|-----------|------------|--------------|-----------|--------------|--------------|
+|:----------|:-----------|:-------------|:----------|:-------------|:-------------|
 |0          |0           |measures      |measure    |exclude_equals|<ignore>      |
 
 Modify the filter specified by `inputFilter` to exclude any row that has a value found in the `value` column of the configuration. Multiple values to match can be specified using arrays, such as `["", -1]` (which will exclude rows where the slot is blank or -1). The resulting filter will be saved with the name in `outputFilter`.
