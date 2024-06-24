@@ -77,9 +77,9 @@ def get_named_filter(name: str, filters: Dict[str, pd.Series], data: Dict[str, p
     filt = filters[name]
     return filt
 
-def do_drop_duplicates(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, keep_first: bool, **kwargs):
+def do_drop_duplicates(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, value: str, **kwargs):
     """Drop all duplicates in a class and slot, keeping either the first or last duplicate for each set of duplicates,
-    according to keep_first.
+    according to value.
 
     Args:
         filters (Dict[str, pd.Series]): All filters. Keys are the names and values are the boolean filters.
@@ -88,42 +88,23 @@ def do_drop_duplicates(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFra
         output_name (str): The output name. After ANDing with the input filter we save the resulting filter to this name.
         cls (str): The class to drop duplicates in.
         slot (str): The slot in the class to drop duplicates in.
-        keep_first (bool): If True then in each set of duplicates we keep the first duplicate row. If False we
-            keep the last duplicate row.
+        value (str): If "keep_first" (default) then keep the first row among all duplicates. If "keep_last" then keep the
+            last row among all duplicates.
     """
     filt = get_named_filter(input_name, filters, data, cls)
 
     df = data[cls]
-    filt = filt & ~df[slot].duplicated(keep="first" if keep_first else "last")
+    if value == "keep_first":
+        keep = "first"
+    elif value == "keep_last":
+        keep = "last"
+    else:
+        raise ValueError(f"Unrecognized value for drop_duplicates: '{value}'")
+    new_filt = ~df[slot][filt].duplicated(keep=keep)
+    filt = filt & new_filt
 
     set_named_filter(filt, output_name, filters)
     
-def do_drop_duplicates_keep_first(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, **kwargs):
-    """Drop all duplicates in a class and slot, keeping the first duplicate for each set of duplicates.
-
-    Args:
-        filters (Dict[str, pd.Series]): All filters. Keys are the names and values are the boolean filters.
-        data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.
-        input_name (str): The input name. We use this as the initial filter.
-        output_name (str): The output name. After ANDing with the input filter we save the resulting filter to this name.
-        cls (str): The class to drop duplicates in.
-        slot (str): The slot in the class to drop duplicates in.
-    """
-    do_drop_duplicates(filters=filters, data=data, input_name=input_name, output_name=output_name, cls=cls, slot=slot, keep_first=True, **kwargs)
-
-def do_drop_duplicates_keep_last(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, **kwargs):
-    """Drop all duplicates in a class and slot, keeping the last duplicate for each set of duplicates.
-
-    Args:
-        filters (Dict[str, pd.Series]): All filters. Keys are the names and values are the boolean filters.
-        data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.
-        input_name (str): The input name. We use this as the initial filter.
-        output_name (str): The output name. After ANDing with the input filter we save the resulting filter to this name.
-        cls (str): The class to drop duplicates in.
-        slot (str): The slot in the class to drop duplicates in.
-    """
-    do_drop_duplicates(filters=filters, data=data, input_name=input_name, output_name=output_name, cls=cls, slot=slot, keep_first=False, **kwargs)
-
 def do_exclude_equals(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, value: Any, **kwargs):
     """Exclude operation. Exclude any row where the slot is equal to the value.
 
@@ -234,8 +215,7 @@ FILTER_FUNCS = {
     "copy_filter": do_copy_filter,
     "copy_class": do_copy_class,
     "delete_class": do_delete_class,
-    "drop_duplicates_keep_first": do_drop_duplicates_keep_first,
-    "drop_duplicates_keep_last": do_drop_duplicates_keep_last,
+    "drop_duplicates": do_drop_duplicates,
     "delete_filter": do_delete_filter,
     "exclude_equals": do_exclude_equals,
 }
