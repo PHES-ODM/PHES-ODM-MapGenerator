@@ -16,34 +16,10 @@ from linkml.validator.plugins.jsonschema_validation_plugin import JsonschemaVali
 from linkml_runtime import SchemaView
 from linkml.validator.report import Severity
 
-from utils.general_utils import get_logger
+from utils.general_utils import parse_numeric, get_logger
 from utils.schema_utils import get_ranges_of_slot
 
 logger = get_logger(__name__)
-
-def _parse_numeric(value: str) -> Any:
-    """Try to parse a string as a numeric (int or float).
-
-    Args:
-        value (str): The string value to convert to an int or float. If it can be converted to
-            an int (ie. a number with no decimal point) then the int is returned. If not then
-            if it can be converted to a float then the float is returned. Otherwise the value
-            is returned unchanged.
-
-    Returns:
-        Any: The numeric value of the string. Either an int or float, or if it can't be converted
-            to numeric then value is returned unchanged.
-    """
-    if not isinstance(value, str) or not re.search(r"[0-9]", value):
-        return value
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        pass
-    try:
-        return float(value)
-    except (TypeError, ValueError, OverflowError):
-        return value
 
 def _parse_value(value: Any, cls: str, slot: str, schema: SchemaView) -> Any:
     """Parse the value, as found in a table/class named cls, according to the format it should
@@ -71,7 +47,7 @@ def _parse_value(value: Any, cls: str, slot: str, schema: SchemaView) -> Any:
                 return str(value)
     
     # Try to cast to an integer or float
-    return _parse_numeric(value)
+    return parse_numeric(value)
 
 class LoaderWithSchema(Loader, ABC):
     """
