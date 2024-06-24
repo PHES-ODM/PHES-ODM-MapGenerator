@@ -12,12 +12,12 @@ The following is an example filters configuration. It will drop all rows in the 
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
 |:----------|:-----------|:-------------|:----------|:-------------|:-------------|
-|0          |0           |measures      |measure    |exclude_equals|<ignore>      |
-|0          |0           |measures      |unit       |exclude_equals|<ignore>      |
+|0          |0           |measures      |measure    |exclude_equals|\<ignore\>      |
+|0          |0           |measures      |unit       |exclude_equals|\<ignore\>      |
 |0          |0           |measures      |value      |exclude_equals|["", -1]      |
 |0          |            |measures      |           |apply_filter  |measures      |
-|1          |1           |protocolSteps |measure    |exclude_equals|<ignore>      |
-|1          |1           |protocolSteps |method     |exclude_equals|<ignore>      |
+|1          |1           |protocolSteps |measure    |exclude_equals|\<ignore\>      |
+|1          |1           |protocolSteps |method     |exclude_equals|\<ignore\>      |
 |1          |1           |protocolSteps |value      |exclude_equals|              |
 |1          |            |protocolSteps |           |apply_filter  |protocolSteps |
 
@@ -91,6 +91,6 @@ Delete the filter specified by `inputFilter`.
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
 |:----------|:-----------|:-------------|:----------|:-------------|:-------------|
-|0          |0           |measures      |measure    |exclude_equals|<ignore>      |
+|0          |0           |measures      |measure    |exclude_equals|\<ignore\>      |
 
 Modify the filter specified by `inputFilter` to exclude any row that has a value found in the `value` column of the configuration. Multiple values to match can be specified using arrays, such as `["", -1]` (which will exclude rows where the slot is blank or -1). The resulting filter will be saved with the name in `outputFilter`.
