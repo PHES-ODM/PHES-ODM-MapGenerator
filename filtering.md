@@ -63,21 +63,13 @@ Copy the class/DataFrame in `class` and save it as the name in `value`. If a cla
 
 Delete the class (DataFrame) specified by `class`.
 
-### drop_duplicates_keep_first
+### drop_duplicates
 
-|inputFilter|outputFilter|class         |slot        |operation                  |value         |
-|:----------|:-----------|:-------------|:-----------|:--------------------------|:-------------|
-|0          |0           |measures      |measureRepID|drop_duplicates_keep_first |              |
+|inputFilter|outputFilter|class         |slot        |operation            |value         |
+|:----------|:-----------|:-------------|:-----------|:--------------------|:-------------|
+|0          |0           |measures      |measureRepID|drop_duplicates_keep |keep_first    |
 
-Modify the filter specified by `inputFilter` to drop rows in class `class` where the value in column `slot` is a duplicate. If duplicates are found then only the first duplicate in the set is retained and the others are dropped. The resulting filter is saved in `outputFilter`.
-
-### drop_duplicates_keep_last
-
-|inputFilter|outputFilter|class         |slot        |operation                  |value         |
-|:----------|:-----------|:-------------|:-----------|:--------------------------|:-------------|
-|0          |0           |measures      |measureRepID|drop_duplicates_keep_last  |              |
-
-Modify the filter specified by `inputFilter` to drop rows in class `class` where the value in column `slot` is a duplicate. If duplicates are found then only the last duplicate in the set is retained and the others are dropped. The resulting filter is saved in `outputFilter`.
+Modify the filter specified by `inputFilter` to drop rows in class `class` where the value in column `slot` is a duplicate. If `value` is `keep_first` then keep the first duplicate when dropping a set of duplicates. If `value` is `keep_last` then keep the last duplicate when dropping a set of duplicates. The resulting filter is saved in `outputFilter`.
 
 ### delete_filter
 
