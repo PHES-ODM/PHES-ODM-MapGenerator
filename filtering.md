@@ -35,7 +35,7 @@ The value found in the `value` column of the configuration is parsed as YAML (no
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
 |:----------|:-----------|:-------------|:----------|:-------------|:-------------|
-|           |0           |measures      |           |and_filters   |["0", "1"]    |
+|           |0           |measures      |           |and_filters   |[0, 1]        |
 
 AND all the filters listed in the array specified in `value`. The resulting filter will be saved as `outputFilter`. While the class is not used it must still be specified.
 
@@ -115,6 +115,6 @@ Invert/negate the specified filter. This will replace all True values in the fil
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
 |:----------|:-----------|:-------------|:----------|:-------------|:-------------|
-|           |0           |measures      |           |or_filters    |["0", "1"]    |
+|           |0           |measures      |           |or_filters    |[0, 1]        |
 
 OR all the filters listed in the array specified in `value`. The resulting filter will be saved as `outputFilter`. While the class is not used it must still be specified.
