@@ -24,6 +24,7 @@ All the arguments above are optional, to avoid errors each filtering function sh
 
 from typing import Dict, Any
 import pandas as pd
+from functools import reduce
 
 from utils.general_utils import get_logger
 
@@ -69,7 +70,7 @@ def get_named_filter(name: str, filters: Dict[str, pd.Series], data: Dict[str, p
             created.
         default_filter_value (bool, optional): The default value to use if we need to create the filter since it does
             not yet exist. A value of True will make the newly created filter include all rows, a value of False
-            will make it exclude all rows (ie. empty).
+            will make it exclude all rows (ie. empty). Defaults to True.
 
     Returns:
         pd.Series: The current filter with the specified name. If the filter did not yet exist then a new
@@ -137,7 +138,7 @@ def do_exclude_equals(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFram
     else:
         cur_filt = pd.Series([False] * len(filt))
     cur_filt = cur_filt | df[slot].isin(value)
-        
+
     # Apply the filter
     init_num_rows = filt.sum()
     exclude_rows = cur_filt.sum()
@@ -159,7 +160,7 @@ def do_include_equals(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFram
         slot (str): The slot. Any row where this slot is equal to value will be included.
         value (Any): The value. Any row where the slot is equal to this value will be included.
     """
-    filt = get_named_filter(input_name, filters, data, cls)
+    filt = get_named_filter(input_name, filters, data, cls, default_filter_value=False)
     df = data[cls]
     
     # Convert the value into a list if it isn't already a list
@@ -273,13 +274,8 @@ def do_or_filters(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], 
         value (Any): Array of all filter names to OR together.
         cls (str): The class the filter applies to.
     """
-    filt = None
-    for cur_name in value:
-        cur_filt = get_named_filter(str(cur_name), filters, data, cls)
-        if filt is None:
-            filt = cur_filt
-        else:
-            filt = filt | cur_filt
+    filts = [get_named_filter(str(f), filters, data, cls) for f in value]
+    filt = reduce(lambda x, y: x | y, filts)
     set_named_filter(filt, output_name, filters)
     
 def do_and_filters(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], output_name: str, cls: str, value: Any, **kwargs):
@@ -292,13 +288,8 @@ def do_and_filters(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame],
         value (Any): Array of all filter names to AND together.
         cls (str): The class the filter applies to.
     """
-    filt = None
-    for cur_name in value:
-        cur_filt = get_named_filter(str(cur_name), filters, data, cls)
-        if filt is None:
-            filt = cur_filt
-        else:
-            filt = filt & cur_filt
+    filts = [get_named_filter(str(f), filters, data, cls) for f in value]
+    filt = reduce(lambda x, y: x & y, filts)
     set_named_filter(filt, output_name, filters)
     
 # Map specifying which function to call for each operation.
@@ -315,4 +306,3 @@ FILTER_FUNCS = {
     "invert_filter": do_invert_filter,
     "or_filters": do_or_filters,
 }
-
