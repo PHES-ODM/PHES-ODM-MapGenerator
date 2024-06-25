@@ -73,6 +73,8 @@ def get_named_filter(name: str, filters: Dict[str, pd.Series], data: Dict[str, p
             filter with all True values is created for the class in the data.
     """
     if name not in filters:
+        if cls not in data:
+            raise ValueError(f"Class with name '{cls}' does not exist")
         filters[name] = pd.Series([True] * len(data[cls].index))
     filt = filters[name]
     return filt
@@ -139,6 +141,42 @@ def do_exclude_equals(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFram
     filt = filt & ~cur_filt
     num_rows = filt.sum()
     logger.info(f"Excluded rows, number of rows changed from {init_num_rows} to {num_rows} (Change: {num_rows - init_num_rows}). Filter matched {exclude_rows} row(s)")
+    
+    set_named_filter(filt, output_name, filters)
+    
+def do_include_equals(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, value: Any, **kwargs):
+    """Include operation. Include any row where the slot is equal to the value.
+
+    Args:
+        filters (Dict[str, pd.Series]): All filters. Keys are the names and values are the boolean filters.
+        data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.
+        input_name (str): The input name. We use this as the initial filter.
+        output_name (str): The output name. After ORing with the input filter we save the resulting filter to this name.
+        cls (str): The class to create the new filter based on.
+        slot (str): The slot. Any row where this slot is equal to value will be included.
+        value (Any): The value. Any row where the slot is equal to this value will be included.
+    """
+    filt = get_named_filter(input_name, filters, data, cls)
+    df = data[cls]
+    
+    # Convert the value into a list if it isn't already a list
+    if not isinstance(value, list):
+        value = [value]
+        
+    # Calculate the filter that includes any row where the slot is found in value (which is an array).
+    if len([v for v in value if pd.isna(v) or v == ""]) > 0:
+        # Treat NAs and "" as the same
+        cur_filt = pd.isna(df[slot]) | (df[slot] == "")
+    else:
+        cur_filt = pd.Series([False] * len(filt))
+    cur_filt = cur_filt | df[slot].isin(value)
+        
+    # Apply the filter
+    init_num_rows = filt.sum()
+    exclude_rows = cur_filt.sum()
+    filt = filt | cur_filt
+    num_rows = filt.sum()
+    logger.info(f"Included rows, number of rows changed from {init_num_rows} to {num_rows} (Change: {num_rows - init_num_rows}). Filter matched {exclude_rows} row(s)")
     
     set_named_filter(filt, output_name, filters)
     
@@ -209,6 +247,19 @@ def do_copy_class(data: Dict[str, pd.DataFrame], cls: str, value: str, **kwargs)
     """
     data[value] = data[cls].copy()
 
+def do_invert_filter(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, **kwargs):
+    """Negate/invert a filter.
+
+    Args:
+        filters (Dict[str, pd.Series]): All filters. Keys are the names and values are the boolean filters.
+        data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.        
+        input_name (str): The input filter to invert.
+        output_name (str): The filter name to save the inverted filter to.
+        cls (str): The class the filter applies to (optional, not needed if the input_name filter already exists).
+    """
+    filt = ~get_named_filter(input_name, filters, data, cls)
+    set_named_filter(filt, output_name, filters)
+    
 # Map specifying which function to call for each operation.
 FILTER_FUNCS = {
     "apply_filter": do_apply_filter,
@@ -218,5 +269,7 @@ FILTER_FUNCS = {
     "drop_duplicates": do_drop_duplicates,
     "delete_filter": do_delete_filter,
     "exclude_equals": do_exclude_equals,
+    "include_equals": do_include_equals,
+    "invert_filter": do_invert_filter,
 }
 

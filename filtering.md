@@ -12,12 +12,12 @@ The following is an example filters configuration. It will drop all rows in the 
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
 |:----------|:-----------|:-------------|:----------|:-------------|:-------------|
-|0          |0           |measures      |measure    |exclude_equals|\<ignore\>      |
-|0          |0           |measures      |unit       |exclude_equals|\<ignore\>      |
+|0          |0           |measures      |measure    |exclude_equals|\<ignore\>    |
+|0          |0           |measures      |unit       |exclude_equals|\<ignore\>    |
 |0          |0           |measures      |value      |exclude_equals|["", -1]      |
 |0          |            |measures      |           |apply_filter  |measures      |
-|1          |1           |protocolSteps |measure    |exclude_equals|\<ignore\>      |
-|1          |1           |protocolSteps |method     |exclude_equals|\<ignore\>      |
+|1          |1           |protocolSteps |measure    |exclude_equals|\<ignore\>    |
+|1          |1           |protocolSteps |method     |exclude_equals|\<ignore\>    |
 |1          |1           |protocolSteps |value      |exclude_equals|              |
 |1          |            |protocolSteps |           |apply_filter  |protocolSteps |
 
@@ -83,6 +83,22 @@ Delete the filter specified by `inputFilter`.
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
 |:----------|:-----------|:-------------|:----------|:-------------|:-------------|
-|0          |0           |measures      |measure    |exclude_equals|\<ignore\>      |
+|0          |0           |measures      |measure    |exclude_equals|\<ignore\>    |
 
 Modify the filter specified by `inputFilter` to exclude any row that has a value found in the `value` column of the configuration. Multiple values to match can be specified using arrays, such as `["", -1]` (which will exclude rows where the slot is blank or -1). The resulting filter will be saved with the name in `outputFilter`.
+
+### include_equals
+
+|inputFilter|outputFilter|class         |slot       |operation     |value         |
+|:----------|:-----------|:-------------|:----------|:-------------|:-------------|
+|0          |0           |measures      |measure    |include_equals|-1            |
+
+Modify the filter specified by `inputFilter` to include any row that has a value found in the `value` column of the configuration. Multiple values to match can be specified using arrays, such as `["", -1]` (which will include rows where the slot is blank or -1). The resulting filter will be saved with the name in `outputFilter`.
+
+### invert_filter
+
+|inputFilter|outputFilter|class         |slot       |operation     |value         |
+|:----------|:-----------|:-------------|:----------|:-------------|:-------------|
+|0          |0           |measures      |           |invert_filter |              |
+
+Invert/negate the specified filter. This will replace all True values in the filter to False, and all False values in the filter to True. The inverted filter will be saved with the name in `outputFilter`. The `class` is optional: If the filter named `inputFilter` already exists it then `class` is not required, if it does not exist then `class` is required, since we need the class's DataFrame to create the new `inputFilter` with the correct number of rows. For best practices the `class` value should be specified.
