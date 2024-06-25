@@ -69,7 +69,7 @@ Delete the class (DataFrame) specified by `class`.
 |:----------|:-----------|:-------------|:-----------|:--------------------|:-------------|
 |0          |0           |measures      |measureRepID|drop_duplicates_keep |keep_first    |
 
-Modify the filter specified by `inputFilter` to drop rows in class `class` where the value in column `slot` is a duplicate. If `value` is `keep_first` then keep the first duplicate when dropping a set of duplicates. If `value` is `keep_last` then keep the last duplicate when dropping a set of duplicates. The resulting filter is saved in `outputFilter`.
+Modify the filter specified by `inputFilter` to drop rows in class `class` where the value in column `slot` is a duplicate. If `value` is `keep_first` then keep the first duplicate when dropping a set of duplicates. If `value` is `keep_last` then keep the last duplicate when dropping a set of duplicates. Duplicates are only calculated and dropped based on the rows that the `inputFilter` includes (not on the full DataFrame under `class`). The resulting filter is saved in `outputFilter`.
 
 ### delete_filter
 
@@ -85,7 +85,7 @@ Delete the filter specified by `inputFilter`.
 |:----------|:-----------|:-------------|:----------|:-------------|:-------------|
 |0          |0           |measures      |measure    |exclude_equals|\<ignore\>    |
 
-Modify the filter specified by `inputFilter` to exclude any row that has a value found in the `value` column of the configuration. Multiple values to match can be specified using arrays, such as `["", -1]` (which will exclude rows where the slot is blank or -1). The resulting filter will be saved with the name in `outputFilter`.
+Modify the filter specified by `inputFilter` to exclude any row in the DataFrame specified by `class` in column `slot` that has a value found in the `value` column of the configuration. Multiple values to match can be specified using arrays, such as `["", -1]` (which will exclude rows where the slot is blank or -1). The resulting filter will be saved with the name in `outputFilter`.
 
 ### include_equals
 
@@ -93,7 +93,7 @@ Modify the filter specified by `inputFilter` to exclude any row that has a value
 |:----------|:-----------|:-------------|:----------|:-------------|:-------------|
 |0          |0           |measures      |measure    |include_equals|-1            |
 
-Modify the filter specified by `inputFilter` to include any row that has a value found in the `value` column of the configuration. Multiple values to match can be specified using arrays, such as `["", -1]` (which will include rows where the slot is blank or -1). The resulting filter will be saved with the name in `outputFilter`.
+Modify the filter specified by `inputFilter` to include any row in the DataFrame specified by `class` in column `slot` that has a value found in the `value` column of the configuration. Multiple values to match can be specified using arrays, such as `["", -1]` (which will include rows where the slot is blank or -1). The resulting filter will be saved with the name in `outputFilter`.
 
 ### invert_filter
 
