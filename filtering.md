@@ -31,6 +31,21 @@ The value found in the `value` column of the configuration is parsed as YAML (no
 
 ## Filter Operations
 
+The following filter operations are available:
+
+<!-- no toc -->
+- [and_filters](#and_filters)
+- [apply_filter](#apply_filter)
+- [copy_filter](#copy_filter)
+- [copy_class](#copy_class)
+- [delete_class](#delete_class)
+- [drop_duplicates](#drop_duplicates)
+- [delete_filter](#delete_filter)
+- [exclude_equals](#exclude_equals)
+- [include_equals](#include_equals)
+- [invert_filter](#invert_filter)
+- [or_filters](#or_filters)
+
 ### and_filters
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
