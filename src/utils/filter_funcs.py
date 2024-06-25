@@ -52,7 +52,7 @@ def set_named_filter(filt: pd.Series, name: str, filters: Dict[str, pd.Series]):
     """
     filters[name] = filt
     
-def get_named_filter(name: str, filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], cls: str) -> pd.Series:
+def get_named_filter(name: str, filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], cls: str, default_filter_value: bool=True) -> pd.Series:
     """Get the filter with the specified name. If the filter does not yet exist then we create the filter with all
     True values for the data of class cls (ie. the filter will have the same number of rows as the data
     for cls).
@@ -67,6 +67,9 @@ def get_named_filter(name: str, filters: Dict[str, pd.Series], data: Dict[str, p
         cls (str): The class that the filter is for. This corresponds to the keys in data. Note that
             data and cls are only used when the filter for the gorup does not yet exist, and so has to be
             created.
+        default_filter_value (bool, optional): The default value to use if we need to create the filter since it does
+            not yet exist. A value of True will make the newly created filter include all rows, a value of False
+            will make it exclude all rows (ie. empty).
 
     Returns:
         pd.Series: The current filter with the specified name. If the filter did not yet exist then a new
@@ -75,7 +78,7 @@ def get_named_filter(name: str, filters: Dict[str, pd.Series], data: Dict[str, p
     if name not in filters:
         if cls not in data:
             raise ValueError(f"Class with name '{cls}' does not exist")
-        filters[name] = pd.Series([True] * len(data[cls].index))
+        filters[name] = pd.Series([default_filter_value] * len(data[cls].index))
     filt = filters[name]
     return filt
 
