@@ -255,13 +255,52 @@ def do_invert_filter(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame
         data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.        
         input_name (str): The input filter to invert.
         output_name (str): The filter name to save the inverted filter to.
-        cls (str): The class the filter applies to (optional, not needed if the input_name filter already exists).
+        cls (str): The class the filter applies to.
     """
     filt = ~get_named_filter(input_name, filters, data, cls)
     set_named_filter(filt, output_name, filters)
     
+def do_or_filters(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], output_name: str, cls: str, value: Any, **kwargs):
+    """OR all the filters in the value array and save to the output_name.
+
+    Args:
+        filters (Dict[str, pd.Series]): All filters. Keys are the names and values are the boolean filters.
+        data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.        
+        output_name (str): The name to save the OR'd filter to.
+        value (Any): Array of all filter names to OR together.
+        cls (str): The class the filter applies to.
+    """
+    filt = None
+    for cur_name in value:
+        cur_filt = get_named_filter(str(cur_name), filters, data, cls)
+        if filt is None:
+            filt = cur_filt
+        else:
+            filt = filt | cur_filt
+    set_named_filter(filt, output_name, filters)
+    
+def do_and_filters(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], output_name: str, cls: str, value: Any, **kwargs):
+    """AND all the filters in the value array and save to the output_name.
+
+    Args:
+        filters (Dict[str, pd.Series]): All filters. Keys are the names and values are the boolean filters.
+        data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.        
+        output_name (str): The name to save the AND'd filter to.
+        value (Any): Array of all filter names to AND together.
+        cls (str): The class the filter applies to.
+    """
+    filt = None
+    for cur_name in value:
+        cur_filt = get_named_filter(str(cur_name), filters, data, cls)
+        if filt is None:
+            filt = cur_filt
+        else:
+            filt = filt & cur_filt
+    set_named_filter(filt, output_name, filters)
+    
 # Map specifying which function to call for each operation.
 FILTER_FUNCS = {
+    "and_filters": do_and_filters,
     "apply_filter": do_apply_filter,
     "copy_filter": do_copy_filter,
     "copy_class": do_copy_class,
@@ -271,5 +310,6 @@ FILTER_FUNCS = {
     "exclude_equals": do_exclude_equals,
     "include_equals": do_include_equals,
     "invert_filter": do_invert_filter,
+    "or_filters": do_or_filters,
 }
 

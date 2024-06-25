@@ -31,6 +31,14 @@ The value found in the `value` column of the configuration is parsed as YAML (no
 
 ## Filter Operations
 
+### and_filters
+
+|inputFilter|outputFilter|class         |slot       |operation     |value         |
+|:----------|:-----------|:-------------|:----------|:-------------|:-------------|
+|           |0           |measures      |           |and_filters   |["0", "1"]    |
+
+AND all the filters listed in the array specified in `value`. The resulting filter will be saved as `outputFilter`. While the class is not used it must still be specified.
+
 ### apply_filter
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
@@ -101,4 +109,12 @@ Modify the filter specified by `inputFilter` to include any row in the DataFrame
 |:----------|:-----------|:-------------|:----------|:-------------|:-------------|
 |0          |0           |measures      |           |invert_filter |              |
 
-Invert/negate the specified filter. This will replace all True values in the filter to False, and all False values in the filter to True. The inverted filter will be saved with the name in `outputFilter`. The `class` is optional: If the filter named `inputFilter` already exists it then `class` is not required, if it does not exist then `class` is required, since we need the class's DataFrame to create the new `inputFilter` with the correct number of rows. For best practices the `class` value should be specified.
+Invert/negate the specified filter. This will replace all True values in the filter to False, and all False values in the filter to True. The inverted filter will be saved with the name in `outputFilter`. While the class is not used it must still be specified.
+
+### or_filters
+
+|inputFilter|outputFilter|class         |slot       |operation     |value         |
+|:----------|:-----------|:-------------|:----------|:-------------|:-------------|
+|           |0           |measures      |           |or_filters    |["0", "1"]    |
+
+OR all the filters listed in the array specified in `value`. The resulting filter will be saved as `outputFilter`. While the class is not used it must still be specified.
