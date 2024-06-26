@@ -16,6 +16,9 @@ from linkml_runtime import SchemaView
 
 EMPTY_PERMISSIBLE_VALUE = "<empty>"
 
+# Name of the tree root Container class that contains all the tables in a LinkML schema
+TREE_ROOT_CLASS_NAME = "Container"
+
 def get_logger(name: str, level: Optional[str] = logging.INFO) -> logging.Logger:
     """Get the logger with the specified name, setting is configuration as well as output format.
     The name can be any arbitrary string. For example:

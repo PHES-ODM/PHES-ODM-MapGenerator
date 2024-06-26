@@ -18,7 +18,7 @@ from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model.meta import SchemaDefinition
 from linkml_runtime.utils.schema_as_dict import schema_as_dict
 
-from utils.general_utils import read_data_frame, strip_whitespace, get_logger, order_columns, EMPTY_PERMISSIBLE_VALUE
+from utils.general_utils import read_data_frame, strip_whitespace, get_logger, order_columns, EMPTY_PERMISSIBLE_VALUE, TREE_ROOT_CLASS_NAME
 from utils.schema_utils import get_enum_names_for_slot, get_enum_name_with_permissible_value
 from utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations, get_variable_reference, MappingColumns, is_wide_target_value_slot, is_wide_target_expr_slot, any_wide_slot_name, get_blank_class_derivation
 from utils.auto_id import add_auto_ids_to_schema
@@ -709,8 +709,8 @@ def make_mappers(maps_files: Union[Union[str, Path], List[Union[str, Path]]], wi
         mapper_spec = {
             "class_derivations" : {
                 target_class : class_derivation,
-                "Container" : {
-                    "name" : "Container",
+                TREE_ROOT_CLASS_NAME : {
+                    "name" : TREE_ROOT_CLASS_NAME,
                     "slot_derivations" : {
                         target_class: {
                             "populated_from" : source_class,

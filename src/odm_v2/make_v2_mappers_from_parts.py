@@ -23,7 +23,7 @@ from typing import Tuple, Union, Dict, List, Optional
 
 from linkml_runtime import SchemaView
 
-from utils.general_utils import read_data_frame, get_logger
+from utils.general_utils import read_data_frame, get_logger, TREE_ROOT_CLASS_NAME
 from utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations
 from odm_v2.v2_utils import v2_get_header_rows, v2_class_names
 from odm_v2.v2_mapping import V2MappingColumns, V2MappingVariableLocations
@@ -300,7 +300,7 @@ def save_all_mappers(class_derivations: Dict, enum_derivations: Dict, schema: Sc
     """ For each class derivation, create a separate mapper specification file (yaml file).
     These specs each map from a single source table to a single v2 table.
     
-    A top-level Container class derivation will also be added to each YAML file. The slot
+    A top-level Container class (named TREE_ROOT_CLASS_NAME) derivation will also be added to each YAML file. The slot
     derivations will have keys for the target class with populated_from fields from the source class.
 
     Args:
@@ -346,8 +346,8 @@ def save_all_mappers(class_derivations: Dict, enum_derivations: Dict, schema: Sc
             mapper_spec = {
                 "class_derivations" : {
                     target_class : cur_derivation,
-                    "Container" : {
-                        "name" : "Container",
+                    TREE_ROOT_CLASS_NAME : {
+                        "name" : TREE_ROOT_CLASS_NAME,
                         "slot_derivations" : {
                             target_class: {
                                 "populated_from" : source_class,
