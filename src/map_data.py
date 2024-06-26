@@ -15,6 +15,12 @@ If the input data is large, performance can be improved by increasing the number
 by changing the `max_processes` parameter in the call to `map`. For small datasets multi-processing
 might not have any improvement (and may in fact be slower).
 
+Optional additional requirements include:
+
+1) An ID configuration file, that specifies which and how IDs are generated.
+2) A filtering configuration file, that specifies how to filter the data after it has been mapped, in
+order to perform operations such as removing rows that should be ignored (eg. missing values).
+
 ### Python
 
 ```python
@@ -28,6 +34,8 @@ map(
     mapper_dir="../gen/nwss_reporting_to_v2/mappers", 
     data_dir="path/to/input/data", 
     data_output_dir="../gen/nwss_reporting_to_v2/mapped_data", 
+    id_config_file="../data/mapping_config_files/nwss_to_odm_v2_ids.csv",
+    filter_config_file="../data/mapping_config_files/nwss_to_odm_v2_filter.csv",
     max_processes=1
     )
     
@@ -43,6 +51,8 @@ python3 map_data.py --source_schema "../data/nwss_reporting/linkml/nwss_reportin
     --mapper_dir "../gen/nwss_reporting_to_v2/mappers" \
     --data_dir "path/to/input/data" \
     --output_dir "../gen/nwss_reporting_to_v2/mapped_data" \
+    --id_config "../data/mapping_config_files/nwss_to_odm_v2_ids.csv" \
+    --filter_config "../data/mapping_config_files/nwss_to_odm_v2_filter.csv" \
     --max_processes 1
 ```
 """
@@ -63,7 +73,7 @@ from linkml_map.session import Session
 from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model import SlotDefinition
 
-from utils.general_utils import save_data_frame, read_data_frame, get_logger, order_columns, choose_ignore_case_value, get_class_name_from_file_name, clear_dirs, parse_df_values
+from utils.general_utils import save_data_frame, read_data_frame, get_logger, order_columns, choose_ignore_case_value, get_class_name_from_file_name, clear_dirs, parse_df_values, TREE_ROOT_CLASS_NAME
 from utils.auto_id import gen_auto_ids
 from utils.filter import run_filter
 
@@ -173,7 +183,9 @@ def add_row_number_derivation(spec: Dict):
     Args:
         spec (Dict): The mapper spec to add a row number slot derivation to all classes.
     """
-    for class_derivation in spec["class_derivations"].values():
+    for class_name, class_derivation in spec["class_derivations"].items():
+        if class_name == TREE_ROOT_CLASS_NAME:
+            continue
         class_derivation["slot_derivations"][TrackingColumns.ROW_NUMBER] = {
             "name" : TrackingColumns.ROW_NUMBER,
             "populated_from" : TrackingColumns.ROW_NUMBER,
@@ -512,7 +524,7 @@ if __name__ == "__main__":
             # output_dir = "../gen/odm_v1_to_v2/mapped_data"
             # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
             # id_config = None
-            # filter_config_file = None
+            # filter_config = None
 
             # Lights test
             # source_schema = f"../data/lights/lights.yaml"
@@ -521,7 +533,7 @@ if __name__ == "__main__":
             # output_dir = f"../data/lights/output/mapped_data"
             # target_schema = "../data/lights/lights_simple.yaml"
             # id_config = None
-            # filter_config_file = None
+            # filter_config = None
 
             # NWSS to v2
             dictionary_type = "reporting"
@@ -531,7 +543,7 @@ if __name__ == "__main__":
             output_dir = f"../gen/nwss_{dictionary_type}_to_v2/mapped_data"
             target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
             id_config = f"../data/mapping_config_files/nwss_to_odm_v2_ids.csv"
-            filter_config_file = "../data/mapping_config_files/nwss_to_odm_v2_filter.csv"
+            filter_config = "../data/mapping_config_files/nwss_to_odm_v2_filter.csv"
 
             max_processes = 1
     else:
@@ -541,9 +553,10 @@ if __name__ == "__main__":
         args.add_argument("--mapper_dir", type=str, help="Directory that contains all the mapper specifications. We will use all of the YAML files in this directory and run a separate mappings on the data for each YAML file", required=True)
         args.add_argument("--data_dir", type=str, help="Directory containing all of the (cleaned) input data to map. The file names (without extension) correspond to the table name. These files should have been cleaned by clean_v1_data.py", required=True)
         args.add_argument("--output_dir", type=str, help="Directory to save all the mapped data to", required=True)
-        args.add_argument("--max_processes", type=int, help="Maximum number of processes to run at a time for mapping the data. If non-positive then the max available processes are used.", default=1, required=False)
         args.add_argument("--id_config", type=str, help="Configuration file for generating IDs", required=False)
+        args.add_argument("--filter_config", type=str, help="Configuration file for filtering the data after mapping is performed", required=False)
+        args.add_argument("--max_processes", type=int, help="Maximum number of processes to run at a time for mapping the data. If non-positive then the max available processes are used.", default=1, required=False)
         opts = args.parse_args()
 
     clear_dirs([opts.output_dir])
-    map(source_schema_file=opts.source_schema, target_schema_file=opts.target_schema, mapper_dir=opts.mapper_dir, data_dir=opts.data_dir, data_output_dir=opts.output_dir, id_config_file=opts.id_config, filter_config_file=opts.filter_config_file, max_processes=opts.max_processes)
+    map(source_schema_file=opts.source_schema, target_schema_file=opts.target_schema, mapper_dir=opts.mapper_dir, data_dir=opts.data_dir, data_output_dir=opts.output_dir, id_config_file=opts.id_config, filter_config_file=opts.filter_config, max_processes=opts.max_processes)
