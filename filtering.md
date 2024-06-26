@@ -101,9 +101,9 @@ Delete the class (DataFrame) specified by `class`.
 
 ### drop_duplicates
 
-|inputFilter|outputFilter|class         |slot        |operation            |value         |
-|:----------|:-----------|:-------------|:-----------|:--------------------|:-------------|
-|0          |0           |measures      |measureRepID|drop_duplicates_keep |keep_first    |
+|inputFilter|outputFilter|class         |slot        |operation       |value         |
+|:----------|:-----------|:-------------|:-----------|:---------------|:-------------|
+|0          |0           |measures      |measureRepID|drop_duplicates |keep_first    |
 
 Modify the filter specified by `inputFilter` to drop rows in class `class` where the value in column `slot` is a duplicate. If `value` is `keep_first` then keep the first duplicate when dropping a set of duplicates. If `value` is `keep_last` then keep the last duplicate when dropping a set of duplicates. Duplicates are only calculated and dropped based on the rows that the `inputFilter` includes (not on the full DataFrame under `class`). The resulting filter is saved in `outputFilter`.
 
