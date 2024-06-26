@@ -12,20 +12,24 @@ The following is an example filters configuration. It will drop all rows in the 
 
 |inputFilter|outputFilter|class         |slot       |operation     |value         |
 |:----------|:-----------|:-------------|:----------|:-------------|:-------------|
+|           |0           |measures      |           |create_filter |TRUE          |
 |0          |0           |measures      |measure    |exclude_equals|\<ignore\>    |
 |0          |0           |measures      |unit       |exclude_equals|\<ignore\>    |
 |0          |0           |measures      |value      |exclude_equals|["", -1]      |
 |0          |            |measures      |           |apply_filter  |measures      |
+|           |1           |protocolSteps |           |create_filter |TRUE          |
 |1          |1           |protocolSteps |measure    |exclude_equals|\<ignore\>    |
 |1          |1           |protocolSteps |method     |exclude_equals|\<ignore\>    |
 |1          |1           |protocolSteps |value      |exclude_equals|              |
 |1          |            |protocolSteps |           |apply_filter  |protocolSteps |
 
-Filtering is performed using boolean filters that are given names and that are applied to various classes (ie. DataFrames). The names given to the filters in the example configuration table above are referenced in the `inputFilter` and `outputFilter` columns. The names can be any user-defined string. The first time a filter is created it consists of all `True` values, meaning it will select all rows in the DataFrame. It will iteratively be modified with each row in the configuration, and when complete it can be applied to a class (ie. a DataFrame).
+Filtering is performed using boolean filters that are given names and that are applied to various classes (ie. DataFrames). The names given to the filters in the example configuration table above are referenced in the `inputFilter` and `outputFilter` columns. The names can be any user-defined string.
 
-Each row in the configuration table uses the filter in `inputFilter` as the filter to use. Once the operation is performed on that filter, it is saved as the named filter in `outputFilter` (overwriting any existing filter with the same name). The operation also uses the specified `class` and `slot` to calculate the new filter, along with which `operation` to perform along with a `value` specific to that operation. For example, the first row will exclude any rows in the `measures` class where the slot `measure` is equal to `<ignore>`. This exclusion will result in a new filter which is combined with filter `0` and then saved as filter `0` (specified by `outputFilter`).
+A filter must first be created. This can be done with the [create_filter](#create_filter) operation, or from another operation where the filter's name is specified as an `outputFilter`. In the example table above, the first row creates the filter named `0`, setting all values to `TRUE`. A value of `TRUE` means that all rows in the table (in this case the measures table) are initially included. A value of `FALSE` would mean that all rows int he table are initially not included.
 
-Note that most operations will not alter the actual DataFrame for the class, but will instead modify the filter used for that class. Once we've performed all the operations we want for creating the filter, we can apply it to the DataFrame using the `apply_filter` operation. For example, in the fourth row in the example configuration table, we use filter `0` (which has been calculated using three `exclude_equals` operations), apply that filter to the measures class (specified in the `class` column), and then save the new filtered class back to the measures class (specified in the `value` column). If we wanted to keep the `measures` DataFrame unchanged, we could save the filtered DataFrame by changing the name in `value` to something like `measures2`.
+Each row in the configuration table uses the filter in `inputFilter` as the filter to use. Once the operation is performed on that filter, it is saved as the named filter in `outputFilter` (overwriting any existing filter with the same name). The operation also uses the specified `class` and `slot` to calculate the new filter, along with which `operation` to perform along with a `value` specific to that operation. For example, the second row will exclude any rows in the `measures` class where the slot `measure` is equal to `<ignore>`. This exclusion will result in a new filter which is combined with filter `0` and then saved as filter `0` (specified by `outputFilter`).
+
+Note that most operations will not alter the actual DataFrame for the class, but will instead modify the filter used for that class. Once we've performed all the operations we want for creating the filter, we can apply it to the DataFrame using the `apply_filter` operation. For example, in the fifth row in the example configuration table, we use filter `0` (which has been calculated using three `exclude_equals` operations), apply that filter to the measures class (specified in the `class` column), and then save the new filtered class back to the measures class (specified in the `value` column). If we wanted to keep the `measures` DataFrame unchanged, we could save the filtered DataFrame by changing the name in `value` to something like `measures2`.
 
 The value found in the `value` column of the configuration is parsed as YAML (note that JSON strings are supported by YAML). This allows multiple values to be specified using an array such as `["", -1]` as found in the third row of the example, or more complex values such as dictionaries. Some operations expect the `value` to be in a certain format.
 
@@ -38,6 +42,7 @@ The following filter operations are available:
 - [apply_filter](#apply_filter)
 - [copy_filter](#copy_filter)
 - [copy_class](#copy_class)
+- [create_filter](#create_filter)
 - [delete_class](#delete_class)
 - [drop_duplicates](#drop_duplicates)
 - [delete_filter](#delete_filter)
@@ -77,6 +82,14 @@ Copy the filter in `inputFilter` and name the copy `outputFilter`. Once copied i
 |           |            |measures      |           |copy_class    |measures2     |
 
 Copy the class/DataFrame in `class` and save it as the name in `value`. If a class with the same name already exists then it is overwritten. No filter is applied to the DataFrame when copying. To apply an existing filter, the `apply_filter` operation must be performed (either before or after copying the class). After copying the DataFrame it can be used in any subsequent row of the configuration.
+
+### create_filter
+
+|inputFilter|outputFilter|class         |slot       |operation     |value         |
+|:----------|:-----------|:-------------|:----------|:-------------|:-------------|
+|           |0           |measures      |           |create_filter |TRUE          |
+
+Create a filter with the name specified in `outputFilter`. If `value` is `TRUE` then all rows in the `class` are initially included. If `value` is `FALSE` then all rows in the `class` are initially not included. All filters must be created before being used, either by using the `create_filter` operation or in another operation where the filter is specified as an `outputFilter`.
 
 ### delete_class
 
