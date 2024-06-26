@@ -53,10 +53,9 @@ def set_named_filter(filt: pd.Series, name: str, filters: Dict[str, pd.Series]):
     """
     filters[name] = filt
     
-def get_named_filter(name: str, filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], cls: str, default_filter_value: bool=True) -> pd.Series:
-    """Get the filter with the specified name. If the filter does not yet exist then we create the filter with all
-    True values for the data of class cls (ie. the filter will have the same number of rows as the data
-    for cls).
+def get_named_filter(name: str, filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], cls: str) -> pd.Series:
+    """Get the filter with the specified name. The filter must have been previously created, using the create_filter operation or as an
+    outputFilter in the configuration file.
 
     Args:
         name (str): The name of the filter to get.
@@ -68,20 +67,14 @@ def get_named_filter(name: str, filters: Dict[str, pd.Series], data: Dict[str, p
         cls (str): The class that the filter is for. This corresponds to the keys in data. Note that
             data and cls are only used when the filter for the gorup does not yet exist, and so has to be
             created.
-        default_filter_value (bool, optional): The default value to use if we need to create the filter since it does
-            not yet exist. A value of True will make the newly created filter include all rows, a value of False
-            will make it exclude all rows (ie. empty). Defaults to True.
 
     Returns:
         pd.Series: The current filter with the specified name. If the filter did not yet exist then a new
             filter with all True values is created for the class in the data.
     """
     if name not in filters:
-        if cls not in data:
-            raise ValueError(f"Class with name '{cls}' does not exist")
-        filters[name] = pd.Series([default_filter_value] * len(data[cls].index))
-    filt = filters[name]
-    return filt
+        raise ValueError(f"Filter named '{name}' does not exist. Make sure it has been created with the create_filter operation or created as an outputFilter.")
+    return filters[name]
 
 def do_drop_duplicates(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], input_name: str, output_name: str, cls: str, slot: str, value: str, **kwargs):
     """Drop all duplicates in a class and slot, keeping either the first or last duplicate for each set of duplicates,
@@ -160,7 +153,7 @@ def do_include_equals(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFram
         slot (str): The slot. Any row where this slot is equal to value will be included.
         value (Any): The value. Any row where the slot is equal to this value will be included.
     """
-    filt = get_named_filter(input_name, filters, data, cls, default_filter_value=False)
+    filt = get_named_filter(input_name, filters, data, cls)
     df = data[cls]
     
     # Convert the value into a list if it isn't already a list
@@ -292,12 +285,27 @@ def do_and_filters(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame],
     filt = reduce(lambda x, y: x & y, filts)
     set_named_filter(filt, output_name, filters)
     
+def do_create_filter(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame], output_name: str, cls: str, value: Any, **kwargs):
+    """Create a filter named output_name, using the specified boolean value. A boolean value of True means that all rows
+    are initially included. A boolean value of False means that none of the rows are initially included.
+
+    Args:
+        filters (Dict[str, pd.Series]): All filters. Keys are the names and values are the boolean filters.
+        data (Dict[str, pd.DataFrame]): The data. Keys are the classes and values are the DataFrames.        
+        output_name (str): The name to give the filter.
+        cls (str): The class the filter applies to.
+        value (Any): Either True or False. If True then the new filter will include all rows, if False then the
+            new filter will include none of the rows.
+    """
+    filters[output_name] = pd.Series([value] * len(data[cls].index))
+
 # Map specifying which function to call for each operation.
 FILTER_FUNCS = {
     "and_filters": do_and_filters,
     "apply_filter": do_apply_filter,
     "copy_filter": do_copy_filter,
     "copy_class": do_copy_class,
+    "create_filter": do_create_filter,
     "delete_class": do_delete_class,
     "drop_duplicates": do_drop_duplicates,
     "delete_filter": do_delete_filter,
