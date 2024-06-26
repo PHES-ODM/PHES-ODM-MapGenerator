@@ -297,6 +297,8 @@ def do_create_filter(filters: Dict[str, pd.Series], data: Dict[str, pd.DataFrame
         value (Any): Either True or False. If True then the new filter will include all rows, if False then the
             new filter will include none of the rows.
     """
+    if not isinstance(value, bool):
+        raise ValueError(f"value must be a boolean for the create_filter operation. Found '{value}' (of type {type(value)})")
     filters[output_name] = pd.Series([value] * len(data[cls].index))
 
 # Map specifying which function to call for each operation.
