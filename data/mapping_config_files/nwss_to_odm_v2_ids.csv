@@ -8,3 +8,4 @@ id:measureSetRepID,
 id:polygonID,caOnOtt002UniCaOnOttOtt
 id:qualityReportID[0-9]+,
 id:stepID[0-9]+,
+id:protocolRelationshipsID[0-9]+,
