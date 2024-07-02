@@ -20,7 +20,7 @@ from linkml_runtime.utils.schema_as_dict import schema_as_dict
 
 from utils.general_utils import read_data_frame, strip_whitespace, get_logger, order_columns, EMPTY_PERMISSIBLE_VALUE, TREE_ROOT_CLASS_NAME
 from utils.schema_utils import get_enum_names_for_slot, get_enum_name_with_permissible_value
-from utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations, get_variable_reference, MappingColumns, is_wide_target_value_slot, is_wide_target_expr_slot, any_wide_slot_name, get_blank_class_derivation
+from utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations, get_variable_reference, MappingColumns, is_wide_target_value_slot, is_wide_target_expr_slot, any_wide_slot_name, get_blank_class_derivation, CONFIG_READ_KWARGS
 from utils.auto_id import add_auto_ids_to_schema
 
 logger = get_logger(__name__)
@@ -108,8 +108,7 @@ def extract_class_derivations(maps_df: pd.DataFrame, source_schema: SchemaView) 
         else:
             # Add the slot derivation for target_slot (populating from source_slot)
             if source_slot not in source_schema.class_slots(source_class):
-                logger.error(f"Found source slot {source_slot} (in source class '{source_class}') in mapping data that does not exist in the source schema, ignoring row")
-                continue
+                raise ValueError(f"Found source slot {source_slot} (in source class '{source_class}') in mapping data that does not exist in the source schema, ignoring row")
             if target_slot in slot_derivations:
                 if "populated_from" not in slot_derivations[target_slot]:
                     raise ValueError(f"Target slot '{target_slot}' in target class '{target_class}' from source class '{source_class}' already exists in slot_derivations but has different populated_from fields (expected source slot '{source_slot}' but found Empty)")
@@ -296,7 +295,7 @@ def prepare_maps_df(maps_file: Union[str, Path]) -> pd.DataFrame:
     if not maps_file:
         return None
     
-    maps_df = read_data_frame(maps_file, keep_default_na=False, na_values=[""])
+    maps_df = read_data_frame(maps_file, **CONFIG_READ_KWARGS)
     maps_df = strip_whitespace(maps_df)
 
     # Drop empty rows
@@ -328,7 +327,7 @@ def prepare_wide_df(wide_file: Union[str, Path]) -> pd.DataFrame:
     if not wide_file:
         return None
     
-    wide_df = read_data_frame(wide_file, keep_default_na=False, na_values=[""])
+    wide_df = read_data_frame(wide_file, **CONFIG_READ_KWARGS)
     wide_df = strip_whitespace(wide_df)
 
     # Drop empty rows
@@ -354,7 +353,7 @@ def prepare_wide_df(wide_file: Union[str, Path]) -> pd.DataFrame:
 
     # Order the columns into a nice order. This isn't necessary but makes it easier to view when debugging.
     wide_df = order_columns(wide_df, [MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.TARGET_CLASS])
-    
+
     return wide_df.copy()
 
 def prepare_enums_df(enums_file: Union[str, Path]) -> pd.DataFrame:
@@ -371,7 +370,7 @@ def prepare_enums_df(enums_file: Union[str, Path]) -> pd.DataFrame:
     if not enums_file:
         return None
     
-    enums_df = read_data_frame(enums_file, keep_default_na=False, na_values=[""])
+    enums_df = read_data_frame(enums_file, **CONFIG_READ_KWARGS)
     enums_df = strip_whitespace(enums_df)
 
     # Drop empty rows

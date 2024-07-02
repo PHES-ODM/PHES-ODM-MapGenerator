@@ -52,6 +52,18 @@ class MappingColumns:
     WIDE_ROW_NUMBER = "wideRowNumber"
     WIDE_OTHER_SLOTS = "wideOtherSlots"
 
+# Additional arguments to pass to pd.read_csv, pd.read_excel, etc for reading in the mapping configuration files.
+CONFIG_READ_KWARGS = {
+    "dtype" : {
+        MappingColumns.SOURCE_VALUE : str,
+        MappingColumns.TARGET_VALUE : str,
+    },
+    "keep_default_na" : False,
+    "na_values" : [""], 
+    "default_na_values" : [""], 
+}
+
+
 def is_wide_slot(name: Any, suffix: str) -> bool:
     """Test if the column name refers to a special wide slot name, such as for a wide target value, wide expr value, etc.
     
