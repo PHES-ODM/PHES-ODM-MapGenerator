@@ -58,7 +58,7 @@ python3 map_data.py --source_schema "../data/nwss_reporting/linkml/nwss_reportin
 """
 
 from pathlib import Path
-from typing import Union, Optional, List, Dict, Any
+from typing import Union, Optional, List, Dict
 import os
 import math
 import yaml
@@ -66,7 +66,7 @@ import pandas as pd
 import logging
 import argparse
 from datetime import datetime
-from multiprocessing import Queue, Pool, cpu_count
+from multiprocessing import Pool, cpu_count
 
 from linkml_map.session import Session
 # from linkml_transformer.session import Session
