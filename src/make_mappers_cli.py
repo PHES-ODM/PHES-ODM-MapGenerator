@@ -9,6 +9,7 @@ from make_mappers import make_mappers
 from map_data import map
 from utils.clean_data import clean_data_directory
 from utils.general_utils import clear_dirs, extract_sheets, get_logger
+from utils.mapper_utils import CONFIG_READ_KWARGS
 
 logger = get_logger(__name__)
 
@@ -112,7 +113,7 @@ def make_mappers_cli(output_dir: Union[str, Path],
         output_wide_files = [configs_dir / f"{f}.csv" for f in output_wide_names]
         output_enums_names = [f"enums{i}" for i in range(len(excel_enums_sheets))]
         output_enums_files = [configs_dir / f"{f}.csv" for f in output_enums_names]
-        extract_sheets(mapping_excel_file, [*excel_maps_sheets, *excel_wide_sheets, *excel_enums_sheets], configs_dir, output_names=[*output_maps_names, *output_wide_names, *output_enums_names], na_values={}, default_na_values=[""])
+        extract_sheets(mapping_excel_file, [*excel_maps_sheets, *excel_wide_sheets, *excel_enums_sheets], configs_dir, output_names=[*output_maps_names, *output_wide_names, *output_enums_names], na_values={}, default_na_values=[""], read_excel_kwargs=CONFIG_READ_KWARGS)
     else:
         output_maps_files = []
         output_wide_files = []
@@ -171,7 +172,7 @@ if __name__ == "__main__":
             target_schema = f"../data/odm_v2/linkml/odm_v2.yaml"
             mapping_excel_file = "../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx"
             excel_maps_sheets = ["maps"]
-            excel_wide_sheets = ["wide_measures", "wide_protocolSteps", "wide_qualityReports"]
+            excel_wide_sheets = ["wide_measures", "wide_protocolRelationships", "wide_protocolSteps", "wide_qualityReports"]
             excel_enums_sheets = ["enums"]
             maps_files = []
             wide_files = []
