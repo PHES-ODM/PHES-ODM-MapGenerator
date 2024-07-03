@@ -58,7 +58,7 @@ python3 map_data.py --source_schema "../data/nwss_reporting/linkml/nwss_reportin
 """
 
 from pathlib import Path
-from typing import Union, Optional, List, Dict
+from typing import Union, Optional, List, Dict, Any, Callable
 import os
 import math
 import yaml
@@ -67,13 +67,14 @@ import logging
 import argparse
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
+from functools import partial
 
 from linkml_map.session import Session
 # from linkml_transformer.session import Session
 from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model import SlotDefinition
 
-from utils.general_utils import save_data_frame, read_data_frame, get_logger, order_columns, choose_ignore_case_value, get_class_name_from_file_name, clear_dirs, parse_df_values, TREE_ROOT_CLASS_NAME
+from utils.general_utils import save_data_frame, read_data_frame, get_logger, order_columns, choose_ignore_case_value, get_class_name_from_file_name, clear_dirs, parse_df_values, parse_numeric, TREE_ROOT_CLASS_NAME
 from utils.auto_id import gen_auto_ids
 from utils.filter import run_filter
 
@@ -111,7 +112,8 @@ def load_data(data_dir: Union[str, Path], schema: Union[str, SchemaView], id_con
     Args:
         data_dir (Union[str, Path]): Directory where all data files are located. We load all CSV files
             as well as all TSV and TXT (tab-separated) files.
-        schema (Union[str, SchemaView]): The schema that the data should conform to.
+        schema (Union[str, SchemaView]): The schema that the data should conform to. We will only load
+            files of a recognized class and cast all values to the correct type.
         id_config_file (Union[str, Path]): File containing the configuration for generating IDs. If
             empty then no ID generation is performed.
 
@@ -127,7 +129,8 @@ def load_data(data_dir: Union[str, Path], schema: Union[str, SchemaView], id_con
     if isinstance(schema, str):
         schema = SchemaView(schema)
     
-    data = {}    
+    data = {}
+    cast_functions = get_cast_functions(schema)
     for file in os.listdir(data_dir):
         if os.path.splitext(file)[1].lower() in [".csv", ".tsv", ".txt"]:
             # Get the class name, which is the file name (without extension and ignoring case)
@@ -164,13 +167,97 @@ def load_data(data_dir: Union[str, Path], schema: Union[str, SchemaView], id_con
             
             # Reorient the data to a format recognized by the mapper (an array of rows, where
             # each row is a dictionary of the form {column_name:value, ...})
-            cur_data = [{ c: v for c, v in r.items() } for _, r in df.iterrows() ]    
+            cur_cast_functions = cast_functions[class_name]
+            cur_data = [{ c: cur_cast_functions[c](v) for c, v in r.items() } for _, r in df.iterrows() ]    
+            # cur_data = [{ c: v for c, v in r.items() } for _, r in df.iterrows() ]    
             if class_name not in data:
                 data[class_name] = []
             data[class_name].extend(cur_data)
             logger.info(f"Data file has {len(cur_data)} rows: {file}")
     
     return data
+
+def _cast_types(v: Any, cast_types: str) -> Any:
+    """Try to cast a value to the types specified in cast_types. We iterate over all cast types until
+    the casting works without throwing an exception. If none of the casting works then the value is returned
+    unchanged.
+
+    Args:
+        v (Any): The value to cast.
+        cast_types (str): A list of the cast types to try. Can have the values "float", "integer", or
+        "string". Any other value will be treated as a string (eg. if the cast type is a LinkML enumeration,
+        then it will be cast as a string).
+
+    Returns:
+        Any: The cast value, or the value unchanged if it could not be cast.
+    """
+    if pd.isna(v):
+        return v
+    for cast_type in cast_types:
+        # The default cast function is str, this will deal with enums and other types
+        cast_func = {
+            "float" : float,
+            "integer" : int,
+            "string" : str,
+        }.get(cast_type, str)
+        try:
+            return cast_func(v)
+        except:
+            pass
+    return v
+
+def get_cast_functions(schema: SchemaView) -> Dict[str, Dict[str, Callable]]:
+    """Get a dictionary specifying how all slots/attributes in all classes of the schema should
+    be cast, according to the range of the slot. 
+    
+    The keys of the returned dictionary are all the class names in the schema, and the values are 
+    sub-dictionaries specifying how values in the slots of the class should be cast.
+    The sub-dictionaries have keys that are slot names (or attribute names) in the class,
+    and the values are functions that take a single parameter to cast a value. For example,
+    the function might be float, int, or str.
+
+    Args:
+        schema (SchemaView): The schema to get the casting functions for.
+
+    Returns:
+        Dict[str, Dict[str, Callable]]: Dictionary of all casting functions. Keys are the schema
+            class names, values are dictionaries where keys are the slot names and values are
+            the casting functions (that take a single parameter to cast).
+    """
+    cast_functions = {}
+    # Loop through all classes in the schema
+    for class_name in schema.all_classes():
+        class_defn = schema.induced_class(class_name)
+        
+        # Add the sub-dictionary for the current class name
+        cast_functions[class_name] = {}
+        
+        # Loop through all attributes in the current class and add the casting functions
+        # to cur_cast_functions. Note that induced classes have converted all slots to
+        # attributes.
+        cur_cast_functions = cast_functions[class_name]
+        for slot_name in class_defn.attributes:
+            # Get the range of the slot. It is a string (even if it's a list of ranges),
+            # so we must convert it to a list using yaml. If it is not a list then
+            # yaml will just keep it as a string.
+            slot_defn = schema.induced_slot(slot_name=slot_name, class_name=class_name)
+            rng = yaml.safe_load(slot_defn.range)
+            # Add the casting function according to the range
+            if isinstance(rng, list):
+                # Order of a multi-range should be float, int, string. This will ensure
+                # that we don't lose decimals by trying to cast to an int first. Anything
+                # that is not a float or int will be ordered according to the position of "*"
+                # (this includes enumeration names).
+                order = ["float", "int", "*"]
+                rng = sorted(rng, key=lambda x: order.index(x) if x in order else order.index("*"))                
+                cur_cast_functions[slot_name] = partial(_cast_types, cast_types=rng)
+            elif rng in ["float", "double"]:
+                cur_cast_functions[slot_name] = partial(_cast_types, cast_types=["float"])
+            elif rng == "integer":
+                cur_cast_functions[slot_name] = partial(_cast_types, cast_types=["integer"])
+            else:
+                cur_cast_functions[slot_name] = partial(_cast_types, cast_types=["string"])
+    return cast_functions
 
 def add_row_number_derivation(spec: Dict):
     """Add a slot derivation for all class derivations in the mapper spec to copy over the row number
