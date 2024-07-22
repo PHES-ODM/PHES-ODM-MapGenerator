@@ -112,6 +112,8 @@ def read_data_frame(file: str, **kwargs) -> pd.DataFrame:
         with open(file, "r") as f:
             data = yaml.safe_load(f)
         df = pd.DataFrame(data)
+    else:
+        raise ValueError(f"Unrecognized extension for file {file}")
     return df
 
 def strip_whitespace(df: pd.DataFrame) -> pd.DataFrame:
