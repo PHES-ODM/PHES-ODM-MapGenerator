@@ -12,8 +12,11 @@ from general_utils import read_data_frame, save_data_frame, get_logger
 
 logger = get_logger(__name__)
 
+# Value to use if a value from one of the classes/tables is empty.
 EMPTY_VALUE = "Empty"
 
+# We save the original ID values in the loaded DataFrames to new columns with the same column
+# name as the original preceded by ORIG_ID_PREFIX (ie. f"{ORIG_ID_PREFIX}{column_name}")
 ORIG_ID_PREFIX = "__"
 
 # All columns that should be in the ID code generation config file
@@ -39,11 +42,17 @@ class FunctionBindings:
     def rownum(self) -> str:
         return "{:03d}".format(self.generator.current_row_index)
     
-    @property
-    def emptystring(self) -> str:
-        return EMPTY_VALUE
-    
     def makeid(self, *args) -> str:
+        """Create an ID out of the list of values.
+        
+        Args:
+            *args: The list of values to convert to an ID. We will convert them to strings and concatenate
+                them. The leading character is lower case, and the first character of each item in the list
+                becomes uppercase.
+
+        Returns:
+            str: The ID generated from the list of values.
+        """
         firstcap = False
         if not args:
             return None
@@ -55,15 +64,28 @@ class FunctionBindings:
         return v
         
     def date(self, d):
+        # @TODO: Implement
         return d
 
-    def countrows(self, cls: str, slot: str, equals) -> int:
-        return len(self.generator.get_rows_equal(cls, slot, equals))
+    def countrows(self, cls: str, slot: str, equals: Any) -> int:
+        """Count number of rows in class cls where the value in the slot is equal to any equals.
+
+        Args:
+            cls (str): The class to count the rows in.
+            slot (str): The slot in the class where we match to the equals parameter.
+            equals (Any): The value(s) to match. If a list or tuple then we match any of the values in the list. If not a list
+                then we only match the single value.
+
+        Returns:
+            int: The number of rows in the class where the value in the slot matches equals.
+        """
+        rows = self.generator.get_rows_equal(cls, slot, equals)
+        return len(rows) if rows is not None else 0
 
 class DataBindings():
     """All data bindings accessible from ID generation code through the dat object (eg. dat.samples.sampleID).
     """
-    def __init__(self, generator: "IDGenerator", root_class: Optional[str], sub_class_names: Optional[List[str]]):
+    def __init__(self, generator: "IDGenerator", root_class: Optional[str], sub_class_names: Optional[List[str]], replace_empty_values: bool=True):
         """Constructor for DataBindings.
 
         Args:
@@ -81,12 +103,15 @@ class DataBindings():
                 of all the recognized classes (ie. tables). To retrieve the bindings for one of these classes, we
                 would retrieve the attribute (using the name of the class) on this binding. For example,
                 bindingsObj.column. The actual row that is retrieved depends on the current_row_index of the generator.
+            replace_empty_values (bool, Optional): If True, then replace any empty values returned by this binding
+                with the value EMPTY_VALUE.
         """
         self.generator = generator
         self.root_class = root_class
+        self.replace_empty_values = replace_empty_values
         if sub_class_names:
             self.sub_classes = {
-                cls: DataBindings(generator, root_class=cls, sub_class_names=[]) for cls in sub_class_names
+                cls: DataBindings(generator, root_class=cls, sub_class_names=[], replace_empty_values=self.replace_empty_values) for cls in sub_class_names
             }
         else:
             self.sub_classes = None
@@ -101,7 +126,14 @@ class DataBindings():
         source_class = self.generator.current_class
         source_index = self.generator.current_row_index
         v = self.generator.get_first_linked_value(source_class, source_index, self.root_class, name)
-        return self.generator.finalize_value(v)
+        v = self.generator.parse_value(v)
+        if self.replace_empty_values:
+            if pd.isna(v) or v == "":
+                v = EMPTY_VALUE
+        else:
+            if pd.isna(v):
+                v = ""
+        return v
 
 class IDGenerator(object):
     def __init__(self, data_dir: str, config_file: str, id_code_file: str, id_code_sheet: str = None):
@@ -140,7 +172,8 @@ class IDGenerator(object):
         all_classes = list(self.config["class_linkages"].keys())
         all_classes += [cls for lnk in self.config["class_linkages"].values() for cls in lnk.keys()]
         self.bindings = {
-            "dat" : DataBindings(self, root_class="", sub_class_names=all_classes),
+            "dat" : DataBindings(self, root_class="", sub_class_names=all_classes, replace_empty_values=True),
+            "dat0" : DataBindings(self, root_class="", sub_class_names=all_classes, replace_empty_values=False),
             "fn" : FunctionBindings(self),
         }
         self.interpreter = Interpreter(usersyms=self.bindings)
@@ -337,22 +370,19 @@ class IDGenerator(object):
             return self.calculate_id(target_class, target_slot, row.name)
         return row[target_slot]
     
-    def finalize_value(self, v: Any) -> Any:
-        """Finalize a value retrieved from a DataFrame or calculated with ID generation code. This should
-        be called on any value calculated based on ID generated code before it gets used in a final ID in
-        the output DataFrame.
+    def parse_value(self, v: Any) -> Any:
+        """Parse a value retrieved from a DataFrame or calculated with ID generation code. This should
+        be called on any value before it gets used in a final ID in the output DataFrame.
         
-        We will do some processing such as replacing blank values with EMPTY_VALUE.
+        We will do some processing such as casting floats to ints if the float has no decimals.
 
         Args:
-            v (Any): The value to finalize.
+            v (Any): The value to parse.
 
         Returns:
-            Any: The finalized value.
+            Any: The parsed value.
         """
-        if pd.isna(v) or v == "":
-            return EMPTY_VALUE
-        if isinstance(v, float):
+        if isinstance(v, float) and not pd.isna(v):
             if int(v) == v:
                 return int(v)
         return v
@@ -381,7 +411,7 @@ class IDGenerator(object):
         old_class = self.current_class
         old_row_index = self.current_row_index
         v = self.interpreter(code)
-        v = self.finalize_value(v)
+        v = self.parse_value(v)
         
         # @TODO: Test this!!
         filt = self.data[cls][f"{ORIG_ID_PREFIX}{slot}"] == self.data[cls][f"{ORIG_ID_PREFIX}{slot}"].iloc[row_index]
@@ -405,6 +435,8 @@ class IDGenerator(object):
             pd.DataFrame: All rows in the class cls, where the value in the slot is equal to the value specified by match_value.
                 None if no matching rows are found.
         """
+        if cls not in self.data:
+            return None
         data = self.data[cls]
         if not isinstance(match_value, (list, tuple)):
             match_value = [match_value]
