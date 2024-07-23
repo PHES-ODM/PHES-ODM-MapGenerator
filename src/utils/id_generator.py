@@ -24,7 +24,9 @@ ORIG_ID_PREFIX = "__"
 class IDCodeColumns:
     CLASS = "class"
     SLOT = "slot"
-    CODE = "code"
+    # The code columns are in the format f"{CODE_PREFIX}{CODE_SUFFIX}".format(idx)
+    CODE_PREFIX = "code"
+    CODE_SUFFIX = "{:03d}"
 
 # Keys for linkage paths. These are used in the config file under the "class_linkages" key.
 class LinkageKeys:
@@ -261,7 +263,16 @@ class IDGenerator(object):
             id_code_df = pd.read_excel(id_code_file, id_code_sheet if id_code_sheet else 0)
         else:
             id_code_df = read_data_frame(id_code_file)
-        id_code_df = id_code_df.dropna(subset=[IDCodeColumns.CLASS, IDCodeColumns.SLOT, IDCodeColumns.CODE], axis=0, how="any")
+            
+        # Rename any column that starts with the word "code", so that they're in the form "code000" (maintaining the
+        # original order)
+        code_columns = [c for c in id_code_df.columns if c.startswith(IDCodeColumns.CODE_PREFIX)]
+        code_columns_map = { c: self.make_code_column_name(idx) for idx, c in enumerate(code_columns)}
+        id_code_df.columns = [code_columns_map.get(c, c) for c in id_code_df.columns]
+            
+        id_code_df = id_code_df.dropna(subset=[IDCodeColumns.CLASS, IDCodeColumns.SLOT], axis=0, how="any")
+        id_code_df = id_code_df.dropna(subset=code_columns_map.values(), axis=0, how="all")
+        # id_code_df = id_code_df.dropna(subset=self.make_code_column_name(1), axis=0, how="all")
         self.id_code_df = id_code_df
         
         # Determine all the ID slots that need to be calculated (in all classes).
@@ -300,24 +311,46 @@ class IDGenerator(object):
             df[orig_values_slots] = df[slots]
             df[slots] = None
             
-    def get_code(self, cls: str, slot: str) -> Optional[str]:
+    def make_code_column_name(self, idx: int) -> str:
+        """Get the name of the code column at the specified index in the ID code generation config table.
+        The index is 0-based.
+        
+        The returned column name might not exist in the code DataFrame (self.id_code_df). The caller
+        should make sure the column exists before accessing it.
+
+        Args:
+            idx (int): The code index to get the column name for.
+
+        Returns:
+            str: The name of the code column at index idx.
+        """
+        return "{}{}".format(IDCodeColumns.CODE_PREFIX, IDCodeColumns.CODE_SUFFIX).format(idx)
+            
+    def get_code(self, cls: str, slot: str, idx: int) -> Optional[str]:
         """Get the ID code for generating the ID for the specified slot.
 
         Args:
             cls (str): The class the slot belongs to.
             slot (str): The slot to get the code for.
-
-        Raises:
-            ValueError: No code is available for the specified slot.
+            idx (int): The code index to use. There may be multiple code columns in the ID code config
+                file. We should execute the code starting with the first index (index 0). If the code
+                results in an empty value, we should advance to the next code index, and continue until
+                a non-empty value is obtained, or we reach a code index where no code is available.
 
         Returns:
-            str: The code that generates the ID for the slot. None if no code is available.
+            str: The code (at index idx) that generates the ID for the slot. None if no code is available.
         """
+        # Get the code column name at the index, and make sure the column exists.
+        code_column = self.make_code_column_name(idx)
+        if code_column not in self.id_code_df.columns:
+            return None
+        
+        # Filter to get all rows for the specified class and slot.
         code = self.id_code_df[(self.id_code_df[IDCodeColumns.CLASS] == cls) & (self.id_code_df[IDCodeColumns.SLOT] == slot)]
         if len(code) == 0:
-            # raise ValueError(f"No code found for class '{cls}' and slot '{slot}'")
             return None
-        code = code[IDCodeColumns.CODE].iloc[0]
+        
+        code = code[code_column].iloc[0]
         return code
                
     def make_all_ids(self):
@@ -404,33 +437,39 @@ class IDGenerator(object):
         if cls not in self.data:
             return None
 
-        code = self.get_code(cls, slot)
-        
-        if pd.isna(code) or not code:
-            return None
+        code_idx = -1
+        while True:
+            code_idx += 1
+            code = self.get_code(cls, slot, code_idx)
+            
+            if pd.isna(code) or not code:
+                return None
+                    
+            old_class = self.current_class
+            old_row_index = self.current_row_index
+            self.current_class = cls
+            self.current_row_index = row_index
+            try:
+                v = self.interpreter(code, raise_errors=True)
+            except Exception as e:
+                raise ValueError(f"Error when calculating ID for '{cls}.{slot}:{row_index}': {e}")
+            finally:
+                self.current_class = old_class
+                self.current_row_index = old_row_index
                 
-        old_class = self.current_class
-        old_row_index = self.current_row_index
-        self.current_class = cls
-        self.current_row_index = row_index
-        try:
-            v = self.interpreter(code, raise_errors=True)
-        except Exception as e:
-            raise ValueError(f"Error when calculating ID for '{cls}.{slot}:{row_index}': {e}")
-        finally:
-            self.current_class = old_class
-            self.current_row_index = old_row_index
-        
-        # @TODO: Test this!!
-        match_value = self.data[cls][f"{ORIG_ID_PREFIX}{slot}"].iloc[row_index]
-        if pd.isna(match_value):
-            filt = pd.isna(self.data[cls][f"{ORIG_ID_PREFIX}{slot}"])
-        else:
-            filt = self.data[cls][f"{ORIG_ID_PREFIX}{slot}"] == match_value
-        self.data[cls].loc[filt, slot] = v
-        # self.data[cls].loc[row_index, slot] = v
-        
-        return v
+            if pd.isna(v) or v == "":
+                continue
+            
+            # @TODO: Test this!!
+            match_value = self.data[cls][f"{ORIG_ID_PREFIX}{slot}"].iloc[row_index]
+            if pd.isna(match_value):
+                filt = pd.isna(self.data[cls][f"{ORIG_ID_PREFIX}{slot}"])
+            else:
+                filt = self.data[cls][f"{ORIG_ID_PREFIX}{slot}"] == match_value
+            self.data[cls].loc[filt, slot] = v
+            # self.data[cls].loc[row_index, slot] = v
+            
+            return v
                     
     def get_rows_equal(self, cls: str, slot: str, match_value: Any) -> pd.DataFrame:
         """Get the rows in class cls where slot is equal to match_value.
@@ -601,3 +640,4 @@ if __name__ == "__main__":
     gen = IDGenerator(opts.data_dir, opts.config_file, opts.id_code_file, opts.id_code_sheet)
     gen.make_all_ids()
     gen.save_all(opts.output_dir)
+# %%
