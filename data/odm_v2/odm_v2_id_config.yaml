@@ -6,29 +6,94 @@ class_linkages:
     datasets:
       source_slot: datasetID
       target_slot: datasetID
+    # Not sure if this is correct
+    # organizations:
+    #   source_slot: addressID
+    #   target_slot: addressID
+  # datasets:
+  #   # Not sure if this is correct
+  #   organizations:
+  #     source_slot: datasetID
+  #     target_slot: datasetID
+  contacts:
+    datasets:
+      source_slot: datasetID
+      target_slot: datasetID
+    organizations:
+      source_slot: organizationID
+      target_slot: organizationID
+  instruments:
+    datasets:
+      source_slot: datasetID
+      target_slot: datasetID
+    contacts:
+      source_slot: contactID
+      target_slot: contactID
+    organizations:
+      source_slot: organizationID
+      target_slot: organizationID
   measures:
-    protocols:
-      source_slot: protocolID
-      target_slot: protocolID
-    # Results in multiple matches:
-    qualityReports:
-      source_slot: measureRepID
-      target_slot: measureRepID
-    samples:
-      source_slot: sampleID
-      target_slot: sampleID
-    polygons:
-      source_slot: polygonID
-      target_slot: polygonID
-    sites:
-      source_slot: siteID
-      target_slot: siteID
+    addresses:
+      - source_slot: siteID
+        target_class: sites
+        target_slot: siteID
+      - source_slot: addressID
+        target_slot: addressID
+    contacts:
+      source_slot: contactID
+      target_slot: contactID
     datasets:
       source_slot: datasetID
       target_slot: datasetID
     measureSets:
       source_slot: measureSetRepID
       target_slot: measureSetRepID
+    organizations:
+      source_slot: organizationID
+      target_slot: organizationID
+    polygons:
+      source_slot: polygonID
+      target_slot: polygonID
+    protocols:
+      source_slot: protocolID
+      target_slot: protocolID
+    # Results in multiple matches:
+    # qualityReports:
+    #   source_slot: measureRepID
+    #   target_slot: measureRepID
+    samples:
+      source_slot: sampleID
+      target_slot: sampleID
+    sites:
+      source_slot: siteID
+      target_slot: siteID
+  measureSets:
+    measures:
+      source_slot: measureSetRepID
+      target_slot: measureSetRepID
+    protocols:
+      source_slot: protocolID
+      target_slot: protocolID
+    organizations:
+      source_slot: organizationID
+      target_slot: organizationID
+    contacts:
+      source_slot: contactID
+      target_slot: contactID
+  organizations:
+    addresses:
+      source_slot: addressID
+      target_slot: addressID
+    datasets:
+      source_slot: datasetID
+      target_slot: datasetID
+  polygons:
+    sites:
+      source_slot: polygonID
+      target_slot: polygonID
+    datasets:
+      source_slot: datasetID
+      target_slot: datasetID
     organizations:
       source_slot: organizationID
       target_slot: organizationID
@@ -99,56 +164,6 @@ class_linkages:
     addresses:
       source_slot: addressID
       target_slot: addressID
-    organizations:
-      source_slot: organizationID
-      target_slot: organizationID
-    contacts:
-      source_slot: contactID
-      target_slot: contactID
-  contacts:
-    datasets:
-      source_slot: datasetID
-      target_slot: datasetID
-    organizations:
-      source_slot: organizationID
-      target_slot: organizationID
-  instruments:
-    datasets:
-      source_slot: datasetID
-      target_slot: datasetID
-    contacts:
-      source_slot: contactID
-      target_slot: contactID
-    organizations:
-      source_slot: organizationID
-      target_slot: organizationID
-  measureSets:
-    measures:
-      source_slot: measureSetRepID
-      target_slot: measureSetRepID
-    protocols:
-      source_slot: protocolID
-      target_slot: protocolID
-    organizations:
-      source_slot: organizationID
-      target_slot: organizationID
-    contacts:
-      source_slot: contactID
-      target_slot: contactID
-  organizations:
-    addresses:
-      source_slot: addressID
-      target_slot: addressID
-    datasets:
-      source_slot: datasetID
-      target_slot: datasetID
-  polygons:
-    sites:
-      source_slot: polygonID
-      target_slot: polygonID
-    datasets:
-      source_slot: datasetID
-      target_slot: datasetID
     organizations:
       source_slot: organizationID
       target_slot: organizationID
