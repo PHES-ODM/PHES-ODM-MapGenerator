@@ -1,5 +1,6 @@
 #%%
 from typing import Any, List, Dict, Union, Optional
+from collections.abc import Iterable
 import yaml
 import os
 import pandas as pd
@@ -56,11 +57,12 @@ class FunctionBindings:
         firstcap = False
         if not args:
             return None
-        args = [str(v) for v in args]
+        args = [str(v).replace(" ", "") for v in args]
         args = [v for v in args if len(v)]
+        # Make first character of each element uppercase. The first element has a first character that is
+        # lowercase unless firstcap is True
         args = ["%s%s" % (v[0].upper() if (idx or firstcap) else v[0].lower(), v[1:]) for idx, v in enumerate(args)]
         v = "".join(args)
-        v = v.replace(" ", "")
         return v
         
     def date(self, d):
@@ -115,6 +117,13 @@ class DataBindings():
             }
         else:
             self.sub_classes = None
+            
+    def __str__(self) -> str:
+        if self.sub_classes is None:
+            sub_classes =  None
+        else:
+            sub_classes = list(self.sub_classes.keys())
+        return f"DataBindings(root_class={self.root_class}, sub_classes={sub_classes})"
     
     def __getattr__(self, name):
         if self.sub_classes:
@@ -126,13 +135,20 @@ class DataBindings():
         source_class = self.generator.current_class
         source_index = self.generator.current_row_index
         v = self.generator.get_first_linked_value(source_class, source_index, self.root_class, name)
-        v = self.generator.parse_value(v)
+
+        # Convert float to integer if it has no decimals
+        if isinstance(v, float) and not pd.isna(v):
+            if int(v) == v:
+                v = int(v)
+
+        # Replace empty values
         if self.replace_empty_values:
             if pd.isna(v) or v == "":
                 v = EMPTY_VALUE
         else:
             if pd.isna(v):
                 v = ""
+                
         return v
 
 class IDGenerator(object):
@@ -188,7 +204,7 @@ class IDGenerator(object):
         Returns:
             bool: True if the slot gets its ID generated, False if it doesn't.
         """
-        return slot in self.class_ids[cls]
+        return cls in self.class_ids and slot in self.class_ids[cls]
         
     def prepare_config(self, config: str):
         """Load and prepare the configuration file for the ID generator.
@@ -319,6 +335,7 @@ class IDGenerator(object):
             all_slots = self.class_ids.get(cls, [])
             for idx in tqdm(self.data[cls].index):
                 for slot in all_slots:
+                    # logger.info(f"Making slot '{slot}' in class '{cls}'")
                     if slot not in self.data[cls]:
                         raise ValueError(f"Found slot '{slot}' in class '{cls}' in ID code file that does not exist in the source data.")
                     v = self.data[cls][slot].loc[idx]
@@ -367,25 +384,9 @@ class IDGenerator(object):
         if row is None:
             return None
         if self.is_id_generated_slot(target_class, target_slot) and pd.isna(row[target_slot]):
+            # Note: row.name is the row index
             return self.calculate_id(target_class, target_slot, row.name)
         return row[target_slot]
-    
-    def parse_value(self, v: Any) -> Any:
-        """Parse a value retrieved from a DataFrame or calculated with ID generation code. This should
-        be called on any value before it gets used in a final ID in the output DataFrame.
-        
-        We will do some processing such as casting floats to ints if the float has no decimals.
-
-        Args:
-            v (Any): The value to parse.
-
-        Returns:
-            Any: The parsed value.
-        """
-        if isinstance(v, float) and not pd.isna(v):
-            if int(v) == v:
-                return int(v)
-        return v
     
     def calculate_id(self, cls: str, slot: str, row_index: int) -> Any:
         """Calculate the ID for the slot in the class at the specified row index. The ID is
@@ -410,16 +411,25 @@ class IDGenerator(object):
                 
         old_class = self.current_class
         old_row_index = self.current_row_index
-        v = self.interpreter(code)
-        v = self.parse_value(v)
+        self.current_class = cls
+        self.current_row_index = row_index
+        try:
+            v = self.interpreter(code, raise_errors=True)
+        except Exception as e:
+            raise ValueError(f"Error when calculating ID for '{cls}.{slot}:{row_index}': {e}")
+        finally:
+            self.current_class = old_class
+            self.current_row_index = old_row_index
         
         # @TODO: Test this!!
-        filt = self.data[cls][f"{ORIG_ID_PREFIX}{slot}"] == self.data[cls][f"{ORIG_ID_PREFIX}{slot}"].iloc[row_index]
+        match_value = self.data[cls][f"{ORIG_ID_PREFIX}{slot}"].iloc[row_index]
+        if pd.isna(match_value):
+            filt = pd.isna(self.data[cls][f"{ORIG_ID_PREFIX}{slot}"])
+        else:
+            filt = self.data[cls][f"{ORIG_ID_PREFIX}{slot}"] == match_value
         self.data[cls].loc[filt, slot] = v
         # self.data[cls].loc[row_index, slot] = v
         
-        self.current_class = old_class
-        self.current_row_index = old_row_index
         return v
                     
     def get_rows_equal(self, cls: str, slot: str, match_value: Any) -> pd.DataFrame:
@@ -465,7 +475,7 @@ class IDGenerator(object):
         Returns:
             pd.DataFrame: The retrieved rows.
         """
-        if isinstance(index, int):
+        if not isinstance(index, Iterable):
             index = [index]
         return self.data[cls].loc[index]
     
@@ -499,7 +509,7 @@ class IDGenerator(object):
         
         # If no linkage path is available, then return None
         if linkage_path is None:
-            # raise ValueError(f"No linkage path available to link from class '{source_class}' to class '{target_class}'")
+            raise ValueError(f"No linkage path available to link from class '{source_class}:{source_index}' to class '{target_class}'")
             return None
                 
         if not isinstance(linkage_path, (list, tuple)):
