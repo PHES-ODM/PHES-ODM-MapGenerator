@@ -108,7 +108,7 @@ def extract_class_derivations(maps_df: pd.DataFrame, source_schema: SchemaView) 
         else:
             # Add the slot derivation for target_slot (populating from source_slot)
             if source_slot not in source_schema.class_slots(source_class):
-                raise ValueError(f"Found source slot {source_slot} (in source class '{source_class}') in mapping data that does not exist in the source schema, ignoring row")
+                raise ValueError(f"Found source slot '{source_slot}' (in source class '{source_class}') in mapping data that does not exist in the source schema, for row:\n{row}")
             if target_slot in slot_derivations:
                 if "populated_from" not in slot_derivations[target_slot]:
                     raise ValueError(f"Target slot '{target_slot}' in target class '{target_class}' from source class '{source_class}' already exists in slot_derivations but has different populated_from fields (expected source slot '{source_slot}' but found Empty)")
