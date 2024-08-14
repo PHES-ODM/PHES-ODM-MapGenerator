@@ -86,7 +86,7 @@ class IDGenerator(object):
         # Prepare the code for calculating IDs
         self.prepare_id_code(id_code_file, id_code_sheet)
 
-        # Prepare the IDs in the loaded DataFrames based on the config
+        # Prepare the IDs in the loaded DataFrames based on the ID code
         self.prepare_ids()
 
         # Prepare the config file
@@ -105,12 +105,14 @@ class IDGenerator(object):
         """Create the function and data bindings. Should be called once all data has been loaded
         and finalized.
         """
+        # Get all recognized classes
         class_linkages = self.config.get(ConfigKeys.CLASS_LINKAGES, {})
         primary_keys = self.config.get(ConfigKeys.PRIMARY_KEYS, {})
         all_classes = list(class_linkages.keys())
         all_classes += [class_name for lnk in class_linkages.values() for class_name in lnk.keys()]
         all_classes += list(primary_keys.keys())
         all_classes = list(dict.fromkeys(all_classes))
+        
         self.bindings = {
             "dat" : DataBindings(self, root_class="", sub_class_names=all_classes, replace_empty_values=True),
             "dat0" : DataBindings(self, root_class="", sub_class_names=all_classes, replace_empty_values=False),
@@ -715,18 +717,23 @@ class IDGenerator(object):
                 return rows, indices
             return rows
         
+        # Return None if class not recognized
         if class_name not in self.class_info:
             return _ret_value(None, None)
-        data = self.class_info[class_name][ClassInfoKeys.DATA]
+
         if not isinstance(match_value, (list, tuple)):
             match_value = [match_value]
+
+        data = self.class_info[class_name][ClassInfoKeys.DATA]
+        
+        # If any NA value found in match_value, then include pd.isna for filtering, since np.isin does not work with all NA values.
         if len([v for v in match_value if pd.isna(v)]):
             na_filt = pd.isna(data[:, self.get_column_index(class_name, slot)])
         else:
             na_filt = False
-        indices = None
+            
+        # Get the filter for all matches (including the na_filt), and the indices to select with the filter
         filt = np.isin(data[:, self.get_column_index(class_name, slot)], match_value) | na_filt
-        # indices = np.where(filt)[0]
         indices = filt.nonzero()[0]
 
         rows = data[filt]
@@ -885,7 +892,7 @@ class IDGenerator(object):
                     # Drop rows where pk_slot is a duplicate
                     data = data.drop_duplicates(pk_slot, keep="first")
                     new_len = len(data)
-                else:               
+                else:
                     # Add "drop" column for testing
                     DROP_COLUMN = "drop"
                     columns = list(data.columns)
