@@ -562,7 +562,7 @@ def map(source_schema_file: Union[str, Path], target_schema_file: Union[str, Pat
             parse_df_values(df, inline=True)
             # Retain the original order by sorting by ROW_NUMBER. ROW_NUMBER was added in code with the integer row number,
             # so that we can sort the output DataFrame by row number.
-            df = sort_mapped_data(df, drop_sorting_column=True)
+            df = sort_mapped_data(df, drop_sorting_column=False)
             data = { target_type : df }
             
             # Filter the data. 
