@@ -555,9 +555,9 @@ class IDGenerator(object):
                 # ID where the rows are identical, or will add an index to the end of the new ID
                 # if there are no identical rows but the new ID is already in use (ie. we will
                 # make the new ID unique)
-                v = self.group_primary_key(class_name, row_index)
+                self.group_primary_key(class_name, row_index)
 
-            return v
+            return self.get_data_value(class_name, slot, row_index)
         
     def set_data_value(self, class_name: str, slot: str, row_index: int, v: Any):
         """Set the value in the data for the specified class, slot, and row index.
