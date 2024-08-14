@@ -385,6 +385,7 @@ class IDGenerator(object):
                     if output_progress:
                         current_progress = processed_indices/len(row_indices) * 100
                         self.report_progress(processed_ids, total_ids, f" (Current={processed_indices}/{len(row_indices)}, {current_progress:0.1f}%)")
+
                     # _log_info(f"Making slot '{slot}' in class '{class_name}'")
                     if slot not in self.class_info[class_name][ClassInfoKeys.COLUMNS]:
                         raise ValueError(f"Found slot '{slot}' in class '{class_name}' in ID code file that does not exist in the source data.")
@@ -537,7 +538,7 @@ class IDGenerator(object):
             finally:
                 self.current_class = orig_current_class
                 self.current_row_index = orig_current_row_index
-            
+
             # If the code resulted in an empty value, continue to the next code column
             if pd.isna(v) or v == "":
                 continue                
@@ -554,7 +555,7 @@ class IDGenerator(object):
                 # ID where the rows are identical, or will add an index to the end of the new ID
                 # if there are no identical rows but the new ID is already in use (ie. we will
                 # make the new ID unique)
-                self.group_primary_key(class_name, row_index)
+                v = self.group_primary_key(class_name, row_index)
 
             return v
         
@@ -582,7 +583,7 @@ class IDGenerator(object):
         """
         return self.class_info[class_name][ClassInfoKeys.DATA][row_index, self.get_column_index(class_name, slot)]
         
-    def group_primary_key(self, class_name: str, row_index: int):
+    def group_primary_key(self, class_name: str, row_index: int) -> Any:
         """For the (unindexed) primary key value currently found at the row index in the specified class, 
         either group it with other rows generated so far that are identical to the row at row_index
         (by using the same primary key index as found in the duplicate rows), or if there are no other
@@ -605,6 +606,9 @@ class IDGenerator(object):
         Args:
             class_name (str): The class that contains the row to group.
             row_index (int): The 0-based row number in the class to group the primary key for.
+        
+        Returns:
+            Any: The value of the primary key at row row_index, after any grouping is performed.
         """
         def _make_indexed_pk(unindexed_pk: str, pk_index: int) -> str:
             """Make an indexed primary key value, based on the unindexed primary key value and
@@ -645,7 +649,7 @@ class IDGenerator(object):
         delete_idx = indices.index(row_index)
         rows = np.delete(rows, delete_idx, axis=0)
         indices.pop(delete_idx)
-        
+
         if len(rows) > 0:
             # Get the rows that are identical to current_row
             # The columns we use for matching are all of the original columns in the loaded DataFrame, without the primary key column
@@ -683,6 +687,8 @@ class IDGenerator(object):
                     break
                 pk_index += 1
             _set_current_row_values(unindexed_pk_value, pk_index)
+
+        return self.get_data_value(class_name, pk_slot, row_index)
 
     def get_rows_equal(self, class_name: str, slot: str, match_value: Any, return_indices: Optional[bool]=False) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """Get the rows in class class_name where slot is equal to match_value.
