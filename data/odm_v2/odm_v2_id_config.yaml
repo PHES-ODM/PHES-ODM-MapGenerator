@@ -1,3 +1,4 @@
+# The slots for each class that are the primary keys
 primary_keys:
   addresses: addressID
   contacts: contactID
@@ -17,6 +18,7 @@ primary_keys:
 # Class linkages determines how to link a row in one table to a row in another table. We match the value
 # in the source slot of the source row to the target slot in the target row.
 # These are the default slots to use, when no linkage slots are explicitly specified.
+# To use the source row numbers for linking, remove the class_linkages key.
 # class_linkages:
 #   addresses:
 #     datasets:
