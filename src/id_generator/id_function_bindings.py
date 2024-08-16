@@ -37,7 +37,7 @@ class FunctionBindings:
         return d
 
     def countrows(self, class_name: str, slot: str, equals: Any) -> int:
-        """Count number of rows in class class_name where the value in the slot is equal to any equals.
+        """Count number of rows in class class_name where the value in the slot is equal to any value in equals.
 
         Args:
             class_name (str): The class to count the rows in.

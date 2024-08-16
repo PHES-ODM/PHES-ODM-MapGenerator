@@ -573,7 +573,7 @@ class IDGenerator(object):
         # If no linkage path is available, then return None
         if linkage_path is None:
             raise ValueError(f"No linkage path available to link from class '{source_class}:{source_index}' to class '{target_class}'")
-            return _ret_value(None, None)
+            # return _ret_value(None, None)
                 
         if not isinstance(linkage_path, (list, tuple)):
             linkage_path = [linkage_path]
@@ -658,7 +658,7 @@ class IDGenerator(object):
         
         # If the target slot is an ID that needs to be generated, then generate it and return the value
         if self.is_id_generated_slot(target_class, target_slot) and pd.isna(row[self.get_column_index(target_class, target_slot)]):
-            return self.calculate_id(target_class, target_slot, idx) #row.name)
+            return self.calculate_id(target_class, target_slot, idx)
             
         return row[self.get_column_index(target_class, target_slot)]
     
