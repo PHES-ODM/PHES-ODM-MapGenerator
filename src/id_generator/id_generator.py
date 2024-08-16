@@ -1,4 +1,9 @@
 #%%
+"""
+# IDGenerator
+
+@TODO: Add details of how IDs are generated, including grouping of primary keys
+"""
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -49,7 +54,8 @@ class ClassInfoKeys:
     DATA = "data"
     COLUMNS = "columns"
     ORIG_COLUMNS = "orig_columns"
-    
+
+# Keys found in the config file
 class ConfigKeys:
     PRIMARY_KEYS = "primary_keys"
     CLASS_LINKAGES = "class_linkages"
@@ -134,18 +140,6 @@ class IDGenerator(object):
             # Convert the DataFrame to a Numpy array
             info[ClassInfoKeys.DATA] = info[ClassInfoKeys.DATA].to_numpy()
 
-    def is_id_generated_slot(self, class_name: str, slot: str) -> bool:
-        """Determine if the slot in the class is for an ID that gets generated.
-
-        Args:
-            class_name (str): The class of the slot.
-            slot (str): The slot.
-
-        Returns:
-            bool: True if the slot gets its ID generated, False if it doesn't.
-        """
-        return class_name in self.class_ids and slot in self.class_ids[class_name]
-        
     def prepare_config(self, config: str):
         """Load and prepare the configuration file for the ID generator.
 
@@ -252,69 +246,6 @@ class IDGenerator(object):
             df[orig_values_slots] = df[slots]
             df[slots] = None
             
-    def make_code_column_name(self, idx: int) -> str:
-        """Get the name of the code column at the specified index in the ID code generation config table.
-        The index is 0-based.
-        
-        The returned column name might not exist in the code DataFrame (self.id_code_df). The caller
-        should make sure the column exists before accessing it.
-
-        Args:
-            idx (int): The code index to get the column name for.
-
-        Returns:
-            str: The name of the code column at index idx.
-        """
-        return "{}{}".format(IDCodeColumns.CODE_PREFIX, IDCodeColumns.CODE_SUFFIX).format(idx)
-            
-    def get_code(self, class_name: str, slot: str, idx: int) -> Optional[str]:
-        """Get the ID code for generating the ID for the specified slot.
-
-        Args:
-            class_name (str): The class the slot belongs to.
-            slot (str): The slot to get the code for.
-            idx (int): The code index to use. There may be multiple code columns in the ID code config
-                file. We should execute the code starting with the first index (index 0). If the code
-                results in an empty value, we should advance to the next code index, and continue until
-                a non-empty value is obtained, or we reach a code index where no code is available.
-
-        Returns:
-            Optional[str]: The code (at index idx) that generates the ID for the slot. None if no code 
-                is available.
-        """
-        # Get the code column name at the index, and make sure the column exists.
-        code_column = self.make_code_column_name(idx)
-        if code_column not in self.id_code_df.columns:
-            return None
-        
-        # Filter to get all rows for the specified class and slot.
-        code = self.id_code_df[(self.id_code_df[IDCodeColumns.CLASS] == class_name) & (self.id_code_df[IDCodeColumns.SLOT] == slot)]
-        if len(code) == 0:
-            return None
-        
-        code = code[code_column].iloc[0]
-        return code
-    
-    def get_column_index(self, class_name: str, col: str) -> int:
-        """Get the index of the specified column name in the specified class.
-        
-        The index is the 0-based column number for the 2D Numpy array for the class. The Numpy array is found
-        at self.class_info[class_name][ClassInfoKeys.DATA].
-
-        Args:
-            class_name (str): The class name that the column belongs to.
-            col (str): The column name to get the index for.
-
-        Returns:
-            int: The index for the class name.
-        """
-        return self.class_info[class_name][ClassInfoKeys.COLUMNS].index(col)
-    
-    def report_progress(self, processed_ids: int, total_ids: int, extra_info: str=""):
-        if processed_ids % 500 == 0:
-            percent_complete = processed_ids / total_ids * 100
-            # print(f"Progress: {percent_complete:0.1f}%{extra_info}", end="\r")
-    
     def make_all_ids(self, class_names: Optional[Union[str, List[str]]]=None, row_indices: Optional[Union[int, List[int]]]=None):
         """Make all IDs that need to be generated.
         
@@ -409,158 +340,61 @@ class IDGenerator(object):
         
         _log_info(f"Finished making all IDs: {datetime.now() - tic}")
     
-    def get_first_linked_row(self, source_class: str, source_index: int, target_class: str, linkage_path: Optional[Union[Dict, List[Dict]]]=None, return_index: bool=False) -> Union[np.ndarray, Tuple[np.ndarray, int]]:
-        """Get the first row in target_class that is linked to the row at index source_index in the class source_class.
+    def is_id_generated_slot(self, class_name: str, slot: str) -> bool:
+        """Determine if the slot in the class is for an ID that gets generated.
 
         Args:
-            source_class (str): The source class.
-            source_index (int): The row index in the source class that we want to get the linked rows for.
-            target_class (str): The target class to get the linked rows from.
-            linkage_path (Optional[Union[Dict, List[Dict]]], Optional): The configuration specifying how to link from source_class to target_class. If None
-                then the default linkage path from source_class to target_class in the config file is used. Defaults to None.
-            return_index (Optional[bool], Optional): If True then return the index of the first linked row, in addition to
-                the row. The return value will be the tuple (row, index)
+            class_name (str): The class of the slot.
+            slot (str): The slot.
 
         Returns:
-            Union[np.ndarray, Tuple[np.ndarray, int]]: If return_index is False then a 1D Numpy array is returned
-                that is the first linked row in the target class. If return_index is True then a tuple of the form 
-                (row, index) is returned, where index is the index of the row in the full dataset for the target class.
-                If no linked rows are found the either None or the tuple (None, None) are returned,
-                depending on the value of return_indices.
+            bool: True if the slot gets its ID generated, False if it doesn't.
         """
-        rows, indices = self.get_linked_rows(source_class, source_index, target_class, linkage_path, return_indices=return_index)
-        if rows is None or len(rows) == 0:
-            row = None
-            idx = None
-        else:
-            row = rows[0]
-            idx = indices[0]
-        if return_index:
-            return row, idx
-        else:
-            return row
-                    
-    def get_first_linked_value(self, source_class: str, source_index: int, target_class: str, target_slot: str, linkage_path: Optional[Union[Dict, List[Dict]]]=None) -> Any:
-        """Get the first value in target_class and slot target_slot that is linked to the row in source_class at row index source_index, using
-        the linkage_path to determine how to link from source_class to target_class. If linkage_path is None then we use the
-        linkage path found in the config file (self.config[ConfigKeys.CLASS_LINKAGES])
+        return class_name in self.class_ids and slot in self.class_ids[class_name]
+        
+    def make_code_column_name(self, idx: int) -> str:
+        """Get the name of the code column at the specified index in the ID code generation config table.
+        The index is 0-based.
+        
+        The returned column name might not exist in the code DataFrame (self.id_code_df). The caller
+        should make sure the column exists before accessing it.
 
         Args:
-            source_class (str): The source class we are linking from.
-            source_index (int): The row index in the source class to link from.
-            target_class (str): The target class that we want to get the linked value from.
-            target_slot (str): The slot in the target class to get the value from.
-            linkage_path (Optional[Union[Dict, List[Dict]]], Optional): Configuration of how to link from source_class to target_class. If None then
-                the default linkage in the config file is used. Defaults to None.
+            idx (int): The code index to get the column name for.
 
         Returns:
-            Any: The first linked value in the target class and slot. If no linked value is found then None is returned.
+            str: The name of the code column at index idx.
         """
-        row, idx = self.get_first_linked_row(source_class, source_index, target_class, linkage_path, return_index=True)
-        if row is None:
+        return "{}{}".format(IDCodeColumns.CODE_PREFIX, IDCodeColumns.CODE_SUFFIX).format(idx)
+            
+    def get_code(self, class_name: str, slot: str, idx: int) -> Optional[str]:
+        """Get the ID code for generating the ID for the specified slot.
+
+        Args:
+            class_name (str): The class the slot belongs to.
+            slot (str): The slot to get the code for.
+            idx (int): The code index to use. There may be multiple code columns in the ID code config
+                file. We should execute the code starting with the first index (index 0). If the code
+                results in an empty value, we should advance to the next code index, and continue until
+                a non-empty value is obtained, or we reach a code index where no code is available.
+
+        Returns:
+            Optional[str]: The code (at index idx) that generates the ID for the slot. None if no code 
+                is available.
+        """
+        # Get the code column name at the index, and make sure the column exists.
+        code_column = self.make_code_column_name(idx)
+        if code_column not in self.id_code_df.columns:
             return None
         
-        # If the target slot is an ID that needs to be generated, then generate it and return the value
-        if self.is_id_generated_slot(target_class, target_slot) and pd.isna(row[self.get_column_index(target_class, target_slot)]):
-            return self.calculate_id(target_class, target_slot, idx) #row.name)
-            
-        return row[self.get_column_index(target_class, target_slot)]
-    
-    def is_primary_key(self, class_name: str, slot: str) -> bool:
-        """Determine if the slot in the specified class is a primary key for the class.
-
-        Args:
-            class_name (str): The class name.
-            slot (str): The name of the slot to determine if it is a primary key.
-
-        Returns:
-            bool: True if slot is a primary key in the class, False if it is not.
-        """
-        return slot == self.get_primary_key(class_name)
-    
-    def get_primary_key(self, class_name: str) -> Optional[str]:
-        """Get the primary key for the specified class.
-
-        Args:
-            class_name (str): The class (table) name to get the primary key of.
-
-        Returns:
-            Optional[str]: The name of the slot that is the primary key for the class. If there is no primary key
-                specified in the config file then None is returned.
-        """
-        if ConfigKeys.PRIMARY_KEYS not in self.config:
-            logger.warning(f"Key {ConfigKeys.PRIMARY_KEYS} does not exist in config file, assuming no primary keys.")
+        # Filter to get all rows for the specified class and slot.
+        code = self.id_code_df[(self.id_code_df[IDCodeColumns.CLASS] == class_name) & (self.id_code_df[IDCodeColumns.SLOT] == slot)]
+        if len(code) == 0:
             return None
-        return self.config[ConfigKeys.PRIMARY_KEYS].get(class_name, None)
-    
-    def calculate_id(self, class_name: str, slot: str, row_index: int) -> Any:
-        """Calculate the ID for the slot in the class at the specified row index. The ID is
-        calculated based on the ID generation code for the class/slot combination, and is found
-        in the ID code config file.
-
-        Args:
-            class_name (str): The class that the slot belongs to.
-            slot (str): The slot to calculate the ID for.
-            row_index (int): The row index in the class's DataFrame that we calculate the slot for.
-
-        Returns:
-            Any: The calculated ID.
-        """
-        if class_name not in self.class_info:
-            return None
-
-        # We loop through all code columns for the slot. Once executing the code generates a
-        # non-empty value, we use that value as the generated ID and stop looping over the code
-        # columns. If we have executed all the code columns and all of them have generated an
-        # empty value, we return without setting the ID
-        # @TODO: Deal with case where all code columns results in an empty value. May want to set
-        # the ID in the Numpy data to an empty string.
-        code_idx = -1
-        while True:
-            code_idx += 1
-            code = self.get_code(class_name, slot, code_idx)
-            
-            if pd.isna(code) or not code:
-                return None
-                    
-            orig_current_class = self.current_class
-            orig_current_row_index = self.current_row_index
-            self.current_class = class_name
-            self.current_row_index = row_index
-            
-            try:
-                v = self.interpreter(code, raise_errors=True)
-            except Exception as e:
-                # format_exc() will provide extra traceback information related to the exception that occurred
-                # when executing the code string.
-                print("*"*100)
-                print(traceback.format_exc())
-                print("="*100)
-                raise ValueError(f"Error when calculating ID for '{class_name}.{slot}:{row_index}': {e}\nCode: {code}")
-            finally:
-                self.current_class = orig_current_class
-                self.current_row_index = orig_current_row_index
-
-            # If the code resulted in an empty value, continue to the next code column
-            if pd.isna(v) or v == "":
-                continue                
-            
-            self.set_data_value(class_name, slot, row_index, v)
-            
-            # If the slot is the primary key, then calculate the remainder of the row, so we can determine if the
-            # row is a duplicate or not of all other rows generated so far that have the same primary key value.
-            # If it is a duplicate, we reuse an existing primary key ID from the duplicates. If it is not
-            # a duplicate we make sure the primary key value is unique.
-            if self.is_primary_key(class_name, slot):
-                self.make_all_ids(class_name, row_index)
-                # Grouping the primary keys will either group the new calculated ID with an existing
-                # ID where the rows are identical, or will add an index to the end of the new ID
-                # if there are no identical rows but the new ID is already in use (ie. we will
-                # make the new ID unique)
-                self.group_primary_key(class_name, row_index)
-
-            return self.get_data_value(class_name, slot, row_index)
         
+        code = code[code_column].iloc[0]
+        return code
+    
     def set_data_value(self, class_name: str, slot: str, row_index: int, v: Any):
         """Set the value in the data for the specified class, slot, and row index.
 
@@ -585,113 +419,53 @@ class IDGenerator(object):
         """
         return self.class_info[class_name][ClassInfoKeys.DATA][row_index, self.get_column_index(class_name, slot)]
         
-    def group_primary_key(self, class_name: str, row_index: int) -> Any:
-        """For the (unindexed) primary key value currently found at the row index in the specified class, 
-        either group it with other rows generated so far that are identical to the row at row_index
-        (by using the same primary key index as found in the duplicate rows), or if there are no other
-        identical rows so far add an optional index to make sure the primary key is unique.
+    def get_column_index(self, class_name: str, col: str) -> int:
+        """Get the index of the specified column name in the specified class.
         
-        An unindexed primary key value is the original calculated ID, without any modification. These
-        values are stored in the UNINDEXED_PK_SLOT of the class's Numpy data. In order to create a unique
-        primary key from this unindexed value, we add an index to it (eg. a trailing number).
-        This index number is stored in PK_INDEX_SLOT. The actual primary key becomes a combination
-        of the unindexed pk value and the pk index (eg. "mySample" + "001" = "mySample001").
-        
-        If the pk index is 0 then the indexed pk value will be the same as the unindexed pk value
-        (eg. "mySample", without a trailing number).
-        
-        When calling this function, the value currently found in the row's primary key column is
-        assumed to be the unindexed value. Both the values at PK_INDEX_SLOT and UNINDEXED_PK_SLOT
-        are ignored. Once this function is complete, all three of these columns will be set with
-        the new values.
+        The index is the 0-based column number for the 2D Numpy array for the class. The Numpy array is found
+        at self.class_info[class_name][ClassInfoKeys.DATA].
 
         Args:
-            class_name (str): The class that contains the row to group.
-            row_index (int): The 0-based row number in the class to group the primary key for.
-        
+            class_name (str): The class name that the column belongs to.
+            col (str): The column name to get the index for.
+
         Returns:
-            Any: The value of the primary key at row row_index, after any grouping is performed.
+            int: The index for the class name.
         """
-        def _make_indexed_pk(unindexed_pk: str, pk_index: int) -> str:
-            """Make an indexed primary key value, based on the unindexed primary key value and
-            a numerical index."""
-            if pk_index:
-                return f"{unindexed_pk}{pk_index:03d}"
-            else:
-                return unindexed_pk
-            
-        def _set_current_row_values(unindexed_pk: str, pk_index: int):
-            """Set the ID values for the current row (the indexed pk value in pk_slot, the
-            unindexed pk value in UNINDEXED_PK_SLOT, and the index in PK_INDEX_SLOT).
-            """
-            self.set_data_value(class_name, PK_INDEX_SLOT, row_index, pk_index)
-            self.set_data_value(class_name, UNINDEXED_PK_SLOT, row_index, unindexed_pk)
-            indexed_pk_value = _make_indexed_pk(unindexed_pk, pk_index)
-            self.set_data_value(class_name, pk_slot, row_index, indexed_pk_value)
-        
-        pk_slot = self.get_primary_key(class_name)
-        
-        # The unindex PK value is currently at pk_slot. Copy the value over to the UNINDEXED_PK_SLOT
-        # then clear pk_slot (since we will recalculate it)
-        unindexed_pk_value = self.get_data_value(class_name, pk_slot, row_index)
-        self.set_data_value(class_name, pk_slot, row_index, None)
-        self.set_data_value(class_name, PK_INDEX_SLOT, row_index, None)
-        self.set_data_value(class_name, UNINDEXED_PK_SLOT, row_index, unindexed_pk_value)
+        return self.class_info[class_name][ClassInfoKeys.COLUMNS].index(col)
+    
+    def get_primary_key(self, class_name: str) -> Optional[str]:
+        """Get the primary key for the specified class.
 
-        # Get the current row (at row_index)
-        current_row = self.get_rows_at_index(class_name, row_index)
-        # Get all rows that have the same unindexed primary key value
-        rows, indices = self.get_rows_equal(class_name, UNINDEXED_PK_SLOT, unindexed_pk_value, return_indices=True)
-        
-        if rows is None:
-            raise RuntimeError(f"No rows in class '{class_name}' match the unindexed primary key value '{unindexed_pk_value}', at least one must exist.")
+        Args:
+            class_name (str): The class (table) name to get the primary key of.
 
-        # Remove the row at row_index (ie. the current row) from the matches
-        indices = list(indices)
-        delete_idx = indices.index(row_index)
-        rows = np.delete(rows, delete_idx, axis=0)
-        indices.pop(delete_idx)
+        Returns:
+            Optional[str]: The name of the slot that is the primary key for the class. If there is no primary key
+                specified in the config file then None is returned.
+        """
+        if ConfigKeys.PRIMARY_KEYS not in self.config:
+            logger.warning(f"Key {ConfigKeys.PRIMARY_KEYS} does not exist in config file, assuming no primary keys.")
+            return None
+        return self.config[ConfigKeys.PRIMARY_KEYS].get(class_name, None)
+    
+    def is_primary_key(self, class_name: str, slot: str) -> bool:
+        """Determine if the slot in the specified class is a primary key for the class.
 
-        if len(rows) > 0:
-            # Get the rows that are identical to current_row
-            # The columns we use for matching are all of the original columns in the loaded DataFrame, without the primary key column
-            # but with the column at UNINDEXED_PK_SLOT.
-            columns = [self.get_column_index(class_name, c) for c in self.class_info[class_name][ClassInfoKeys.ORIG_COLUMNS] if c != pk_slot]
-            columns.append(self.get_column_index(class_name, UNINDEXED_PK_SLOT))
-            
-            # Replace NANs so that they can be equated to each other (normally, float("nan") == float("nan") is False, but we
-            # want it to be true by replacing the nan values with a single comparable value)
-            nanobj = object()
-            rows_nan = rows[:, columns].copy()
-            current_row_nan = current_row[:, columns].copy()
-            rows_nan[np.where(pd.isna(rows_nan))] = nanobj
-            current_row_nan[np.where(pd.isna(current_row_nan))] = nanobj
-            
-            # Collect all rows that are identical to the current row
-            identical_rows_filt = np.equal(rows_nan, current_row_nan).all(axis=1)
-            identical_rows = rows[identical_rows_filt, :]
-        else:
-            # There are no identical rows
-            identical_rows = []
-        
-        if len(identical_rows) > 0:
-            # There are identical rows, so use the PK index found in the first identical row
-            pk_index = identical_rows[0, self.get_column_index(class_name, PK_INDEX_SLOT)]
-            _set_current_row_values(unindexed_pk_value, pk_index)
-        else:
-            # There are no identical rows, so get a PK index that results in a unique indexed PK
-            pk_index = rows[:, self.get_column_index(class_name, PK_INDEX_SLOT)].max() + 1 if len(rows) else 0
-            while True:
-                indexed_pk_value = _make_indexed_pk(unindexed_pk_value, pk_index)
-                # If indexed_pk_value is unique in column pk_slot then use it.
-                # Note that we have previously set the value in column pk_slot for the current row to None
-                if indexed_pk_value not in self.class_info[class_name][ClassInfoKeys.DATA][:, self.get_column_index(class_name, pk_slot)]:
-                    break
-                pk_index += 1
-            _set_current_row_values(unindexed_pk_value, pk_index)
+        Args:
+            class_name (str): The class name.
+            slot (str): The name of the slot to determine if it is a primary key.
 
-        return self.get_data_value(class_name, pk_slot, row_index)
-
+        Returns:
+            bool: True if slot is a primary key in the class, False if it is not.
+        """
+        return slot == self.get_primary_key(class_name)
+    
+    def report_progress(self, processed_ids: int, total_ids: int, extra_info: str=""):
+        if processed_ids % 500 == 0:
+            percent_complete = processed_ids / total_ids * 100
+            # print(f"Progress: {percent_complete:0.1f}%{extra_info}", end="\r")
+    
     def get_rows_equal(self, class_name: str, slot: str, match_value: Any, return_indices: Optional[bool]=False) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """Get the rows in class class_name where slot is equal to match_value.
 
@@ -831,6 +605,63 @@ class IDGenerator(object):
             
         return _ret_value(rows, indices)
         
+    def get_first_linked_row(self, source_class: str, source_index: int, target_class: str, linkage_path: Optional[Union[Dict, List[Dict]]]=None, return_index: bool=False) -> Union[np.ndarray, Tuple[np.ndarray, int]]:
+        """Get the first row in target_class that is linked to the row at index source_index in the class source_class.
+
+        Args:
+            source_class (str): The source class.
+            source_index (int): The row index in the source class that we want to get the linked rows for.
+            target_class (str): The target class to get the linked rows from.
+            linkage_path (Optional[Union[Dict, List[Dict]]], Optional): The configuration specifying how to link from source_class to target_class. If None
+                then the default linkage path from source_class to target_class in the config file is used. Defaults to None.
+            return_index (Optional[bool], Optional): If True then return the index of the first linked row, in addition to
+                the row. The return value will be the tuple (row, index)
+
+        Returns:
+            Union[np.ndarray, Tuple[np.ndarray, int]]: If return_index is False then a 1D Numpy array is returned
+                that is the first linked row in the target class. If return_index is True then a tuple of the form 
+                (row, index) is returned, where index is the index of the row in the full dataset for the target class.
+                If no linked rows are found the either None or the tuple (None, None) are returned,
+                depending on the value of return_indices.
+        """
+        rows, indices = self.get_linked_rows(source_class, source_index, target_class, linkage_path, return_indices=return_index)
+        if rows is None or len(rows) == 0:
+            row = None
+            idx = None
+        else:
+            row = rows[0]
+            idx = indices[0]
+        if return_index:
+            return row, idx
+        else:
+            return row
+                    
+    def get_first_linked_value(self, source_class: str, source_index: int, target_class: str, target_slot: str, linkage_path: Optional[Union[Dict, List[Dict]]]=None) -> Any:
+        """Get the first value in target_class and slot target_slot that is linked to the row in source_class at row index source_index, using
+        the linkage_path to determine how to link from source_class to target_class. If linkage_path is None then we use the
+        linkage path found in the config file (self.config[ConfigKeys.CLASS_LINKAGES])
+
+        Args:
+            source_class (str): The source class we are linking from.
+            source_index (int): The row index in the source class to link from.
+            target_class (str): The target class that we want to get the linked value from.
+            target_slot (str): The slot in the target class to get the value from.
+            linkage_path (Optional[Union[Dict, List[Dict]]], Optional): Configuration of how to link from source_class to target_class. If None then
+                the default linkage in the config file is used. Defaults to None.
+
+        Returns:
+            Any: The first linked value in the target class and slot. If no linked value is found then None is returned.
+        """
+        row, idx = self.get_first_linked_row(source_class, source_index, target_class, linkage_path, return_index=True)
+        if row is None:
+            return None
+        
+        # If the target slot is an ID that needs to be generated, then generate it and return the value
+        if self.is_id_generated_slot(target_class, target_slot) and pd.isna(row[self.get_column_index(target_class, target_slot)]):
+            return self.calculate_id(target_class, target_slot, idx) #row.name)
+            
+        return row[self.get_column_index(target_class, target_slot)]
+    
     def get_default_linkage_path(self, source_class: str, target_class: str) -> Optional[Union[Dict, List[Dict]]]:
         """Get the default class linkage, that specifies the steps required to link a row in source_class to
         row(s) in target_class. The default linkage is the one specified in the config file under the
@@ -868,6 +699,181 @@ class IDGenerator(object):
         linkage = self.config[ConfigKeys.CLASS_LINKAGES][source_class]
         return linkage.get(target_class, None)
                     
+    def calculate_id(self, class_name: str, slot: str, row_index: int) -> Any:
+        """Calculate the ID for the slot in the class at the specified row index. The ID is
+        calculated based on the ID generation code for the class/slot combination, and is found
+        in the ID code config file.
+
+        Args:
+            class_name (str): The class that the slot belongs to.
+            slot (str): The slot to calculate the ID for.
+            row_index (int): The row index in the class's DataFrame that we calculate the slot for.
+
+        Returns:
+            Any: The calculated ID.
+        """
+        if class_name not in self.class_info:
+            return None
+
+        # We loop through all code columns for the slot. Once executing the code generates a
+        # non-empty value, we use that value as the generated ID and stop looping over the code
+        # columns. If we have executed all the code columns and all of them have generated an
+        # empty value, we return without setting the ID
+        # @TODO: Deal with case where all code columns results in an empty value. May want to set
+        # the ID in the Numpy data to an empty string.
+        code_idx = -1
+        while True:
+            code_idx += 1
+            code = self.get_code(class_name, slot, code_idx)
+            
+            if pd.isna(code) or not code:
+                return None
+                    
+            orig_current_class = self.current_class
+            orig_current_row_index = self.current_row_index
+            self.current_class = class_name
+            self.current_row_index = row_index
+            
+            try:
+                v = self.interpreter(code, raise_errors=True)
+            except Exception as e:
+                # format_exc() will provide extra traceback information related to the exception that occurred
+                # when executing the code string.
+                print("*"*100)
+                print(traceback.format_exc())
+                print("="*100)
+                raise ValueError(f"Error when calculating ID for '{class_name}.{slot}:{row_index}': {e}\nCode: {code}")
+            finally:
+                self.current_class = orig_current_class
+                self.current_row_index = orig_current_row_index
+
+            # If the code resulted in an empty value, continue to the next code column
+            if pd.isna(v) or v == "":
+                continue                
+            
+            self.set_data_value(class_name, slot, row_index, v)
+            
+            # If the slot is the primary key, then calculate the remainder of the row, so we can determine if the
+            # row is a duplicate or not of all other rows generated so far that have the same primary key value.
+            # If it is a duplicate, we reuse an existing primary key ID from the duplicates. If it is not
+            # a duplicate we make sure the primary key value is unique.
+            if self.is_primary_key(class_name, slot):
+                self.make_all_ids(class_name, row_index)
+                # Grouping the primary keys will either group the new calculated ID with an existing
+                # ID where the rows are identical, or will add an index to the end of the new ID
+                # if there are no identical rows but the new ID is already in use (ie. we will
+                # make the new ID unique)
+                self.group_primary_key(class_name, row_index)
+
+            return self.get_data_value(class_name, slot, row_index)
+        
+    def group_primary_key(self, class_name: str, row_index: int) -> Any:
+        """For the (unindexed) primary key value currently found at the row index in the specified class, 
+        either group it with other rows generated so far that are identical to the row at row_index
+        (by using the same primary key index as found in the duplicate rows), or if there are no other
+        identical rows so far add an optional index to make sure the primary key is unique.
+        
+        An unindexed primary key value is the original calculated ID, without any modification. These
+        values are stored in the UNINDEXED_PK_SLOT of the class's Numpy data. In order to create a unique
+        primary key from this unindexed value, we add an index to it (eg. a trailing number).
+        This index number is stored in PK_INDEX_SLOT. The actual primary key becomes a combination
+        of the unindexed pk value and the pk index (eg. "mySample" + "001" = "mySample001").
+        
+        If the pk index is 0 then the indexed pk value will be the same as the unindexed pk value
+        (eg. "mySample", without a trailing number).
+        
+        When calling this function, the value currently found in the row's primary key column is
+        assumed to be the unindexed value. Both the values at PK_INDEX_SLOT and UNINDEXED_PK_SLOT
+        are ignored. Once this function is complete, all three of these columns will be set with
+        the new values.
+
+        Args:
+            class_name (str): The class that contains the row to group.
+            row_index (int): The 0-based row number in the class to group the primary key for.
+        
+        Returns:
+            Any: The value of the primary key at row row_index, after any grouping is performed.
+        """
+        def _make_indexed_pk(unindexed_pk: str, pk_index: int) -> str:
+            """Make an indexed primary key value, based on the unindexed primary key value and
+            a numerical index."""
+            if pk_index:
+                return f"{unindexed_pk}{pk_index:03d}"
+            else:
+                return unindexed_pk
+            
+        def _set_current_row_values(unindexed_pk: str, pk_index: int):
+            """Set the ID values for the current row (the indexed pk value in pk_slot, the
+            unindexed pk value in UNINDEXED_PK_SLOT, and the index in PK_INDEX_SLOT).
+            """
+            self.set_data_value(class_name, PK_INDEX_SLOT, row_index, pk_index)
+            self.set_data_value(class_name, UNINDEXED_PK_SLOT, row_index, unindexed_pk)
+            indexed_pk_value = _make_indexed_pk(unindexed_pk, pk_index)
+            self.set_data_value(class_name, pk_slot, row_index, indexed_pk_value)
+        
+        pk_slot = self.get_primary_key(class_name)
+        
+        # The unindex PK value is currently at pk_slot. Copy the value over to the UNINDEXED_PK_SLOT
+        # then clear pk_slot (since we will recalculate it)
+        unindexed_pk_value = self.get_data_value(class_name, pk_slot, row_index)
+        self.set_data_value(class_name, pk_slot, row_index, None)
+        self.set_data_value(class_name, PK_INDEX_SLOT, row_index, None)
+        self.set_data_value(class_name, UNINDEXED_PK_SLOT, row_index, unindexed_pk_value)
+
+        # Get the current row (at row_index)
+        current_row = self.get_rows_at_index(class_name, row_index)
+        # Get all rows that have the same unindexed primary key value
+        rows, indices = self.get_rows_equal(class_name, UNINDEXED_PK_SLOT, unindexed_pk_value, return_indices=True)
+        
+        if rows is None:
+            raise RuntimeError(f"No rows in class '{class_name}' match the unindexed primary key value '{unindexed_pk_value}', at least one must exist.")
+
+        # Remove the row at row_index (ie. the current row) from the matches
+        indices = list(indices)
+        delete_idx = indices.index(row_index)
+        rows = np.delete(rows, delete_idx, axis=0)
+        indices.pop(delete_idx)
+
+        if len(rows) > 0:
+            # Get the rows that are identical to current_row
+            # The columns we use for matching are all of the original columns in the loaded DataFrame, without the primary key column
+            # but with the column at UNINDEXED_PK_SLOT.
+            columns = [self.get_column_index(class_name, c) for c in self.class_info[class_name][ClassInfoKeys.ORIG_COLUMNS] if c != pk_slot]
+            columns.append(self.get_column_index(class_name, UNINDEXED_PK_SLOT))
+            
+            # Replace NANs so that they can be equated to each other (normally, float("nan") == float("nan") is False, but we
+            # want it to be true by replacing the nan values with a single comparable value)
+            nanobj = object()
+            rows_nan = rows[:, columns].copy()
+            current_row_nan = current_row[:, columns].copy()
+            rows_nan[np.where(pd.isna(rows_nan))] = nanobj
+            current_row_nan[np.where(pd.isna(current_row_nan))] = nanobj
+            
+            # Collect all rows that are identical to the current row
+            identical_rows_filt = np.equal(rows_nan, current_row_nan).all(axis=1)
+            identical_rows = rows[identical_rows_filt, :]
+        else:
+            # There are no identical rows
+            identical_rows = []
+        
+        if len(identical_rows) > 0:
+            # There are identical rows, so use the PK index found in the first identical row
+            pk_index = identical_rows[0, self.get_column_index(class_name, PK_INDEX_SLOT)]
+            _set_current_row_values(unindexed_pk_value, pk_index)
+        else:
+            # There are no identical rows, so get a PK index that results in a unique indexed PK
+            pk_index = rows[:, self.get_column_index(class_name, PK_INDEX_SLOT)].max() + 1 if len(rows) else 0
+            while True:
+                indexed_pk_value = _make_indexed_pk(unindexed_pk_value, pk_index)
+                # If indexed_pk_value is unique in column pk_slot then use it.
+                # Note that we have previously set the value in column pk_slot for the current row to None
+                if indexed_pk_value not in self.class_info[class_name][ClassInfoKeys.DATA][:, self.get_column_index(class_name, pk_slot)]:
+                    break
+                pk_index += 1
+            _set_current_row_values(unindexed_pk_value, pk_index)
+
+        return self.get_data_value(class_name, pk_slot, row_index)
+
     def save_all(self, output_dir: str, orig_columns_only: bool=True, drop_duplicates: bool=True):
         """Save all DataFrames to disk.
 
