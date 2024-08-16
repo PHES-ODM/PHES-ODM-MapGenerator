@@ -1,13 +1,20 @@
 import pandas as pd
-from typing import Optional, List, Any
+from typing import Optional, List
 
 # Value to use if a value from one of the classes/tables is empty.
 EMPTY_VALUE = "Empty"
 
-class DataBindings():
-    """All data bindings accessible from ID generation code through the dat object (eg. dat.samples.sampleID).
-    """
-    def __init__(self, generator, root_class: Optional[str], sub_class_names: Optional[List[str]], replace_empty_values: bool=True):
+
+class DataBindings:
+    """All data bindings accessible from ID generation code through the dat object (eg. dat.samples.sampleID)."""
+
+    def __init__(
+        self,
+        generator,
+        root_class: Optional[str],
+        sub_class_names: Optional[List[str]],
+        replace_empty_values: bool = True,
+    ):
         """Constructor for DataBindings.
 
         Args:
@@ -33,18 +40,24 @@ class DataBindings():
         self.replace_empty_values = replace_empty_values
         if sub_class_names:
             self.sub_classes = {
-                class_name: DataBindings(generator, root_class=class_name, sub_class_names=[], replace_empty_values=self.replace_empty_values) for class_name in sub_class_names
+                class_name: DataBindings(
+                    generator,
+                    root_class=class_name,
+                    sub_class_names=[],
+                    replace_empty_values=self.replace_empty_values,
+                )
+                for class_name in sub_class_names
             }
         else:
             self.sub_classes = None
-            
+
     def __str__(self) -> str:
         if self.sub_classes is None:
-            sub_classes =  None
+            sub_classes = None
         else:
             sub_classes = list(self.sub_classes.keys())
         return f"DataBindings(root_class={self.root_class}, sub_classes={sub_classes})"
-    
+
     def __getattr__(self, name):
         if self.sub_classes:
             return self.sub_classes[name]
@@ -55,8 +68,10 @@ class DataBindings():
         # in source_class at index source_index.
         source_class = self.generator.current_class
         source_index = self.generator.current_row_index
-        v = self.generator.get_first_linked_value(source_class, source_index, self.root_class, name)
-        
+        v = self.generator.get_first_linked_value(
+            source_class, source_index, self.root_class, name
+        )
+
         # Convert float to integer if it has no decimals
         if isinstance(v, float) and not pd.isna(v):
             if int(v) == v:
@@ -69,5 +84,5 @@ class DataBindings():
         else:
             if pd.isna(v):
                 v = ""
-        
+
         return v

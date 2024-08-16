@@ -15,9 +15,14 @@ from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model.meta import SlotDefinition
 
 from utils.general_utils import get_logger, read_data_frame
-from utils.mapper_utils import get_variable_reference, MappingColumns, is_wide_target_value_slot
+from utils.mapper_utils import (
+    get_variable_reference,
+    MappingColumns,
+    is_wide_target_value_slot,
+)
 
 logger = get_logger(__name__)
+
 
 class IDConfigColumns:
     # Name of the ID (eg. id:idName, where idName is any string)
@@ -25,7 +30,8 @@ class IDConfigColumns:
     # How to generate the ID. If in the format {{slotName}} then the ID receives the value found "slotName" of the source
     # class. Otherwise if not empty then the ID receives the constant value. If empty then a random identifier is generated.
     value = "value"
-    
+
+
 class IDType:
     # The type of ID to generate.
     # Copy the value from another slot in the source class.
@@ -34,6 +40,7 @@ class IDType:
     constant = "constant"
     # Create a unique random ID
     random = "random"
+
 
 def is_auto_id(name: Any) -> bool:
     """Determine if the specified variable name represents an auto ID.
@@ -50,6 +57,7 @@ def is_auto_id(name: Any) -> bool:
         return False
     return name.startswith("id:")
 
+
 def add_id_to_schema(schema: SchemaView, cls: str, id_slot_name: str):
     """Add the specified slot (in the specified class) to the specified LinkML schema. The slot is added to the top-most
     "slots" of the schema, as well as in the "slots" and "slot_usage" fields of the class definition.
@@ -64,14 +72,19 @@ def add_id_to_schema(schema: SchemaView, cls: str, id_slot_name: str):
     if id_slot_name not in schema.all_slots():
         defn = SlotDefinition(id_slot_name, from_schema=schema.schema.id)
         schema.add_slot(defn)
-    
+
     # Make sure id_slot_name exists in both slots and slot_usage of the class definition
     class_defn = schema.get_class(cls)
     if id_slot_name not in class_defn.slots:
-        defn = SlotDefinition(id_slot_name, range="string", description=f"Auto generated ID for class '{cls}' and slot '{id_slot_name}'")
+        defn = SlotDefinition(
+            id_slot_name,
+            range="string",
+            description=f"Auto generated ID for class '{cls}' and slot '{id_slot_name}'",
+        )
         class_defn.slots.append(id_slot_name)
         class_defn.slot_usage[id_slot_name] = defn
-    
+
+
 def add_auto_ids_to_schema(schema: SchemaView, df: pd.DataFrame):
     """Using the specified mapping DataFrame (from a mapping config file "maps" or "wide" sheet), create all the
     auto ids found and add them to the schema (in the appropriate classes).
@@ -88,25 +101,32 @@ def add_auto_ids_to_schema(schema: SchemaView, df: pd.DataFrame):
         source_slot = row.get(MappingColumns.SOURCE_SLOT, None)
         wide_other_slots = row.get(MappingColumns.WIDE_OTHER_SLOTS, None)
         target_value = row.get(MappingColumns.TARGET_VALUE, None)
-        
+
         # Check for an ID in sourceSlot
         if source_class and source_slot and is_auto_id(source_slot):
             add_id_to_schema(schema, source_class, source_slot)
-            
+
         # Check for an ID in targetValue
         if source_class and source_slot and is_auto_id(target_value):
             add_id_to_schema(schema, source_class, target_value)
-        
+
         # Check for an ID in wideOtherSlots (a dictionary where the value might be in the form {{id:idSlot}})
-        if source_class and source_slot and wide_other_slots and isinstance(wide_other_slots, str):
+        if (
+            source_class
+            and source_slot
+            and wide_other_slots
+            and isinstance(wide_other_slots, str)
+        ):
             wide_other_slots = json.loads(wide_other_slots)
             for value in wide_other_slots.values():
                 value = get_variable_reference(value)
                 if value and is_auto_id(value):
                     add_id_to_schema(schema, source_class, value)
-                    
+
         # Check all _value columns
-        wide_target_value_slots = [s for s in df.columns if is_wide_target_value_slot(s)]
+        wide_target_value_slots = [
+            s for s in df.columns if is_wide_target_value_slot(s)
+        ]
         if len(wide_target_value_slots) > 0:
             for s in wide_target_value_slots:
                 value = row.get(s)
@@ -114,10 +134,13 @@ def add_auto_ids_to_schema(schema: SchemaView, df: pd.DataFrame):
                 if value and is_auto_id(value):
                     add_id_to_schema(schema, source_class, value)
 
-def gen_auto_ids(id_config_file: Union[str, Path], schema: SchemaView, cls: str, df: pd.DataFrame):
+
+def gen_auto_ids(
+    id_config_file: Union[str, Path], schema: SchemaView, cls: str, df: pd.DataFrame
+):
     """Using the DataFrame that represents the specified class (cls), add any auto ID columns to the DataFrame that are
     found in the LinkML schema for the specified class. Any slot in the class that is of the form id:idName, where idName is
-    any string, will be treated as an auto ID. The values that we set the IDs to depends on how they are configured in 
+    any string, will be treated as an auto ID. The values that we set the IDs to depends on how they are configured in
     id_config_file. These can include constant strings, random IDs, etc.
 
     Args:
@@ -131,21 +154,27 @@ def gen_auto_ids(id_config_file: Union[str, Path], schema: SchemaView, cls: str,
         id_config_df = read_data_frame(id_config_file)
     else:
         id_config_df = None
-    
+
     # Get all slots in the class that are given an auto ID name (eg. id:idName)
     class_defn = schema.get_class(cls)
     id_slots = [s for s in class_defn.slots if is_auto_id(s)]
-    
+
     # Go through all auto ID slots and add the generated IDs to the DataFrame.
     if len(id_slots) > 0:
         for id_slot in id_slots:
             value = None
-            id_type = IDType.random # Default ID type
+            id_type = IDType.random  # Default ID type
             if id_config_df is not None:
                 # Get the configuration for the ID slot.
-                config_row = id_config_df[id_config_df[IDConfigColumns.id].map(lambda x: re.fullmatch(x, id_slot) is not None)]
+                config_row = id_config_df[
+                    id_config_df[IDConfigColumns.id].map(
+                        lambda x: re.fullmatch(x, id_slot) is not None
+                    )
+                ]
                 if len(config_row.index) > 1:
-                    raise ValueError(f"Found multiple rows for ID '{id_slot}' in ID config file")
+                    raise ValueError(
+                        f"Found multiple rows for ID '{id_slot}' in ID config file"
+                    )
                 if len(config_row.index) == 1:
                     config_row = config_row.iloc[0]
                     value = config_row[IDConfigColumns.value]
@@ -157,14 +186,20 @@ def gen_auto_ids(id_config_file: Union[str, Path], schema: SchemaView, cls: str,
                     else:
                         id_type = IDType.constant
                 else:
-                    logger.warning(f"No configuration found for ID '{id_slot}'. Using default ID type '{id_type}'")
+                    logger.warning(
+                        f"No configuration found for ID '{id_slot}'. Using default ID type '{id_type}'"
+                    )
 
             # Generate the IDs (add them to the DataFrame)
             if id_type == IDType.random:
-                df[id_slot] = [f"{id_slot.replace(':', '_')}_{i}" for i in range(len(df.index))]
+                df[id_slot] = [
+                    f"{id_slot.replace(':', '_')}_{i}" for i in range(len(df.index))
+                ]
             elif id_type == IDType.variable:
                 df[id_slot] = df[variable]
             elif id_type == IDType.constant:
                 df[id_slot] = value
             else:
-                raise RuntimeError(f"Unrecognized ID type for ID '{id_slot}' with config value '{value}'")
+                raise RuntimeError(
+                    f"Unrecognized ID type for ID '{id_slot}' with config value '{value}'"
+                )

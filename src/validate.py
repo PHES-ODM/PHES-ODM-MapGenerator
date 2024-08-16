@@ -1,4 +1,4 @@
-#%%
+# %%
 
 import argparse
 from collections import Counter
@@ -6,13 +6,14 @@ from typing import Any, Optional, Iterator, Union
 from pathlib import Path
 from abc import ABC, abstractmethod
 import csv
-import re
 import sys
 import os
 
 from linkml.validator import Validator
 from linkml.validator.loaders import Loader
-from linkml.validator.plugins.jsonschema_validation_plugin import JsonschemaValidationPlugin
+from linkml.validator.plugins.jsonschema_validation_plugin import (
+    JsonschemaValidationPlugin,
+)
 from linkml_runtime import SchemaView
 from linkml.validator.report import Severity
 
@@ -20,6 +21,7 @@ from utils.general_utils import parse_numeric, get_logger
 from utils.schema_utils import get_ranges_of_slot
 
 logger = get_logger(__name__)
+
 
 def _parse_value(value: Any, cls: str, slot: str, schema: SchemaView) -> Any:
     """Parse the value, as found in a table/class named cls, according to the format it should
@@ -39,23 +41,32 @@ def _parse_value(value: Any, cls: str, slot: str, schema: SchemaView) -> Any:
     """
     # Get the range and cast to string if range is "string" or an enum
     ranges = get_ranges_of_slot(cls, slot, schema)
-    
+
     if ranges:
         for rng in ranges:
             # Test if rng is an enum or "string", if it is then return the value as a string
             if rng == "string" or rng in schema.all_enums():
                 return str(value)
-    
+
     # Try to cast to an integer or float
     return parse_numeric(value)
 
+
 class LoaderWithSchema(Loader, ABC):
-    """
-    """
-    def __init__(self, source: Union[str, Path], source_schema: Union[str, Path], source_class: str, *, skip_empty_rows: bool = False, index_slot_name: Optional[str] = None) -> None:
+    """ """
+
+    def __init__(
+        self,
+        source: Union[str, Path],
+        source_schema: Union[str, Path],
+        source_class: str,
+        *,
+        skip_empty_rows: bool = False,
+        index_slot_name: Optional[str] = None,
+    ) -> None:
         """Initializer for LoaderWithSchema. LoaderWithSchema is an abstract base class that loads a data file
         one row at a time and casts the columns to the appropriate type according to a schema and class.
-        
+
         Derived classes should override the delimiter property, which specifies the delimeter used for the
         data source.
 
@@ -82,11 +93,17 @@ class LoaderWithSchema(Loader, ABC):
             Iterator[dict]: A single row.
         """
         with open(self.source) as file:
-            reader: csv.DictReader = csv.DictReader(file, delimiter=self.delimiter, skipinitialspace=True)
+            reader: csv.DictReader = csv.DictReader(
+                file, delimiter=self.delimiter, skipinitialspace=True
+            )
             for row in reader:
                 if self.skip_empty_rows and not any(row.values()):
                     continue
-                yield {k: _parse_value(v, self.source_class, k, self.schema) for k, v in row.items() if k is not None and v != ""}
+                yield {
+                    k: _parse_value(v, self.source_class, k, self.schema)
+                    for k, v in row.items()
+                    if k is not None and v != ""
+                }
 
     def iter_instances(self) -> Iterator[dict]:
         """Iterate over all rows or return the full data all once as a single dictionary where the key
@@ -99,27 +116,31 @@ class LoaderWithSchema(Loader, ABC):
             yield {self.index_slot_name: list(self._rows())}
         else:
             yield from self._rows()
-            
+
     @property
     @abstractmethod
-    def delimiter(self):
-        ...
+    def delimiter(self): ...
+
 
 class CsvLoaderWithSchema(LoaderWithSchema):
     @property
     def delimiter(self):
         return ","
-    
+
+
 class TsvLoaderWithSchema(LoaderWithSchema):
     @property
     def delimiter(self):
         return "\t"
-    
-def loader_from_file(data_source: Union[str, Path], *args, **kwargs) -> LoaderWithSchema:
+
+
+def loader_from_file(
+    data_source: Union[str, Path], *args, **kwargs
+) -> LoaderWithSchema:
     """Construct the correct LoaderWithSchema-derived class according to the file extension of the
     data_source, and prepare the loader to load the data. The LoaderWithSchema-derived class will
     ensure that the correct delimiter is used (ie. comma-separated or tab-separated).
-    
+
     For **kwargs source_schema and source_class are required, and skip_empty_rows is optional.
 
     Args:
@@ -139,8 +160,10 @@ def loader_from_file(data_source: Union[str, Path], *args, **kwargs) -> LoaderWi
     else:
         raise ValueError(f"No LoaderWithSchema for file {data_source}")
 
+
 if __name__ == "__main__":
     if "get_ipython" in globals():
+
         class opts:
             # schema = "../data/nwss_restricted_analytics/linkml/nwss_restricted_analytics.yaml"
             schema = "../data/nwss_reporting/linkml/nwss_reporting.yaml"
@@ -150,24 +173,49 @@ if __name__ == "__main__":
             data_source = "../gen/nwss_reporting_to_v2/cleaned_data/nwss[cdc-nwss-restricted-data-set-wastewater-2024-03-19].csv"
             max_errors = 500
     else:
-        args = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        args.add_argument("--schema", type=str, help="Location of the schema file", required=True)
-        args.add_argument("--source_class", type=str, help="Name of the class for the data source", required=True)
-        args.add_argument("--data_source", type=str, help="The data file to validate", required=True)
-        args.add_argument("--max_errors", type=int, help="Maximum number of errors or warnings to output", required=False)
+        args = argparse.ArgumentParser(
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+        args.add_argument(
+            "--schema", type=str, help="Location of the schema file", required=True
+        )
+        args.add_argument(
+            "--source_class",
+            type=str,
+            help="Name of the class for the data source",
+            required=True,
+        )
+        args.add_argument(
+            "--data_source", type=str, help="The data file to validate", required=True
+        )
+        args.add_argument(
+            "--max_errors",
+            type=int,
+            help="Maximum number of errors or warnings to output",
+            required=False,
+        )
         opts = args.parse_args()
 
     strict = False
 
     plugins = [JsonschemaValidationPlugin(closed=True)]
-    loader = loader_from_file(opts.data_source, source_schema=opts.schema, source_class=opts.source_class, skip_empty_rows=True)
+    loader = loader_from_file(
+        opts.data_source,
+        source_schema=opts.schema,
+        source_class=opts.source_class,
+        skip_empty_rows=True,
+    )
     validator = Validator(opts.schema, validation_plugins=plugins, strict=strict)
 
     severity_counter = Counter()
-    for idx, result in enumerate(validator.iter_results_from_source(loader, opts.source_class)):
+    for idx, result in enumerate(
+        validator.iter_results_from_source(loader, opts.source_class)
+    ):
         severity_counter[result.severity] += 1
-        print(f"[{result.severity.value}] [{loader.source}/{result.instance_index}] {result.message}")
-        if opts.max_errors is not None and idx+1 >= opts.max_errors:
+        print(
+            f"[{result.severity.value}] [{loader.source}/{result.instance_index}] {result.message}"
+        )
+        if opts.max_errors is not None and idx + 1 >= opts.max_errors:
             break
 
     if sum(severity_counter.values()) == 0:

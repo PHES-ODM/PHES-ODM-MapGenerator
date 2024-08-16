@@ -35,31 +35,36 @@ v2_class_names = [
 # a column with the same name as the table. If a row has any of the following _v2_header_tags in that
 # column, then the partID for that row is a column header in the ODM v2 table.
 _v2_header_tags = [
-    "header",   # Regular header
-    "fK",       # Foreign key
-    "pK",       # Primary key
+    "header",  # Regular header
+    "fK",  # Foreign key
+    "pK",  # Primary key
 ]
 
 # Enumerations specified in the parts list (that are NOT in the sets list) are identified by rows that
 # have "categorical" as the "dataType" and that have an empty "mmaSet" column. The names for
 # the enumerations for these rows are created by adding an "s" to the end of the "partID". However, some
-# enumeration names do not follow this pattern. The exceptions are listed below, with the "partID" as the 
+# enumeration names do not follow this pattern. The exceptions are listed below, with the "partID" as the
 # key and the corresponding enumeration name as the value.
 _v2_enum_name_exceptions = {
-    "aggragationScale" : "aggregationScales",        # TYPO! Should be aggregationScale / Only in parts table
-    "class" : "classes",                             # Add "es" instead of "s"
-    "dataTypes" : "dataTypes",                       # No change
-    "measure" : "measurements",                      # Not sure?
-    "missingnessSets" : "missingnessSets",           # No change
-    "partType" : "partType",                         # Not sure?
-    "qualityFlag" : "qualityIndicators",
-    "specimenSets" : "specimenSets",                 # No change
+    "aggragationScale": "aggregationScales",  # TYPO! Should be aggregationScale / Only in parts table
+    "class": "classes",  # Add "es" instead of "s"
+    "dataTypes": "dataTypes",  # No change
+    "measure": "measurements",  # Not sure?
+    "missingnessSets": "missingnessSets",  # No change
+    "partType": "partType",  # Not sure?
+    "qualityFlag": "qualityIndicators",
+    "specimenSets": "specimenSets",  # No change
 }
 
-def v2_get_header_rows(df: pd.DataFrame, tables: Union[str, List[str]], header_tags: Optional[Union[str, List[str]]] = None) -> pd.DataFrame:
+
+def v2_get_header_rows(
+    df: pd.DataFrame,
+    tables: Union[str, List[str]],
+    header_tags: Optional[Union[str, List[str]]] = None,
+) -> pd.DataFrame:
     """Retrieve all rows in the DataFrame that correspond to a column in any of the specified
     ODM v2 tables.
-    
+
     This corresponds to rows that are either a primary key, a foreign key, or a header in any
     of the tables. Note that to determine if a row is a column, the DataFrame df must
     have a column with the same name as the table.
@@ -89,7 +94,12 @@ def v2_get_header_rows(df: pd.DataFrame, tables: Union[str, List[str]], header_t
     is_header = is_header.sum(axis=1)
     return df[is_header > 0].copy()
 
-def v2_keep_active_rows(df: pd.DataFrame, status_column: str = "status", keep_status: Union[Any, List[Any]] = "active") -> pd.DataFrame:
+
+def v2_keep_active_rows(
+    df: pd.DataFrame,
+    status_column: str = "status",
+    keep_status: Union[Any, List[Any]] = "active",
+) -> pd.DataFrame:
     """Keep only rows that have an "active" status. Status is specified in a single column in the
     DataFrame.
 
@@ -108,6 +118,7 @@ def v2_keep_active_rows(df: pd.DataFrame, status_column: str = "status", keep_st
     df = df[keep_filt]
     return df.copy()
 
+
 def v2_get_enum_name_from_part_id(part_id: str) -> str:
     """Get the enumeration name for the specified part ID.
 
@@ -123,4 +134,3 @@ def v2_get_enum_name_from_part_id(part_id: str) -> str:
     else:
         name = f"{part_id}s"
     return name
-
