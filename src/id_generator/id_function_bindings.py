@@ -8,8 +8,8 @@ class FunctionBindings:
         self.generator = generator
 
     @property
-    def rownum(self) -> str:
-        return "{:04d}".format(self.generator.current_row_index)
+    def rownum(self) -> int:
+        return self.generator.current_row_index
 
     def makeid(self, *args) -> str:
         """Create an ID out of the list of values.
