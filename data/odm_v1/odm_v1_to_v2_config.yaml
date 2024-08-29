@@ -1,0 +1,42 @@
+v1_to_v2_classes: 
+  # AssayMethod: [instruments, measureSets, protocols, protocolSteps]
+  # CovidPublicHealthData: [contacts, measures, measureSets]
+  # Instrument: [instruments]
+  # Lab: [contacts, organizations]
+  # Polygon: [polygons]
+  # Reporter: [contacts, organizations]
+  # Sample: [samples]
+  # Site: [contacts, measureSets, organizations, sites]
+  # SiteMeasure: [contacts, measures]
+  # WWMeasure: [organizations, measures, measureSets, protocols, protocolSteps, qualityReports]
+
+  AssayMethod: [protocols, protocolSteps]
+  CovidPublicHealthData: [measures, measureSets]
+  Instrument: [instruments]
+  Lab: [organizations]
+  Polygon: [polygons]
+  Reporter: [contacts, organizations]
+  Sample: [samples]
+  Site: [sites]
+  SiteMeasure: [measures, measureSets]
+  WWMeasure: [measures, measureSets, qualityReports]
+
+add_slot_derivations:
+  - source_class: CovidPublicHealthData
+    target_class: [measures, measureSets]
+    slot_derivations:
+      measureSetRepID:
+        name: measureSetRepID
+        populated_from: cphdID
+  - source_class: SiteMeasure
+    target_class: [measures, measureSets]
+    slot_derivations:
+      measureSetRepID:
+        name: measureSetRepID
+        populated_from: uSiteMeasureID
+  - source_class: WWMeasure
+    target_class: [measures, measureSets]
+    slot_derivations:
+      measureSetRepID:
+        name: measureSetRepID
+        populated_from: uWwMeasureID

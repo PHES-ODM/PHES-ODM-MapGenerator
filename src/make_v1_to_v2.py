@@ -30,6 +30,7 @@ map_columns = {
 
 
 def make_v1_to_v2(
+    config: Union[str, Path],
     output_dir: Union[str, Path],
     v2_data_dictionary: Union[str, Path],
     source_schema: Union[str, Path],
@@ -46,6 +47,8 @@ def make_v1_to_v2(
     NWSS to ODM v2 (see make_mappers_cli.py).
 
     Args:
+        config (Union[str, Path]): Location of the config file for mapping from ODM v1 to v2. Includes
+            information on which source tables should map to which target tables and other config details.
         output_dir (Union[str, Path]): Directory to save all the output to. Various subdirectories will
             be created for the different outputs. The final mapper config files will be in the
             "mappers" sub-directory.
@@ -87,6 +90,7 @@ def make_v1_to_v2(
 
     # Make all mapper configurations. Each config maps from one source table to one v2 table.
     make_mappers(
+        config=config,
         mapper_dir=mapper_dir,
         prepared_parts_file=prepared_parts_file,
         source_schema_file=source_schema,
@@ -99,17 +103,24 @@ if __name__ == "__main__":
     if "get_ipython" in globals():
 
         class opts:
+            config = "../data/odm_v1/odm_v1_to_v2_config.yaml"
             source_schema = "../data/odm_v1/linkml/odm_v1.yaml"
             target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
             wide_dir = "../data/odm_v1/custom_wide"
             output_dir = "../gen/odm_v1_to_v2"
             v2_data_dictionary = "../data/odm_v2/v2 ODM dictionary.xlsx"
-            max_mapping_only = True
+            max_mapping_only = False
             input_data_dir = "../../../PHES-ODM-Data/odm_v1_data/centreau_qc/updated"
             input_max_rows = 50
     else:
         args = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+        args.add_argument(
+            "--config",
+            type=str,
+            help="Location of the configuration file for mapping ODM v1 to ODM v2",
+            required=True,
         )
         args.add_argument(
             "--source_schema",
@@ -162,6 +173,7 @@ if __name__ == "__main__":
         opts = args.parse_args()
 
     make_v1_to_v2(
+        config=opts.config,
         output_dir=opts.output_dir,
         v2_data_dictionary=opts.v2_data_dictionary,
         source_schema=opts.source_schema,

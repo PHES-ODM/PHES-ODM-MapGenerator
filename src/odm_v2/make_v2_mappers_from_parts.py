@@ -24,7 +24,12 @@ from typing import Union, Dict, List, Optional
 
 from linkml_runtime import SchemaView
 
-from utils.general_utils import read_data_frame, get_logger, TREE_ROOT_CLASS_NAME
+from utils.general_utils import (
+    read_data_frame,
+    get_logger,
+    TREE_ROOT_CLASS_NAME,
+    get_class_name_from_file_name,
+)
 from utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations
 from odm_v2.v2_utils import v2_get_header_rows, v2_class_names
 from odm_v2.v2_mapping import V2MappingColumns, V2MappingVariableLocations
@@ -243,6 +248,7 @@ def make_class_derivations(
 
 
 def make_mappers(
+    config: Union[str, Path],
     mapper_dir: Union[str, Path],
     prepared_parts_file: Union[str, Path],
     source_schema_file: Union[str, Path],
@@ -254,6 +260,8 @@ def make_mappers(
     v2 table mapping.
 
     Args:
+        config (Union[str, Path]): Location of the config file for mapping from ODM v1 to v2. Includes
+            information on which source tables should map to which target tables and other config details.
         mapper_dir (Union[str, Path]): The directory to save the mapper specifications to (they are
             all YAML files).
         prepared_parts_file (Union[str, Path]): The ODM v2 data dictionary parts list, after being prepared
@@ -273,6 +281,9 @@ def make_mappers(
             the source type to target type.
     """
     logger.info("Running...")
+
+    with open(config, "r") as f:
+        config = yaml.safe_load(f)
 
     schema = SchemaView(source_schema_file)
 
@@ -341,6 +352,8 @@ def make_mappers(
     class_derivations: Dict[str, List[Dict]] = {}
 
     # Create a class derivation for all source tables to a v2 table.
+    v1_to_v2_classes = config["v1_to_v2_classes"]
+    do_all_mappings = isinstance(v1_to_v2_classes, str) and v1_to_v2_classes == "all"
     for source_table_name in all_source_tables:
         for cur_results in make_class_derivations(
             df,
@@ -350,6 +363,16 @@ def make_mappers(
         ):
             cur_source_name = cur_results["source_class"]
             cur_target_name = cur_results["target_class"]
+
+            cur_source_class_name = get_class_name_from_file_name(cur_source_name)
+            cur_target_class_name = get_class_name_from_file_name(cur_target_name)
+            if (
+                not do_all_mappings
+                and cur_target_class_name
+                not in v1_to_v2_classes.get(cur_source_class_name, [])
+            ):
+                continue
+
             cur_dict = cur_results["class_derivation"]
             if cur_target_name is None:
                 continue
@@ -359,6 +382,36 @@ def make_mappers(
             if cur_target_name not in class_derivations.keys():
                 class_derivations[cur_target_name] = []
             class_derivations[cur_target_name].append(cur_dict)
+
+    # Add additional slot derivations from the config file
+    add_slot_derivations = config.get("add_slot_derivations", None)
+    if add_slot_derivations is not None:
+        for cur_add_derivations in add_slot_derivations:
+            # Get all values from the config
+            source_class = cur_add_derivations["source_class"]
+            target_class = cur_add_derivations["target_class"]
+            if isinstance(source_class, str):
+                source_class = [source_class]
+            if isinstance(target_class, str):
+                target_class = [target_class]
+            slot_derivations = cur_add_derivations["slot_derivations"]
+
+            # Get all derivations for the target class
+            matching_target_derivations = [
+                d
+                for target_name, d in class_derivations.items()
+                if get_class_name_from_file_name(target_name) in target_class
+            ]
+            if not len(matching_target_derivations):
+                continue
+
+            # Each of the matching_target_derivations is an array of derivations mapping to target_class.
+            # Iterate over them and update the ones that populate from the source_class.
+            for target_derivations in matching_target_derivations:
+                for target_derivation in target_derivations:
+                    if target_derivation["populated_from"] not in source_class:
+                        continue
+                    target_derivation["slot_derivations"].update(slot_derivations)
 
     res = save_all_mappers(
         class_derivations,
@@ -465,15 +518,22 @@ if __name__ == "__main__":
     if "get_ipython" in globals():
 
         class opts:
+            config = "../../data/odm_v1/odm_v1_to_v2_config.yaml"
             prepared_parts_file = "../../gen/odm_v1_to_v2/configs/parts_prepared.csv"
             data_output_dir = "../../gen/odm_v1_to_v2/mapped_data"
             mapper_dir = "../../gen/odm_v1_to_v2/mappers"
             source_schema = "../../data/odm_v1/linkml/odm_v1.yaml"
-            max_mapping_only = True
-            custom_wide_dir = "../../gen/odm_v1/custom_wide"
+            max_mapping_only = False
+            custom_wide_dir = "../../data/odm_v1/custom_wide"
     else:
         args = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+        args.add_argument(
+            "--config",
+            type=str,
+            help="Location of the configuration file for mapping ODM v1 to ODM v2",
+            required=True,
         )
         args.add_argument(
             "--prepared_parts_file",
@@ -513,6 +573,7 @@ if __name__ == "__main__":
         opts = args.parse_args()
 
     make_mappers(
+        config=opts.config,
         mapper_dir=opts.mapper_dir,
         prepared_parts_file=opts.prepared_parts_file,
         source_schema_file=opts.source_schema,
