@@ -28,6 +28,12 @@ from utils.general_utils import (
 )
 from utils.schema_utils import get_ranges_of_slot
 
+# If True and max_rows is specified in clean_data_file, then when loading the input dataset, load the
+# full dataset then take a random sample from it. Note that the random state (seed) is kept constant
+# when selecting a random sample, so the same rows will be loaded for the same values of max_rows.
+# If False then load the first max_rows samples (which is faster).
+RANDOM_SAMPLE_DATA = True
+
 logger = get_logger(__name__)
 
 
@@ -82,15 +88,14 @@ def fix_data_with_schema(
                     ]
                     df[slot_name] = df[slot_name].apply(
                         lambda x: choose_ignore_case_value(
-                            x, permissible_values, lowercase_permissible_values
+                            x,
+                            permissible_values,
+                            lowercase_permissible_values,
+                            return_same_if_missing=True,
                         )
                     )
 
-    # missing_columns = [c for c in class_definition.attributes.keys() if c not in df.columns]
-    # df[missing_columns] = None
-    # return df[class_definition.attributes.keys()]
     return df[keep_columns]
-    # return df
 
 
 def fix_data_no_schema(df: pd.DataFrame) -> pd.DataFrame:
@@ -179,10 +184,13 @@ def clean_data_file(
     # Read the DataFrame from disk
     df = read_data_frame(
         file,
-        nrows=max_rows if max_rows else None,
+        nrows=None if RANDOM_SAMPLE_DATA else (max_rows if max_rows else None),
         keep_default_na=False,
         na_values=[""],
     )
+
+    if RANDOM_SAMPLE_DATA and max_rows and len(df) > max_rows:
+        df = df.sample(max_rows, random_state=0).reset_index(drop=True)
 
     # Fix the data
     df = fix_data_no_schema(df)
@@ -241,8 +249,8 @@ if __name__ == "__main__":
     if "get_ipython" in globals():
 
         class opts:
-            directory = "../../data/test/output/uncleaned_data"
-            output_dir = "../../data/test/output/cleaned_data"
+            directory = "../../../../PHES-ODM-Data/odm_v1_data/centreau_qc/updated"
+            output_dir = "../gen/odm_v1_to_v2/cleaned_data-test"
 
             # directory = "../../../../PHES-ODM-Data/odm_v1_data/wwMeasure"
             # directory = "../../../../PHES-ODM-Data/odm_v1_data/centreau_qc/updated"
@@ -250,9 +258,9 @@ if __name__ == "__main__":
             file = ""
             # output_dir = "../../../../PHES-ODM-Data/nwss/private_cleaned"
             max_rows = 1000
-            # schema = "../../data/odm_v1/linkml/odm_v1.yaml"
+            schema = "../../data/odm_v1/linkml/odm_v1.yaml"
             # schema = "../../data/nwss_reporting/linkml/nwss_reporting.yaml"
-            schema = "../../data/test/source.yaml"
+            # schema = "../../data/test/source.yaml"
     else:
         args = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
