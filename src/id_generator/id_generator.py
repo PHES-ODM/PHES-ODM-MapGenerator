@@ -21,7 +21,12 @@ import argparse
 import numpy as np
 import traceback
 
-from utils.general_utils import read_data_frame, save_data_frame, get_logger
+from utils.general_utils import (
+    read_data_frame,
+    save_data_frame,
+    get_logger,
+    RECOGNIZED_EXTENSIONS,
+)
 from id_function_bindings import FunctionBindings
 from id_data_bindings import DataBindings
 
@@ -87,20 +92,11 @@ class IDGenerator(object):
             id_code_sheet (str, optional): If id_code_file is an Excel file, then the sheet name to load that contains
                 the ID generation code. Defaults to None.
         """
-        # Load all data from disk
-        self.class_info = {}
-        for f in os.listdir(data_dir):
-            class_name, ext = os.path.splitext(f)
-            if ext in [".csv", ".tsv", ".txt", ".yaml", ".yml"]:
-                logger.info(f"Loading data from {f}")
-                self.class_info[class_name] = {}
-                df = read_data_frame(os.path.join(data_dir, f))
-                self.class_info[class_name][ClassInfoKeys.DATA] = df
+        with open(config_file, "r") as f:
+            self.config = yaml.safe_load(f)
 
-                # Save the original columns found in the dataset (without the row number slot)
-                columns = list(df.columns)
-                columns.remove(ROW_NUMBER_SLOT)
-                self.class_info[class_name][ClassInfoKeys.ORIG_COLUMNS] = columns
+        # Load all data from disk
+        self.load_all(data_dir)
 
         # Prepare the code for calculating IDs
         self.prepare_id_code(id_code_file, id_code_sheet)
@@ -119,6 +115,27 @@ class IDGenerator(object):
 
         # Create the interpreter for executing Python code (the code is in the form of strings)
         self.interpreter = Interpreter(usersyms=self.bindings)
+
+    def load_all(self, data_dir: str):
+        """Load all data from disk
+
+        Args:
+            data_dir (str): Directory to load data from. All data files are loaded (csv, tsv, txt, yaml, yml). The
+                class that each file represents is the name of the file (without extension).
+        """
+        self.class_info = {}
+        for f in os.listdir(data_dir):
+            class_name, ext = os.path.splitext(f)
+            if ext in RECOGNIZED_EXTENSIONS:
+                logger.info(f"Loading data from {f}")
+                self.class_info[class_name] = {}
+                df = read_data_frame(os.path.join(data_dir, f))
+                self.class_info[class_name][ClassInfoKeys.DATA] = df
+
+                # Save the original columns found in the dataset (without the row number slot)
+                columns = list(df.columns)
+                columns.remove(ROW_NUMBER_SLOT)
+                self.class_info[class_name][ClassInfoKeys.ORIG_COLUMNS] = columns
 
     def create_bindings(self):
         """Create the function and data bindings. Should be called once all data has been loaded
@@ -139,13 +156,14 @@ class IDGenerator(object):
                 self,
                 root_class="",
                 sub_class_names=all_classes,
-                replace_empty_values=True,
+                replace_empty_values=False,
             ),
-            "dat0": DataBindings(
+            # Same as dat, but if a value is empty then automatically convert it to id_data_bindings.EMPTY_VALUE
+            "datEmpty": DataBindings(
                 self,
                 root_class="",
                 sub_class_names=all_classes,
-                replace_empty_values=False,
+                replace_empty_values=True,
             ),
             "fn": FunctionBindings(self),
         }
@@ -174,8 +192,6 @@ class IDGenerator(object):
         Raises:
             ValueError: There is an error in the configuration file.
         """
-        with open(config, "r") as f:
-            self.config = yaml.safe_load(f)
 
         def _make_orig(class_name: str, slot: str) -> str:
             if self.is_id_generated_slot(class_name, slot):
@@ -262,12 +278,17 @@ class IDGenerator(object):
             if slot not in self.class_ids[class_name]:
                 self.class_ids[class_name].append(slot)
 
-    def prepare_ids(self):
+    def prepare_ids(self, regenerate_all_ids: bool = True):
         """Do some preparation of the ID columns in the loaded DataFrames.
 
         We will copy the IDs to new columns where the names are preceded by ORIG_ID_PREFIX. The values
         in the new columns will remain unchanged, but the values in the old columns will be set to None and
         their IDs generated once make_all_ids is called.
+
+        Args:
+            regenerate_all_ids (bool, Optional): If True, then clear all IDs in the input data so that
+                we will regenerate all IDs. If False then we do not clear all IDs, and will generate only the
+                IDs that are blank. Defaults to True.
         """
         self.current_class = None
         self.current_row_index = None
@@ -287,7 +308,12 @@ class IDGenerator(object):
                 continue
             orig_values_slots = [f"{ORIG_ID_PREFIX}{s}" for s in slots]
             df[orig_values_slots] = df[slots]
-            df[slots] = None
+            if regenerate_all_ids:
+                df[slots] = None
+            else:
+                df[slots] = df[slots].map(
+                    lambda x: None if (pd.isna(x) or x == "") else x
+                )
 
     def make_all_ids(
         self,
@@ -576,6 +602,12 @@ class IDGenerator(object):
                 return rows, indices
             return rows
 
+        def _has_value(values: List[Any], value: Any) -> bool:
+            if callable(value):
+                return len([v for v in values if value(v)]) > 0
+            else:
+                return value in values
+
         # Return None if class not recognized
         if class_name not in self.class_info:
             return _ret_value(None, None)
@@ -585,8 +617,14 @@ class IDGenerator(object):
 
         data = self.class_info[class_name][ClassInfoKeys.DATA]
 
+        # Make sure "" and None co-occur in match_value (ie. "" and None are equivalent)
+        if _has_value(match_value, ""):
+            match_value.append(None)
+        elif _has_value(match_value, pd.isna):
+            match_value.append("")
+
         # If any NA value found in match_value, then include pd.isna for filtering, since np.isin does not work with all NA values.
-        if len([v for v in match_value if pd.isna(v)]):
+        if _has_value(match_value, pd.isna):
             na_filt = pd.isna(data[:, self.get_column_index(class_name, slot)])
         else:
             na_filt = False
@@ -857,13 +895,34 @@ class IDGenerator(object):
         # empty value, we return without setting the ID
         # @TODO: Deal with case where all code columns results in an empty value. May want to set
         # the ID in the Numpy data to an empty string.
-        code_idx = -1
+        v = None
+        data_self_first = self.config.get("data_self_first", None)
+        code_idx = -2 if data_self_first else -1
         while True:
-            code_idx += 1
-            code = self.get_code(class_name, slot, code_idx)
+            include_self = False
+            if code_idx == -2:
+                code_idx += 1
+                for rules in data_self_first:
+                    for rule, slot_expr in rules.items():
+                        rule_class, rule_slot = slot_expr.split(".")
+                        is_match = (rule_class == class_name or rule_class == "*") and (
+                            rule_slot == slot or rule_slot == "*"
+                        )
+                        if rule == "include" and is_match:
+                            include_self = True
+                        elif rule == "exclude" and is_match:
+                            include_self = False
+                if include_self:
+                    code = f"dat.{class_name}.{ORIG_ID_PREFIX}{slot}"
+                else:
+                    continue
+            else:
+                code_idx += 1
+                code = self.get_code(class_name, slot, code_idx)
 
             if pd.isna(code) or not code:
-                return None
+                v = None
+                break
 
             orig_current_class = self.current_class
             orig_current_row_index = self.current_row_index
@@ -889,21 +948,26 @@ class IDGenerator(object):
             if pd.isna(v) or v == "":
                 continue
 
-            self.set_data_value(class_name, slot, row_index, v)
+            break
 
-            # If the slot is the primary key, then calculate the remainder of the row, so we can determine if the
-            # row is a duplicate or not of all other rows generated so far that have the same primary key value.
-            # If it is a duplicate, we reuse an existing primary key ID from the duplicates. If it is not
-            # a duplicate we make sure the primary key value is unique.
-            if self.is_primary_key(class_name, slot):
-                self.make_all_ids(class_name, row_index)
-                # Grouping the primary keys will either group the new calculated ID with an existing
-                # ID where the rows are identical, or will add an index to the end of the new ID
-                # if there are no identical rows but the new ID is already in use (ie. we will
-                # make the new ID unique)
-                self.group_primary_key(class_name, row_index)
+        if pd.isna(v):
+            v = ""
 
-            return self.get_data_value(class_name, slot, row_index)
+        self.set_data_value(class_name, slot, row_index, v)
+
+        # If the slot is the primary key, then calculate the remainder of the row, so we can determine if the
+        # row is a duplicate or not of all other rows generated so far that have the same primary key value.
+        # If it is a duplicate, we reuse an existing primary key ID from the duplicates. If it is not
+        # a duplicate we make sure the primary key value is unique.
+        if not include_self and self.is_primary_key(class_name, slot):
+            self.make_all_ids(class_name, row_index)
+            # Grouping the primary keys will either group the new calculated ID with an existing
+            # ID where the rows are identical, or will add an index to the end of the new ID
+            # if there are no identical rows but the new ID is already in use (ie. we will
+            # make the new ID unique)
+            self.group_primary_key(class_name, row_index)
+
+        return self.get_data_value(class_name, slot, row_index)
 
     def group_primary_key(self, class_name: str, row_index: int) -> Any:
         """For the (unindexed) primary key value currently found at the row index in the specified class,
@@ -1088,11 +1152,16 @@ if __name__ == "__main__":
     if "get_ipython" in globals():
 
         class opts:
-            data_dir = "../../gen/nwss_reporting_to_v2/mapped_data"
-            output_dir = "../../gen/nwss_reporting_to_v2/mapped_data_ids-test"
-            config_file = "../../data/odm_v2/odm_v2_id_config.yaml"
-            id_code_file = "../../data/odm_v2/odm_v2_id_code.xlsx"
+            # data_dir = "../../gen/nwss_reporting_to_v2/mapped_data"
+            # output_dir = "../../gen/nwss_reporting_to_v2/mapped_data_ids"
+            # id_code_file = "../../data/odm_v2/odm_v2_id_code.xlsx"
+
+            data_dir = "../../gen/odm_v1_to_v2/mapped_data"
+            output_dir = "../../gen/odm_v1_to_v2/mapped_data_ids"
+            id_code_file = "../../data/odm_v2/odm_v1_to_v2_id_code.xlsx"
+
             id_code_sheet = "id_code"
+            config_file = "../../data/odm_v2/odm_v2_id_config.yaml"
             debug = True
     else:
         args = argparse.ArgumentParser(
