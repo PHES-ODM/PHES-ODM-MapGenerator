@@ -20,6 +20,8 @@ EMPTY_PERMISSIBLE_VALUE = "<empty>"
 # Name of the tree root Container class that contains all the tables in a LinkML schema
 TREE_ROOT_CLASS_NAME = "Container"
 
+RECOGNIZED_EXTENSIONS = [".tsv", ".txt", ".csv", ".yaml", ".yml"]
+
 
 def get_logger(name: str, level: Optional[str] = logging.INFO) -> logging.Logger:
     """Get the logger with the specified name, setting is configuration as well as output format.
@@ -99,8 +101,7 @@ def read_data_frame(file: str, **kwargs) -> pd.DataFrame:
     """Read a Pandas DataFrom from disk.
 
     Args:
-        file (str): The file to read. Supports ".csv", ".tsv", ".txt", ".yaml", and ".yml" files. If the extension
-            is ".tsv" or ".txt" then tab delimeters are used.
+        file (str): The file to read. Supports loading files with any of the extensions in RECOGNIZED_EXTENSIONS.
         **kwargs: Additional key-word arguments passed to pd.read_csv for character-separated file formats.
 
     Returns:
