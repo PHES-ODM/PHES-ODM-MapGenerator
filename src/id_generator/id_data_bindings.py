@@ -2,7 +2,7 @@ import pandas as pd
 from typing import Optional, List
 
 # Value to use if a value from one of the classes/tables is empty.
-EMPTY_VALUE = "Empty"
+EMPTY_VALUE = "empty"
 
 
 class DataBindings:
@@ -68,6 +68,7 @@ class DataBindings:
         # in source_class at index source_index.
         source_class = self.generator.current_class
         source_index = self.generator.current_row_index
+
         v = self.generator.get_first_linked_value(
             source_class, source_index, self.root_class, name
         )
