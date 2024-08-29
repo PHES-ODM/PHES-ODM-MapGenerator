@@ -15,6 +15,10 @@ primary_keys:
   samples: sampleID
   sites: siteID
 
+# data_self_first:
+#   - include: "*.*"
+#   - exclude: measureSets.measureSetRepID
+
 # Class linkages determines how to link a row in one table to a row in another table. We match the value
 # in the source slot of the source row to the target slot in the target row.
 # These are the default slots to use, when no linkage slots are explicitly specified.
