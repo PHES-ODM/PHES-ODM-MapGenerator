@@ -337,7 +337,7 @@ def add_row_number_slot(schema: SchemaView):
     Args:
         schema (SchemaView): The schema to add a row number slot to (for all classes).
     """
-    for cls, slot_definition in schema.schema.classes.items():
+    for slot_definition in schema.schema.classes.values():
         slot_definition.slots.append(TrackingColumns.ROW_NUMBER)
 
     schema.schema.slots[TrackingColumns.ROW_NUMBER] = SlotDefinition(
@@ -418,7 +418,7 @@ def run_mapper(
             unrecognized = [s for s in df.columns if s not in all_slots]
             if len(unrecognized) > 0:
                 raise ValueError(
-                    f"Found unrecognized slots in mapped data for class '{target_type}': {unrecognized}"
+                    f"Found unrecognized slot(s) in mapped data for class '{target_type}': {unrecognized}"
                 )
             missing = [s for s in all_slots if s not in df.columns]
             if len(missing) > 0:
@@ -560,10 +560,10 @@ def map(
     source_schema = SchemaView(source_schema_file)
     target_schema = SchemaView(target_schema_file) if target_schema_file else None
 
-    # Add a row number slot to the source and target schemas. This is a temporary slot that contains the row number of
-    # the initial input tables. It allows us to sort the outputs by the input row number. Once sorting is complete we
-    # delete the row number column from the final output.
-    # After loading the mapper spec we also add a slot derivation for all classes to copy the row number slot to
+    # Add a row number slot to the source and target schemas. It allows us to sort the outputs by the input row number. It
+    # also allows downstream tools (eg. the ID generator) to determine which rows in the output were populated from
+    # the same row in the input. These rows are linked together and can help in ID generation.
+    # Later on, after loading the mapper spec, we add a slot derivation for all classes to copy the row number slot to
     # the output (see add_row_number_derivation)
     add_row_number_slot(source_schema)
     if target_schema:
