@@ -105,8 +105,11 @@ FILTER_AFTER_MERGING = True
 SAVE_UNMERGED_DATA = False
 
 
-class TrackingColumns:
-    ROW_NUMBER = "(___row_number___)"
+class TrackingSlots:
+    SOURCE_CLASS = "(__source_class__)"
+    SOURCE_ROW = "(__source_row__)"
+    SOURCE_FILE = "(__source_file__)"
+    SOURCE_FILE_AND_ROW = "(__source_file_and_row__)"
 
 
 # Change the logging level of the Transformer. For very large datasets we will get way too many WARNINGs in
@@ -171,12 +174,13 @@ def load_data(
             # Add auto-generated IDs
             gen_auto_ids(id_config_file, schema, class_name, df)
 
-            # Make sure all columns exist (except for TrackingColumns.ROW_NUMBER, which we add later)
+            # Make sure all columns exist (except for TrackingSlots, which we add later)
             class_definition = schema.induced_class(class_name)
+            all_tracking_slots = get_all_tracking_slots()
             missing_slots = [
                 s
                 for s in class_definition.attributes
-                if s not in df.columns and s != TrackingColumns.ROW_NUMBER
+                if s not in df.columns and s not in all_tracking_slots
             ]
             df[missing_slots] = ""
 
@@ -186,15 +190,22 @@ def load_data(
             ]
             df = df[recognized_slots]
 
-            # Add the row number. The mappers will copy this row number to the mapped target data,
-            # allowing us to sort the target data to retain the initial ordering in the source data.
-            if TrackingColumns.ROW_NUMBER in df.columns:
+            # Add the tracking columns (eg. source class and source row), which are used for sorting
+            # and other downstream operations such as ID generation.
+            # First make sure the tracking columns don't already exist (this would be due to a name
+            # conflict, where the source data already has columns with the same name as a tracking
+            # column)
+            existing_tracking_slots = set(df.columns).intersection(all_tracking_slots)
+            if len(existing_tracking_slots) > 0:
                 raise ValueError(
-                    f"Loaded data already has row number column. The row number column named '{TrackingColumns.ROW_NUMBER}' must be removed before proceeding."
+                    f"Loaded data already has one or more columns with the same name as a tracking column: {existing_tracking_slots}"
                 )
-            df[TrackingColumns.ROW_NUMBER] = df.index
-            df[TrackingColumns.ROW_NUMBER] = df[TrackingColumns.ROW_NUMBER].map(
-                lambda x: f"{file}-{x:010d}"
+            df[TrackingSlots.SOURCE_ROW] = df.index
+            df[TrackingSlots.SOURCE_CLASS] = class_name
+            df[TrackingSlots.SOURCE_FILE] = file
+            df[TrackingSlots.SOURCE_FILE_AND_ROW] = df.apply(
+                lambda x: f"{x[TrackingSlots.SOURCE_FILE]}/{x[TrackingSlots.SOURCE_ROW]}",
+                axis=1,
             )
 
             # Reorient the data to a format recognized by the mapper (an array of rows, where
@@ -306,43 +317,60 @@ def get_cast_functions(schema: SchemaView) -> Dict[str, Dict[str, Callable]]:
     return cast_functions
 
 
-def add_row_number_derivation(spec: Dict):
-    """Add a slot derivation for all class derivations in the mapper spec to copy over the row number
-    (in the column TrackingColumns.ROW_NUMBER) to the output. The row number allows us to sort the output
-    by input row number, to maintain a nice ordering.
-
-    A row number slot should be called on the source and target schemas by calling add_row_number_slot.
-    The TrackingColumns.ROW_NUMBER column should also be set when loading the source data from disk.
+def add_tracking_slots_derivations(spec: Dict):
+    """Add slot derivations for all class derivations in the mapper spec to copy over the tracking columns
+    (from TrackingSlots) to the output. The tracking slots include the source class and source row number
+    that mapped data was mapped from. It helps with sorting the output and other down-stream operations
+    (eg. might be used when generating IDs that depend on which source class the row originated from)
 
     Args:
         spec (Dict): The mapper spec to add a row number slot derivation to all classes.
     """
+    all_tracking_slots = get_all_tracking_slots()
     for class_name, class_derivation in spec["class_derivations"].items():
         if class_name == TREE_ROOT_CLASS_NAME:
             continue
-        class_derivation["slot_derivations"][TrackingColumns.ROW_NUMBER] = {
-            "name": TrackingColumns.ROW_NUMBER,
-            "populated_from": TrackingColumns.ROW_NUMBER,
-        }
+
+        for col in all_tracking_slots:
+            class_derivation["slot_derivations"][col] = {
+                "name": col,
+                "populated_from": col,
+            }
 
 
-def add_row_number_slot(schema: SchemaView):
-    """Add a row number slot (in the column TrackingColumns.ROW_NUMBER) to all classes in the schema.
+def add_tracking_slots_to_schema(schema: SchemaView):
+    """Add all tracking slots to all classes in the schema.
 
-    The row number slot contains the row number of the source data set (added after loading from disk).
-    We copy this row number to the target data when mapping, then sort the target data by input
-    row number to maintain a consistent ordering of the output. The mapper specs should also
-    be modified with add_row_number_derivation to do the actual copying of row number.
+    Tracking slots include the source row number and class name of a row. These get copied over
+    to the mapped data so we know which class and row and output row was derived from. It can
+    be used for sorting and other downstream operations, such as for ID generation.
 
     Args:
-        schema (SchemaView): The schema to add a row number slot to (for all classes).
+        schema (SchemaView): The schema to add the tracking slots to (for all classes).
     """
+    all_tracking_slots = get_all_tracking_slots()
     for slot_definition in schema.schema.classes.values():
-        slot_definition.slots.append(TrackingColumns.ROW_NUMBER)
+        slot_definition.slots.extend(all_tracking_slots)
 
-    schema.schema.slots[TrackingColumns.ROW_NUMBER] = SlotDefinition(
-        name=TrackingColumns.ROW_NUMBER, from_schema=schema.schema.id
-    )
+    for slot in all_tracking_slots:
+        schema.schema.slots[slot] = SlotDefinition(
+            name=slot, from_schema=schema.schema.id
+        )
+
+
+def get_all_tracking_slots() -> List[str]:
+    """Get all the tracking slots, which are all the columns specified in TrackingSlots.
+
+    Tracking slots include the source row number and class name of a row. These get copied over
+    to the mapped data so we know which class and row and output row was derived from. It can
+    be used for sorting and other downstream operations, such as for ID generation.
+
+    Returns:
+        List[str]: List of all tracking slots.
+    """
+    return [
+        getattr(TrackingSlots, v) for v in vars(TrackingSlots) if not v.startswith("__")
+    ]
 
 
 def run_mapper(
@@ -384,10 +412,10 @@ def run_mapper(
     with open(mapper_file, "r") as f:
         mapper_spec = yaml.safe_load(f)
 
-    # Add a slot derivation to all class derivations to copy over the row number from the source table to target table.
-    # This allows us to sort the output by the input row number to retain a nice ordering. (We delete the row
-    # number column in the final output after sorting)
-    add_row_number_derivation(mapper_spec)
+    # Add all tracking slot derivations. This will copy all slots found in TrackingSlots, such as the source
+    # class and source row number that the output row was derived from. These slots can be used for sorting
+    # and other downstream operations such as ID generation.
+    add_tracking_slots_derivations(mapper_spec)
 
     # Run the mapper to get the mapped data
     logger.info(f"Mapping data with mapper spec {mapper_file}")
@@ -401,7 +429,7 @@ def run_mapper(
 
     # Convert the data to a DataFrame, store in all_mapped_data, and save to disk
     all_mapped_data = {}
-    for target_type, target_data in mapped_data.items():
+    for idx, (target_type, target_data) in enumerate(mapped_data.items()):
         if target_data is None:
             continue
 
@@ -446,7 +474,9 @@ def run_mapper(
             logger.info(
                 f"Saving mapped data file for {target_type} ({len(df.index)} rows): {output_data_file}"
             )
-            keep_columns = [c for c in df.columns if c != TrackingColumns.ROW_NUMBER]
+            # all_tracking_slots = get_all_tracking_slots()
+            # keep_columns = [c for c in df.columns if c not in all_tracking_slots]
+            keep_columns = df.columns
             save_data_frame(df[keep_columns], output_data_file, index=False)
 
     return file_index, all_mapped_data
@@ -560,14 +590,12 @@ def map(
     source_schema = SchemaView(source_schema_file)
     target_schema = SchemaView(target_schema_file) if target_schema_file else None
 
-    # Add a row number slot to the source and target schemas. It allows us to sort the outputs by the input row number. It
-    # also allows downstream tools (eg. the ID generator) to determine which rows in the output were populated from
-    # the same row in the input. These rows are linked together and can help in ID generation.
-    # Later on, after loading the mapper spec, we add a slot derivation for all classes to copy the row number slot to
-    # the output (see add_row_number_derivation)
-    add_row_number_slot(source_schema)
+    # Add all tracking slots to the source schema. These include the source class and source row number.
+    # Later on, after loading the mapper spec, we add a slot derivation for all classes to copy the tracking slots to
+    # the output (see add_tracking_slots_derivations)
+    add_tracking_slots_to_schema(source_schema)
     if target_schema:
-        add_row_number_slot(target_schema)
+        add_tracking_slots_to_schema(target_schema)
 
     # Read all the data from disk.
     data = load_data(data_dir, source_schema, id_config_file=id_config_file)
@@ -652,8 +680,7 @@ def map(
         for target_type, all_df in all_mapped_data.items():
             df = pd.concat(all_df, axis=0)
             parse_df_values(df, inline=True)
-            # Retain the original order by sorting by ROW_NUMBER. ROW_NUMBER was added in code with the integer row number,
-            # so that we can sort the output DataFrame by row number.
+            # Retain the original order by sorting by the TrackingSlots.
             df = sort_mapped_data(df, drop_sorting_column=False)
             data = {target_type: df}
 
@@ -692,9 +719,11 @@ def sort_mapped_data(df: pd.DataFrame, *, drop_sorting_column: bool) -> pd.DataF
     Returns:
         pd.DataFrame: The sorted DataFrame.
     """
-    df = df.sort_values(TrackingColumns.ROW_NUMBER, axis=0, kind="stable")
+    df = df.sort_values(
+        [TrackingSlots.SOURCE_FILE, TrackingSlots.SOURCE_ROW], axis=0, kind="stable"
+    )
     if drop_sorting_column:
-        df = df.drop(TrackingColumns.ROW_NUMBER, axis=1)
+        df = df.drop(get_all_tracking_slots(), axis=1)
     df = df.reset_index(drop=True)
     return df
 
