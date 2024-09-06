@@ -11,32 +11,58 @@ v1_to_v2_classes:
   # WWMeasure: [organizations, measures, measureSets, protocols, protocolSteps, qualityReports]
 
   AssayMethod: [protocols, protocolSteps]
-  CovidPublicHealthData: [measures, measureSets]
+  CovidPublicHealthData: [measures]
   Instrument: [instruments]
   Lab: [organizations]
   Polygon: [polygons]
   Reporter: [contacts, organizations]
   Sample: [samples]
   Site: [sites]
-  SiteMeasure: [measures, measureSets]
-  WWMeasure: [measures, measureSets, qualityReports]
+  SiteMeasure: [measures]
+  WWMeasure: [measures, qualityReports]
 
 add_slot_derivations:
-  - source_class: CovidPublicHealthData
-    target_class: [measures, measureSets]
-    slot_derivations:
-      measureSetRepID:
-        name: measureSetRepID
-        populated_from: cphdID
-  - source_class: SiteMeasure
-    target_class: [measures, measureSets]
-    slot_derivations:
-      measureSetRepID:
-        name: measureSetRepID
-        populated_from: uSiteMeasureID
+  # - source_class: CovidPublicHealthData
+  #   target_class: [measures, measureSets]
+  #   slot_derivations:
+  #     measureSetRepID:
+  #       name: measureSetRepID
+  #       populated_from: cphdID
+  # - source_class: SiteMeasure
+  #   target_class: [measures, measureSets]
+  #   slot_derivations:
+  #     measureSetRepID:
+  #       name: measureSetRepID
+  #       populated_from: uSiteMeasureID
+  # - source_class: WWMeasure
+  #   target_class: [measures, measureSets]
+  #   slot_derivations:
+  #     measureSetRepID:
+  #       name: measureSetRepID
+  #       populated_from: uWwMeasureID
   - source_class: WWMeasure
-    target_class: [measures, measureSets]
+    target_class: qualityReports
     slot_derivations:
-      measureSetRepID:
-        name: measureSetRepID
-        populated_from: uWwMeasureID
+      qualityFlag:
+        name: qualityFlag
+        expr: 'case((str(qualityFlag)==''True'', ''qf1''), (True, ''noConcern''))'
+      sampleID: NULL
+  - source_class: Reporter
+    target_class: contacts
+    slot_derivations:
+      firstName:
+        name: firstName
+        expr: |
+          def get_name(full_name, get_first):
+              names = full_name.strip().rsplit(" ", 1)
+              idx = 0 if get_first else 1
+              return names[idx] if len(names) > idx else ""
+          target = get_name(src.contactName, True)
+      lastName:
+        name: lastName
+        expr: |
+          def get_name(full_name, get_first):
+              names = full_name.strip().rsplit(" ", 1)
+              idx = 0 if get_first else 1
+              return names[idx] if len(names) > idx else ""
+          target = get_name(src.contactName, False)
