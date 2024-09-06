@@ -244,7 +244,7 @@ def extract_enum_derivations(
 
         # Get source enumeration name (if empty) based on the source class and slot
         if not source_enum_name:
-            # Get the source enum name based on the range of the slot
+            # Get the source enum name based on the range of the slot (there might be multiple enums for the range)
             source_enum_names = get_enum_names_for_slot(
                 source_class, source_slot, source_schema
             )
@@ -257,9 +257,13 @@ def extract_enum_derivations(
                 source_enum_names, source_enum_value, source_schema
             )
             if not source_enum_name:
-                raise ValueError(
-                    f"No source enumeration found from {source_enum_names} that has a permissible value='{source_enum_value}' (for source_class='{source_class}', source_slot='{source_slot}')"
+                source_enum_name = source_enum_names[0]
+                logger.error(
+                    f"No source enumeration found for {source_class=}, {source_slot=} from slot range(s) {source_enum_names=} that has a permissible {source_enum_value=} ({target_class=}, {target_slot=}). Using source enumeration name '{source_enum_name}'"
                 )
+                # raise ValueError(
+                #     f"No source enumeration found for {source_class=}, {source_slot=} from slot range(s) {source_enum_names=} that has a permissible {source_enum_value=} ({target_class=}, {target_slot=})"
+                # )
 
         # Get the target enumeration name based on the target class and slot
         if target_class and target_slot:
@@ -272,9 +276,12 @@ def extract_enum_derivations(
                 )
                 if not target_enum_name:
                     target_enum_name = target_enum_names[0]
-                    raise ValueError(
-                        f"No target enumeration found from {target_enum_names} that has a permissible value='{target_enum_value}' (for target_class='{target_class}', target_slot='{target_slot}')"
-                    )  # . Using target enumeration name '{target_enum_name}'")
+                    logger.error(
+                        f"No target enumeration found for {target_class=}, {target_slot=} from slot range(s) {target_enum_names=} that has a permissible value {target_enum_value=} ({source_class=}, {source_slot=}). Using target enumeration name '{target_enum_name}'"
+                    )
+                    # raise ValueError(
+                    #     f"No target enumeration found for {target_class=}, {target_slot=} from slot range(s) {target_enum_names=} that has a permissible value {target_enum_value=} ({source_class=}, {source_slot=})"
+                    # )
             else:
                 # If there is no target enum name (eg. we're mapping from a source slot that is an enum to a target slot that is not an
                 # enum), then we create a unique target enum name to use. Target enum names can be anything, they are just placeholders
@@ -309,9 +316,8 @@ def extract_enum_derivations(
         # Get the enum derivation for the target enum
         enum_derivation = cur_enum_derivations[target_enum_name]
         if enum_derivation["populated_from"] != source_enum_name:
-            # raise ValueError(f"Enum derivation for target {target_enum_name} already exists but does not have a matching populated_from field (expected {source_enum_name} but found {enum_derivation['populated_from']})")
             raise ValueError(
-                f"Enum derivation for source_class='{source_class}', target_class='{target_class}', target_slot='{target_slot}', target_enum_name='{target_enum_name}' already exists but does not have a matching populated_from field (expected '{source_enum_name}' but found '{enum_derivation['populated_from']}')"
+                f"Enum derivation for {source_class=}, {target_class=}, {target_slot=}, {target_enum_name=} already exists but does not have a matching populated_from field (expected '{source_enum_name}' but found '{enum_derivation['populated_from']}')"
             )
 
         # Add the permissible value derivation. Derivation is from source_enum_value to target_enum_value
@@ -929,8 +935,10 @@ def make_mappers(
                         target_class: {
                             "populated_from": source_class,
                             # @TODO: Remove "range" : "string": This is only included to remove warnings
-                            # of unknown target range of target_class
-                            "range": "string",
+                            # of unknown target range of target_class. Also, having a range of string
+                            # seems to force enum mappings where the source enum has no mapping to
+                            # the string "None", rather than the NULL value None.
+                            # "range": "string",
                         }
                     },
                 },
@@ -954,19 +962,29 @@ if __name__ == "__main__":
         dictionary_type = "reporting"
 
         class opts:
-            maps_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/maps0.csv"]
-            wide_files = [
-                f"../gen/nwss_{dictionary_type}_to_v2/configs/wide0.csv",
-                f"../gen/nwss_{dictionary_type}_to_v2/configs/wide1.csv",
-                f"../gen/nwss_{dictionary_type}_to_v2/configs/wide2.csv",
-            ]
-            enums_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/enums0.csv"]
-            mapper_dir = f"../gen/nwss_{dictionary_type}_to_v2/mappers"
-            source_schema = (
-                f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
-            )
+            maps_files = ["../gen/odm_v1_to_v2/configs/maps0.csv"]
+            wide_files = []
+            enums_files = []
+            mapper_dir = "../gen/odm_v1_to_v2/mappers"
+            source_schema = "../data/odm_v1/linkml/odm_v1.yaml"
             target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
-            source_schema_for_mapping = f"../gen/nwss_{dictionary_type}_to_v2/linkml_for_mapping/nwss_{dictionary_type}.yaml"
+            source_schema_for_mapping = (
+                "../gen/odm_v1_to_v2/linkml_for_mapping/odm_v1.yaml"
+            )
+
+            # maps_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/maps0.csv"]
+            # wide_files = [
+            #     f"../gen/nwss_{dictionary_type}_to_v2/configs/wide0.csv",
+            #     f"../gen/nwss_{dictionary_type}_to_v2/configs/wide1.csv",
+            #     f"../gen/nwss_{dictionary_type}_to_v2/configs/wide2.csv",
+            # ]
+            # enums_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/enums0.csv"]
+            # mapper_dir = f"../gen/nwss_{dictionary_type}_to_v2/mappers"
+            # source_schema = (
+            #     f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
+            # )
+            # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
+            # source_schema_for_mapping = f"../gen/nwss_{dictionary_type}_to_v2/linkml_for_mapping/nwss_{dictionary_type}.yaml"
     else:
         args = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -1022,18 +1040,18 @@ if __name__ == "__main__":
 
     # @TODO Remove extract_sheets, this is done in make_mappers_cli.py
     # Extract the required sheets from the NWSS to ODM 2 mapping file
-    from utils.general_utils import extract_sheets
+    # from utils.general_utils import extract_sheets
 
-    mapping_config_file = "../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx"
-    configs_dir = f"../gen/nwss_{dictionary_type}_to_v2/configs/"
-    extract_sheets(
-        mapping_config_file,
-        ["maps", "wide", "enums"],
-        configs_dir,
-        output_names=["maps0", "wide0", "enums0"],
-        na_values={},
-        default_na_values=[""],
-    )
+    # mapping_config_file = "../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx"
+    # configs_dir = f"../gen/nwss_{dictionary_type}_to_v2/configs/"
+    # extract_sheets(
+    #     mapping_config_file,
+    #     ["maps", "wide", "enums"],
+    #     configs_dir,
+    #     output_names=["maps0", "wide0", "enums0"],
+    #     na_values={},
+    #     default_na_values=[""],
+    # )
 
     make_mappers(
         maps_files=opts.maps_files,
