@@ -411,7 +411,11 @@ def make_mappers(
                 for target_derivation in target_derivations:
                     if target_derivation["populated_from"] not in source_class:
                         continue
-                    target_derivation["slot_derivations"].update(slot_derivations)
+                    for k, v in slot_derivations.items():
+                        if v is None:
+                            del target_derivation["slot_derivations"][k]
+                        else:
+                            target_derivation["slot_derivations"][k] = v
 
     res = save_all_mappers(
         class_derivations,
