@@ -1215,11 +1215,12 @@ class IDGenerator(object):
             _set_current_row_values(unindexed_pk_value, pk_index)
         else:
             # There are no identical rows, so get a PK index that results in a unique indexed PK
-            pk_index = (
-                rows[:, self.get_column_index(class_name, PK_INDEX_SLOT)].max() + 1
-                if len(rows)
-                else 0
-            )
+            pk_index = 0
+            if len(rows) > 0:
+                index_values = rows[:, self.get_column_index(class_name, PK_INDEX_SLOT)]
+                index_values = index_values[~pd.isna(index_values)]
+                if len(index_values) > 0:
+                    pk_index = index_values.max() + 1
             while True:
                 indexed_pk_value = _make_indexed_pk(unindexed_pk_value, pk_index)
                 # If indexed_pk_value is unique in column pk_slot then use it.
