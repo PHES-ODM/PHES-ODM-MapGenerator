@@ -11,6 +11,14 @@ class FunctionBindings:
     def rownum(self) -> int:
         return self.generator.current_row_index
 
+    @property
+    def sourceclass(self) -> str:
+        return self.generator.get_current_source_class_and_row()[0]
+
+    @property
+    def sourcerow(self) -> int:
+        return self.generator.get_current_source_class_and_row()[1]
+
     def makeid(self, *args) -> str:
         """Create an ID out of the list of values.
 
