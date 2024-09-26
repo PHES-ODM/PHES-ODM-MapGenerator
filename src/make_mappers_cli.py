@@ -6,8 +6,6 @@ import os
 import shutil
 
 from make_mappers import make_mappers
-from map_data import map
-from utils.clean_data import clean_data_directory
 from utils.general_utils import clear_dirs, extract_sheets, get_logger
 from utils.mapper_utils import CONFIG_READ_KWARGS
 
@@ -198,14 +196,45 @@ if __name__ == "__main__":
             # id_config_file = None
             # filter_config_file = None
 
+            # ODM v1 to ODM v2
+            # source_schema = "../data/odm_v1/linkml/odm_v1.yaml"
+            # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
+            # mapping_excel_file = (
+            #     "../gen/odm_v1_to_v2/xlsx_mappers_from_yaml/mapping_config.xlsx"
+            # )
+            # excel_maps_sheets = [
+            #     "measures",
+            #     "qualityReports",
+            #     "polygons",
+            #     "samples",
+            #     "contacts",
+            #     "instruments",
+            #     "sites",
+            #     "organizations",
+            #     "protocols",
+            # ]
+            # excel_wide_sheets = ["wide_protocolSteps"]
+            # excel_enums_sheets = ["enums"]
+            # maps_files = []
+            # wide_files = []
+            # enums_files = []
+            # output_dir = "../gen/odm_v1_to_v2"
+            # input_data_dir = "../../../PHES-ODM-Data/odm_v1_data/centreau_qc/updated"
+            # input_max_rows = 50  # 25
+            # id_config_file = None
+            # filter_config_file = None
+
+            # NWSS to ODM v2
             source_schema = (
                 f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
             )
             target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
             mapping_excel_file = (
                 "../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx"
+                # "../gen/nwss_reporting_to_v2/xlsx_mappers_from_yaml/mapping_config.xlsx"
             )
             excel_maps_sheets = ["maps"]
+            # excel_maps_sheets = ["measureSets", "contacts", "samples", "addresses", "polygons", "datasets", "sites", "organizations", "protocols", "instruments"]
             excel_wide_sheets = [
                 "wide_measures",
                 "wide_protocolRelationships",
@@ -213,17 +242,20 @@ if __name__ == "__main__":
                 "wide_qualityReports",
             ]
             excel_enums_sheets = ["enums"]
+            # excel_enums_sheets = []
             maps_files = []
             wide_files = []
             enums_files = []
             output_dir = Path(f"../gen/nwss_{dictionary_type}_to_v2")
             # For mapping after config files are created:
             # input_data_dir = "../../../PHES-ODM-Data/nwss/private_renamed_small_pkconflict/"
-            input_data_dir = "../../../PHES-ODM-Data/nwss/private_renamed_50/"
-            input_max_rows = None
+            # input_data_dir = "../../../PHES-ODM-Data/nwss/private_renamed_idconflict/"
+            input_data_dir = "../../../PHES-ODM-Data/nwss/private_renamed/"
+            input_max_rows = 50#25
             id_config_file = "../data/mapping_config_files/nwss_to_odm_v2_ids.csv"
             filter_config_file = (
                 "../data/mapping_config_files/nwss_to_odm_v2_filter.csv"
+                # None
             )
     else:
         args = argparse.ArgumentParser(
@@ -335,36 +367,3 @@ if __name__ == "__main__":
         source_schema=opts.source_schema,
         target_schema=opts.target_schema,
     )
-
-    if opts.input_data_dir:
-        # @TODO: Remove this, it is for testing. After generating the mapping specs we run the below code to test the specs by mapping data
-        logger.info("Running data mappings...")
-        output_dir = Path(opts.output_dir)
-        mapper_dir = output_dir / "mappers"
-        mapped_dir = output_dir / "mapped_data"
-        source_schema_for_mapping = (
-            output_dir / "linkml_for_mapping" / os.path.basename(opts.source_schema)
-        )
-
-        # Prepare data
-        cleaned_data_dir = output_dir / "cleaned_data"
-        clear_dirs([cleaned_data_dir, mapped_dir])
-        _ = clean_data_directory(
-            opts.input_data_dir,
-            cleaned_data_dir,
-            schema=opts.source_schema,
-            max_rows=opts.input_max_rows,
-        )
-
-        # Map the data
-        max_processes = 1
-        map(
-            source_schema_file=source_schema_for_mapping,
-            target_schema_file=opts.target_schema,
-            mapper_dir=mapper_dir,
-            data_dir=cleaned_data_dir,
-            data_output_dir=mapped_dir,
-            id_config_file=opts.id_config_file,
-            filter_config_file=opts.filter_config_file,
-            max_processes=max_processes,
-        )
