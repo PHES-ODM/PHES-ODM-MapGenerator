@@ -15,9 +15,7 @@ import argparse
 from odm_v2.make_v2_mappers_from_parts import make_mappers
 from odm_v2.prepare_parts import prepare_parts
 from odm_v2.v2_mapping import V2MappingColumns
-from utils.clean_data import clean_data_directory
 from utils.general_utils import clear_dirs, extract_sheets, get_logger
-from map_data import map
 
 logger = get_logger(__name__)
 
@@ -181,30 +179,3 @@ if __name__ == "__main__":
         wide_dir=opts.wide_dir,
         max_mapping_only=opts.max_mapping_only,
     )
-
-    if opts.input_data_dir:
-        logger.info("Running data mappings...")
-        output_dir = Path(opts.output_dir)
-        mapper_dir = output_dir / "mappers"
-        mapped_dir = output_dir / "mapped_data"
-
-        # Prepare data
-        cleaned_data_dir = output_dir / "cleaned_data"
-        max_processes = 1
-        clear_dirs([cleaned_data_dir, mapped_dir])
-        files = clean_data_directory(
-            opts.input_data_dir,
-            cleaned_data_dir,
-            schema=opts.source_schema,
-            max_rows=opts.input_max_rows,
-        )
-
-        # Map the data
-        map(
-            source_schema_file=opts.source_schema,
-            target_schema_file=opts.target_schema,
-            mapper_dir=mapper_dir,
-            data_dir=cleaned_data_dir,
-            data_output_dir=mapped_dir,
-            max_processes=max_processes,
-        )
