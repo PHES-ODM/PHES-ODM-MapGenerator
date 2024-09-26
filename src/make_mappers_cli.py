@@ -247,16 +247,6 @@ if __name__ == "__main__":
             wide_files = []
             enums_files = []
             output_dir = Path(f"../gen/nwss_{dictionary_type}_to_v2")
-            # For mapping after config files are created:
-            # input_data_dir = "../../../PHES-ODM-Data/nwss/private_renamed_small_pkconflict/"
-            # input_data_dir = "../../../PHES-ODM-Data/nwss/private_renamed_idconflict/"
-            input_data_dir = "../../../PHES-ODM-Data/nwss/private_renamed/"
-            input_max_rows = 50#25
-            id_config_file = "../data/mapping_config_files/nwss_to_odm_v2_ids.csv"
-            filter_config_file = (
-                "../data/mapping_config_files/nwss_to_odm_v2_filter.csv"
-                # None
-            )
     else:
         args = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -327,32 +317,7 @@ if __name__ == "__main__":
             help="The file(s) that contain the enums configuration, in addition to what is already extracted from mapping_excel_file.",
             required=False,
         )
-        # For mapping after the config files are created:
-        args.add_argument(
-            "--input_data_dir",
-            type=str,
-            help="Directory containing all the input data to map using the generated mapper config files. If empty then no mapping is performed.",
-            required=False,
-        )
-        args.add_argument(
-            "--input_max_rows",
-            type=int,
-            help="If input_data_dir is set, then the number of rows to map from each input data file. If 0 then map all rows.",
-            default=0,
-            required=False,
-        )
-        args.add_argument(
-            "--id_config_file",
-            type=str,
-            help="Configuration file for generating IDs",
-            required=False,
-        )
-        args.add_argument(
-            "--filter_config_file",
-            type=str,
-            help="Configuration file for filtering the final mapped data",
-            required=False,
-        )
+
         opts = args.parse_args()
 
     make_mappers_cli(

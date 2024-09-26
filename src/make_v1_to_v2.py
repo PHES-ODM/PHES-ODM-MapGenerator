@@ -108,8 +108,6 @@ if __name__ == "__main__":
             output_dir = "../gen/odm_v1_to_v2"
             v2_data_dictionary = "../data/odm_v2/v2 ODM dictionary.xlsx"
             max_mapping_only = False
-            input_data_dir = "../../../PHES-ODM-Data/odm_v1_data/centreau_qc/updated"
-            input_max_rows = 50
     else:
         args = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -155,19 +153,7 @@ if __name__ == "__main__":
             action="store_true",
             help="If set, then for each source class, only create the mapper spec where the mapping will result in copying the maximum number of source slots to target slots. If more than one mapping has an equal number of copies, then all of the corresponding mapper specs are created. If not set then mappings from each source class to ALL target classes are created (even if only one or a few columns are copied).",
         )
-        args.add_argument(
-            "--input_data_dir",
-            type=str,
-            help="Directory containing all the input data to map using the generated mapper config files. If empty then no mapping is performed.",
-            required=False,
-        )
-        args.add_argument(
-            "--input_max_rows",
-            type=int,
-            help="If input_data_dir is set, then the number of rows to map from each input data file. If 0 then map all rows.",
-            default=0,
-            required=False,
-        )
+
         opts = args.parse_args()
 
     make_v1_to_v2(
