@@ -12,7 +12,7 @@ cd PHES-ODM-MapGenerator
 python3 -m venv .env
 ```
 
-Activate the virtual environment on Unix/macOS:
+Activate the virtual environment on Linux/macOS:
 
 ```console
 source .env/bin/activate
@@ -26,7 +26,7 @@ Or if you're running Windows:
 
 Install Python library requirements:
 
-```
+```console
 pip3 install -r requirements.txt
 ```
 
