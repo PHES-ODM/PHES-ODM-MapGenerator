@@ -165,6 +165,7 @@ if __name__ == "__main__":
     if "get_ipython" in globals():
         dictionary_type = "reporting"
 
+        # fmt: off
         class opts:
             # source_schema = f"../data/test/source.yaml"
             # target_schema = f"../data/test/target.yaml"
@@ -225,9 +226,7 @@ if __name__ == "__main__":
             # filter_config_file = None
 
             # NWSS to ODM v2
-            source_schema = (
-                f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
-            )
+            source_schema = f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
             target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
             mapping_excel_file = (
                 "../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx"
@@ -247,6 +246,7 @@ if __name__ == "__main__":
             wide_files = []
             enums_files = []
             output_dir = Path(f"../gen/nwss_{dictionary_type}_to_v2")
+        # fmt: on
     else:
         args = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
