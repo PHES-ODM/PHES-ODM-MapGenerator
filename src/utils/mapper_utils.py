@@ -10,6 +10,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from typing import Dict, List, Union, Any, Optional
 import pandas as pd
 import re
+import yaml
 
 from linkml_runtime import SchemaView
 
@@ -177,12 +178,17 @@ def wide_target_expr_slot_name(name: str) -> Optional[str]:
     return wide_slot_name(name, WIDE_SPEC_EXPR_SUFFIX)
 
 
-def get_variable_reference(v: Any) -> Optional[str]:
+def get_variable_reference(
+    v: Any, schema: SchemaView, format_operations: Optional[Union[str, List[str]]]
+) -> Optional[str]:
     """Get the variable name that the value references. If the value is in the form {{variableName}} then the string
     "variableName" will be returned.
 
     Args:
         v (Any): The value to get the variable reference from.
+        schema (SchemaView): The schema that the variable/slot belongs to.
+        format_operations: (Optional[Union[str, List[str]]]): Operations to apply to the variable to format it. See
+            cleanup_slot_name.
 
     Returns:
         Optional[str]: The variable that v refers to, or None if it does not refer to a variable.
@@ -190,7 +196,10 @@ def get_variable_reference(v: Any) -> Optional[str]:
     if not isinstance(v, str):
         return None
     match = re.search(VARIABLE_REGEX, v)
-    return None if match is None else match[1]
+    if match is None:
+        return None
+
+    return cleanup_slot_name(match[1], schema=schema, cleanup_options=format_operations)
 
 
 def select_required_enum_derivations(
@@ -271,6 +280,10 @@ def expand_wide_derivations(
     target_class_name: str,
     slot_derivations: Dict,
     custom_wide_dfs: Union[List[pd.DataFrame], pd.DataFrame],
+    source_schema: SchemaView,
+    target_schema: SchemaView,
+    source_slot_format_operations: Optional[Union[str, List[str]]],
+    target_slot_format_operations: Optional[Union[str, List[str]]],
 ) -> List[Dict]:
     """Using custom wide DataFrames and an already calculated slot_derivations, see if there are any
     custom wide-to-long columns for the current source class to target class slot_derivations. If there are,
@@ -288,6 +301,12 @@ def expand_wide_derivations(
             We will make a copy of this and modify each copy for each wide-to-long column.
         custom_wide_dfs (Union[List[pd.DataFrame], pd.DataFrame]): The DataFrame(s) containing all the
             information required for wide-to-long mappings.
+        source_schema (SchemaView): The source schema of the mapping.
+        target_schema (SchemaView): The target schema of the mapping.
+        source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the source schema.
+        target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the target schema.
 
     Returns:
         Dict: A list of dictionaries of the following form:
@@ -353,7 +372,11 @@ def expand_wide_derivations(
                         f"{MappingColumns.TARGET_SLOT} is empty in row {row_number} for wide mapping"
                     )
 
-                source_slot_variable = get_variable_reference(target_value)
+                source_slot_variable = get_variable_reference(
+                    target_value,
+                    schema=source_schema,
+                    format_operations=source_slot_format_operations,
+                )
                 if target_expr and isinstance(target_expr, str):
                     # A target expr (ie. custom code) is specified
                     cur_slot_derivations[target_slot] = {
@@ -368,7 +391,7 @@ def expand_wide_derivations(
                     # The value is "<sourceSlot>", so we populate from source_column
                     cur_slot_derivations[target_slot] = {
                         "name": target_slot,
-                        "populated_from": source_slot_variable,
+                        "populated_from": source_slot_variable,  # cleanup_slot_name(source_slot_variable),
                     }
                 else:
                     # The value is a constant, so we populate with the constant using expr
@@ -416,3 +439,82 @@ def get_blank_class_derivation(source_class: str, target_class: str) -> Dict:
         "populated_from": source_class,
         "slot_derivations": {},
     }
+
+
+def format_slot_name(val: str, format_options: Union[str, List[str]]) -> str:
+    """Format the specified slot using the specified formatting options.
+
+    Args:
+        val (str): The slot name to format. If not a string then it is left unchanged.
+        format_options (Union[str, List[str]]): The formatting operation, or list of formatting operations, to perform.
+            Formating operations that can be performed are:
+                    "lowercase": Make lowercase.
+                    "uppercase": Make uppercase.
+                    "alpha_numeric_underscore": Replace non alpha-numeric values with underscores.
+                    "single_underscores": Replace double (or more) underscores (eg. __, ___) with single underscores
+                    "trim_whitespace": Remove leading and trailing whitespace.
+                    "trim_underscores": Remove leading and trailing underscores.
+                    "remove_chars": Remove all the specified characters. This should be specified as either a JSON/YAML
+                        string or as a dictionary of the form { "remove_chars": "abc" } where "abc" contains all the
+                        characters to remove (ie. "a", "b", and "c" will be removed).
+                    "remove_special": Remove all special characters (characters other than alpha-numeric and spaces).
+            Multiple operations can be specified, and the operations are performed in the same order as specified
+            in the list.
+
+    Returns:
+        str: The formatted slot name (val), after all formatting operations are performed.
+    """
+    if not isinstance(val, str):
+        return val
+
+    for options in format_options:
+        if isinstance(options, str):
+            options = yaml.safe_load(options)
+            if isinstance(options, str):
+                options = {options: True}
+        for option, param in options.items():
+            if option == "lowercase":
+                val = val.lower()
+            if option == "uppercase":
+                val = val.upper()
+            if option == "alpha_numeric_underscore":
+                val = re.sub("[^A-Za-z0-9]", "_", val)
+            if option == "single_underscores":
+                val = re.sub("__+", "_", val)
+            if option == "trim_underscores":
+                val = val.strip("_")
+            if option == "trim_whitespace":
+                val = re.sub(r"^\s*", "", val)
+                val = re.sub(r"\s*$", "", val)
+            if option == "remove_chars":
+                for ch in param:
+                    val = val.replace(ch, "")
+            if option == "remove_special":
+                val = re.sub(r"[^A-Za-z0-9\s]", "", val)
+    return val
+
+
+def cleanup_slot_name(
+    data: Union[str, pd.DataFrame, pd.Series],
+    schema: SchemaView,
+    cleanup_options: Optional[Union[str, List[str]]],
+) -> Union[str, pd.DataFrame]:
+    """Cleanup a slot name so that it can be used as a variable name, by replacing whitespace
+    and other non-alphanumeric characters with an underscore.
+
+    Args:
+        data (Union[str, pd.DataFrame, pd.Series]): The data to cleanup. If a DataFrame or Series then cleanup all
+            cells, if a string then cleanup the string.
+        schema (SchemaView): The schema that the slot belongs to.
+        cleanup_options (Optional[Union[str, List[str]]], optional): The cleanup options to perform.
+
+    Returns:
+        Union[str, pd.DataFrame]: The cleaned data.
+    """
+    if not cleanup_options:
+        return data
+
+    if isinstance(data, (pd.DataFrame, pd.Series)):
+        return data.map(lambda x: format_slot_name(x, format_options=cleanup_options))
+
+    return format_slot_name(data, format_options=cleanup_options)
