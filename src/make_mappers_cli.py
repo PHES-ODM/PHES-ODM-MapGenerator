@@ -1,6 +1,6 @@
 # %%
 from pathlib import Path
-from typing import Union, List
+from typing import Union, List, Optional
 import argparse
 import os
 import shutil
@@ -49,6 +49,8 @@ def make_mappers_cli(
     enums_files: Union[List[Union[str, Path]], Union[str, Path]],
     source_schema: Union[str, Path],
     target_schema: Union[str, Path],
+    source_slot_format_operations: Optional[Union[str, List[str]]],
+    target_slot_format_operations: Optional[Union[str, List[str]]],
 ):
     """Make the LinkML Mapper spec (YAML) files required for mapping from any source data set to
     any taret dataset, as specified in the mapping_excel_file.
@@ -69,6 +71,10 @@ def make_mappers_cli(
         enum_files (Union[List[Union[str, Path]], Union[str, Path]]): Path to CSV or TSV files that contain the enum configurations.
         source_schema (Union[str, Path]): The source dataset schema LinkML YAML file.
         target_schema (Union[str, Path]): The target dataset schema LinkML YAML file.
+        source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the source schema.
+        target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the target schema.
     """
     output_dir = Path(output_dir)
 
@@ -156,6 +162,8 @@ def make_mappers_cli(
             source_schema=source_schema,
             target_schema=target_schema,
             source_schema_for_mapping=source_schema_for_mapping,
+            source_slot_format_operations=source_slot_format_operations,
+            target_slot_format_operations=target_slot_format_operations,
         )
 
     logger.info("Finished!")
@@ -200,9 +208,7 @@ if __name__ == "__main__":
             # ODM v1 to ODM v2
             # source_schema = "../data/odm_v1/linkml/odm_v1.yaml"
             # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
-            # mapping_excel_file = (
-            #     "../gen/odm_v1_to_v2/xlsx_mappers_from_yaml/mapping_config.xlsx"
-            # )
+            # mapping_excel_file = "../gen/odm_v1_to_v2/xlsx_mappers_from_yaml/mapping_config.xlsx"
             # excel_maps_sheets = [
             #     "measures",
             #     "qualityReports",
@@ -224,28 +230,77 @@ if __name__ == "__main__":
             # input_max_rows = 50  # 25
             # id_config_file = None
             # filter_config_file = None
+            # source_slot_format_operations = ["alpha_numeric_underscore", "single_underscores", "trim_underscores"]
+            # target_slot_format_operations = ["alpha_numeric_underscore", "single_underscores", "trim_underscores"]
 
             # NWSS to ODM v2
-            source_schema = f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
+            # source_schema = f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
+            # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
+            # mapping_excel_file = (
+            #     "../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx"
+            #     # "../gen/nwss_reporting_to_v2/xlsx_mappers_from_yaml/mapping_config.xlsx"
+            # )
+            # excel_maps_sheets = ["maps"]
+            # # excel_maps_sheets = ["measureSets", "contacts", "samples", "addresses", "polygons", "datasets", "sites", "organizations", "protocols", "instruments"]
+            # excel_wide_sheets = [
+            #     "wide_measures",
+            #     "wide_protocolRelationships",
+            #     "wide_protocolSteps",
+            #     "wide_qualityReports",
+            # ]
+            # excel_enums_sheets = ["enums"]
+            # # excel_enums_sheets = []
+            # maps_files = []
+            # wide_files = []
+            # enums_files = []
+            # output_dir = Path(f"../gen/nwss_{dictionary_type}_to_v2")
+            # source_slot_format_operations = ["alpha_numeric_underscore", "single_underscores", "trim_underscores"]
+            # target_slot_format_operations = ["alpha_numeric_underscore", "single_underscores", "trim_underscores"]
+            
+            # PHA4GE to ODM v2
+            # source_schema = "../data/pha4ge/linkml/pha4ge.yaml"
+            source_schema = "/Users/martinwellman/Documents/Health/Wastewater/PHES-ODM-Mapper/PHA4GE/schema-WastewaterSARC-CoV-2.yaml"
             target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
-            mapping_excel_file = (
-                "../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx"
-                # "../gen/nwss_reporting_to_v2/xlsx_mappers_from_yaml/mapping_config.xlsx"
-            )
-            excel_maps_sheets = ["maps"]
-            # excel_maps_sheets = ["measureSets", "contacts", "samples", "addresses", "polygons", "datasets", "sites", "organizations", "protocols", "instruments"]
-            excel_wide_sheets = [
-                "wide_measures",
-                "wide_protocolRelationships",
-                "wide_protocolSteps",
-                "wide_qualityReports",
+            mapping_excel_file = "../data/mapping_config_files/pha4ge_to_odm_v2_mapping.xlsx"
+            excel_maps_sheets = [
+                "maps_OTHER",
+                "maps_sites",
+                "maps_samples",
+                "maps_repositories",
+                "maps_polygons",
+                "maps_measures",
+                "maps_instruments",
+                "maps_datasets",
+                "maps_addresses",
+                "maps_accessions",
+
+                # "maps_qualityReports",
+                # "maps_protocolSteps",
+                # "maps_protocols",
             ]
-            excel_enums_sheets = ["enums"]
+            excel_wide_sheets = [
+                "wide_samples",
+                "wide_sampleRelationships",
+                "wide_repositories",
+                "wide_measures",
+                "wide_datasets",
+                "wide_contacts",
+
+                # "wide_protocolSteps",
+                # "wide_protocols",
+            ]
+            excel_enums_sheets = [
+                "enums_samples",
+                "enums_measures",
+                "enums_addresses",
+            ]
             # excel_enums_sheets = []
             maps_files = []
             wide_files = []
             enums_files = []
-            output_dir = Path(f"../gen/nwss_{dictionary_type}_to_v2")
+            output_dir = Path("../gen/pha4ge_to_v2")
+            source_slot_format_operations = [ "lowercase", '{ remove_chars: "-"}', "alpha_numeric_underscore", "single_underscores", "trim_underscores" ]
+            target_slot_format_operations = ["alpha_numeric_underscore", "single_underscores", "trim_underscores"]
         # fmt: on
     else:
         args = argparse.ArgumentParser(
@@ -317,6 +372,20 @@ if __name__ == "__main__":
             help="The file(s) that contain the enums configuration, in addition to what is already extracted from mapping_excel_file.",
             required=False,
         )
+        args.add_argument(
+            "--source_slot_format_operations",
+            type=str,
+            nargs="+",
+            help="Formatting operations to apply to all configured slots from the source schema.",
+            required=False,
+        )
+        args.add_argument(
+            "--target_slot_format_operations",
+            type=str,
+            nargs="+",
+            help="Formatting operations to apply to all configured slots from the target schema.",
+            required=False,
+        )
 
         opts = args.parse_args()
 
@@ -331,4 +400,6 @@ if __name__ == "__main__":
         enums_files=opts.enums_files,
         source_schema=opts.source_schema,
         target_schema=opts.target_schema,
+        source_slot_format_operations=opts.source_slot_format_operations,
+        target_slot_format_operations=opts.target_slot_format_operations,
     )

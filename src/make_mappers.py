@@ -9,10 +9,11 @@ mappings.
 import argparse
 import pandas as pd
 from pathlib import Path
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Optional
 import os
 import yaml
 import json
+import re
 
 from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model.meta import SchemaDefinition
@@ -29,6 +30,7 @@ from utils.general_utils import (
 from utils.schema_utils import (
     get_enum_names_for_slot,
     get_enum_name_with_permissible_value,
+    remove_ontology_id,
 )
 from utils.mapper_utils import (
     select_required_enum_derivations,
@@ -39,6 +41,7 @@ from utils.mapper_utils import (
     is_wide_target_expr_slot,
     any_wide_slot_name,
     get_blank_class_derivation,
+    cleanup_slot_name,
     CONFIG_READ_KWARGS,
 )
 from utils.auto_id import add_auto_ids_to_schema
@@ -47,7 +50,10 @@ logger = get_logger(__name__)
 
 
 def extract_class_derivations(
-    maps_df: pd.DataFrame, source_schema: SchemaView
+    maps_df: pd.DataFrame,
+    source_schema: SchemaView,
+    source_slot_format_operations: Optional[Union[str, List[str]]],
+    target_slot_format_operations: Optional[Union[str, List[str]]],
 ) -> Dict[str, Dict[str, Dict]]:
     """Extract all class derivations from DataFraome from the the mapping file.
 
@@ -55,6 +61,10 @@ def extract_class_derivations(
         maps_df (pd.DataFrame): The mapping DataFrame loaded from the mapping specification file.
         source_schema (SchemaView): The schema that acts as the source for all the mappings (eg. schema
             for NWSS or ODM v1)
+        source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the source schema.
+        target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the target schema.
 
     Raises:
         ValueError: An error occurred due to problems with the mapping data.
@@ -151,14 +161,45 @@ def extract_class_derivations(
                     )
             slot_derivations[target_slot] = {
                 "name": target_slot,
-                "populated_from": source_slot,
+                "populated_from": source_slot,  # cleanup_slot_name(source_slot),
             }
 
     return all_class_derivations
 
 
+def add_ontoid_to_enum_value(
+    schema: SchemaView, enum_name: str, enum_value: str
+) -> str:
+    """Add an ontology ID to an enum value, if an ontology ID is present for that enum value
+    in the schema. For example, an enum value of "degree Celsius (C)" might be changed to
+    "degree Celsius (C) [UO:0000027]".
+
+    Args:
+        schema (SchemaView): The schema the enum value belongs to.
+        enum_name (str): The enumeration name that the enum value belongs to.
+        enum_value (str): The enum value to an ontology ID to, if the ontology ID is present
+            in the schema.
+
+    Returns:
+        str: The enumeration value, possibly with an ontology ID added to it.
+    """
+    if not enum_name:
+        return enum_value
+    enum_defn = schema.get_enum(enum_name)
+    if not enum_defn:
+        return enum_value
+    for permissible_value in enum_defn.permissible_values.keys():
+        if remove_ontology_id(str(permissible_value)) == enum_value:
+            return permissible_value
+    return enum_value
+
+
 def extract_enum_derivations(
-    maps_df: pd.DataFrame, source_schema: SchemaView, target_schema: SchemaView
+    maps_df: pd.DataFrame,
+    source_schema: SchemaView,
+    target_schema: SchemaView,
+    source_slot_format_operations: Optional[Union[str, List[str]]],
+    target_slot_format_operations: Optional[Union[str, List[str]]],
 ) -> Dict[str, Dict[str, Dict]]:
     """Extract all enum derivations found within the mapping DataFrame.
 
@@ -168,6 +209,10 @@ def extract_enum_derivations(
             prepared with prepare_maps_df, prepare_enums_df, and prepare_wide_df).
         source_schema (SchemaView): The source schema for the mapping.
         target_schema (SchemaView): The target schema for the mapping.
+        source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the source schema.
+        target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the target schema.
 
     Raises:
         ValueError: _description_
@@ -219,7 +264,11 @@ def extract_enum_derivations(
         target_enum_name = row.get(MappingColumns.TARGET_ENUM, "")
         target_enum_value = row[MappingColumns.TARGET_VALUE]
 
-        variable_match = get_variable_reference(target_enum_value)
+        variable_match = get_variable_reference(
+            target_enum_value,
+            source_schema,
+            format_operations=source_slot_format_operations,
+        )
 
         # If variable_match had a match (in the form {{variable_match}}, then it means we copy a source slot to the target slot,
         # so we don't need an enum derivation.
@@ -243,6 +292,7 @@ def extract_enum_derivations(
             target_enum_value = ""
 
         # Get source enumeration name (if empty) based on the source class and slot
+        # orig_source_enum_value = source_enum_value
         if not source_enum_name:
             # Get the source enum name based on the range of the slot (there might be multiple enums for the range)
             source_enum_names = get_enum_names_for_slot(
@@ -254,7 +304,10 @@ def extract_enum_derivations(
                 )
             # Find the first source enumeration that contains source_enum_value, use it as the source enum
             source_enum_name = get_enum_name_with_permissible_value(
-                source_enum_names, source_enum_value, source_schema
+                source_enum_names,
+                source_enum_value,
+                source_schema,
+                with_ontology_id=True,
             )
             if not source_enum_name:
                 source_enum_name = source_enum_names[0]
@@ -264,6 +317,17 @@ def extract_enum_derivations(
                 # raise ValueError(
                 #     f"No source enumeration found for {source_class=}, {source_slot=} from slot range(s) {source_enum_names=} that has a permissible {source_enum_value=} ({target_class=}, {target_slot=})"
                 # )
+            # if source_enum_name:
+            #     print("!!!!REMOVE!") # For removing ontology identifier
+            #     source_enum_defn = source_schema.get_enum(source_enum_name)
+            #     if source_enum_value in source_enum_defn.permissible_values:
+            #         source_enum_value_defn = source_enum_defn.permissible_values[source_enum_value]
+            #         if "old_name" in source_enum_value_defn:
+            #             orig_source_enum_value = source_enum_value_defn["old_name"]
+            #     else:
+            #         logger.error(f"Source enum value '{source_enum_value}' not found in source enum '{source_enum_name}'")
+        # print("!!!!REMOVE!") # For removing ontology identifier
+        # source_enum_value = orig_source_enum_value
 
         # Get the target enumeration name based on the target class and slot
         if target_class and target_slot:
@@ -272,7 +336,10 @@ def extract_enum_derivations(
             )
             if target_enum_names:
                 target_enum_name = get_enum_name_with_permissible_value(
-                    target_enum_names, target_enum_value, target_schema
+                    target_enum_names,
+                    target_enum_value,
+                    target_schema,
+                    with_ontology_id=True,
                 )
                 if not target_enum_name:
                     target_enum_name = target_enum_names[0]
@@ -296,6 +363,15 @@ def extract_enum_derivations(
             raise ValueError(
                 f"At least one of target enumeration or target class/target slot must be specified for enumeration mapping from source class '{source_class}', source slot '{source_slot}', source enum '{source_enum_name}'"
             )
+
+        # Add an ontology ID to the enum values if the schema has ontology IDs appended to the
+        # enum values
+        source_enum_value = add_ontoid_to_enum_value(
+            source_schema, source_enum_name, source_enum_value
+        )
+        target_enum_value = add_ontoid_to_enum_value(
+            target_schema, target_enum_name, target_enum_value
+        )
 
         # Get the enum derivations dictionary for the current source_class and target_class
         if source_class not in all_enum_derivations:
@@ -348,7 +424,13 @@ def extract_enum_derivations(
     return all_enum_derivations
 
 
-def prepare_maps_df(maps_file: Union[str, Path]) -> pd.DataFrame:
+def prepare_maps_df(
+    maps_file: Union[str, Path],
+    source_schema: SchemaView,
+    target_schema: SchemaView,
+    source_slot_format_operations: Optional[Union[str, List[str]]],
+    target_slot_format_operations: Optional[Union[str, List[str]]],
+) -> pd.DataFrame:
     """Load and prepare the mapping specification file from disk. This DataFrame specifies all
     the mappings other than the wide column mappings (wide columns data is prepared by
     prepare_wide_df).
@@ -359,6 +441,12 @@ def prepare_maps_df(maps_file: Union[str, Path]) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The loaded and processed mapping data. It will contain the columns found in
             MappingColumns.
+        source_schema (SchemaView): The source schema for the mapping.
+        target_schema (SchemaView): The target schema for the mapping.
+        source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the source schema.
+        target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the target schema.
     """
     if not maps_file:
         return None
@@ -387,12 +475,40 @@ def prepare_maps_df(maps_file: Union[str, Path]) -> pd.DataFrame:
         MappingColumns.TARGET_EXPR,
         MappingColumns.CUSTOM_DATA,
     ]
+    # Select columns in keep_columns that exist in maps_df
+    maps_df = maps_df[[c for c in keep_columns if c in maps_df.columns]]
+    # Set columns in keep_columns that do not exist in maps_df to None
+    maps_df[[c for c in keep_columns if c not in maps_df.columns]] = None
+    # Sort the columns
     maps_df = maps_df[keep_columns]
+
+    # Cleanup source/target slots (eg. replace whitespace with underscores, etc)
+    maps_df[MappingColumns.SOURCE_SLOT] = cleanup_slot_name(
+        maps_df[MappingColumns.SOURCE_SLOT],
+        schema=source_schema,
+        cleanup_options=source_slot_format_operations,
+    )
+    maps_df[MappingColumns.TARGET_SLOT] = cleanup_slot_name(
+        maps_df[MappingColumns.TARGET_SLOT],
+        schema=target_schema,
+        cleanup_options=target_slot_format_operations,
+    )
+    # ws_columns = [
+    #     MappingColumns.SOURCE_SLOT,
+    #     MappingColumns.TARGET_SLOT,
+    # ]
+    # maps_df[ws_columns] = cleanup_slot_name(maps_df[ws_columns])
 
     return maps_df.copy()
 
 
-def prepare_wide_df(wide_file: Union[str, Path]) -> pd.DataFrame:
+def prepare_wide_df(
+    wide_file: Union[str, Path],
+    source_schema: SchemaView,
+    target_schema: SchemaView,
+    source_slot_format_operations: Optional[Union[str, List[str]]],
+    target_slot_format_operations: Optional[Union[str, List[str]]],
+) -> pd.DataFrame:
     """Load and prepare the wide column configuration file from disk. This DataFrame specifies
     all the columns that act as wide columns in the source schema, along with details for how
     to map the wide columns to the target schema. It may also include some additional enum
@@ -405,6 +521,12 @@ def prepare_wide_df(wide_file: Union[str, Path]) -> pd.DataFrame:
         pd.DataFrame: The DataFrame with the wide column information. It will contain the columns
             found in MappingColumns, including the wide-specific columns specifying values used
             when pivoting.
+        source_schema (SchemaView): The source schema for the mapping.
+        target_schema (SchemaView): The target schema for the mapping.
+        source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the source schema.
+        target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the target schema.
     """
     if not wide_file:
         return None
@@ -443,26 +565,61 @@ def prepare_wide_df(wide_file: Union[str, Path]) -> pd.DataFrame:
     else:
         wide_df[MappingColumns.WIDE_GROUP] = ""
 
+    # Make sure all required columns are present
+    required_columns = [
+        MappingColumns.SOURCE_CLASS,
+        MappingColumns.SOURCE_SLOT,
+        MappingColumns.SOURCE_VALUE,
+        MappingColumns.TARGET_CLASS,
+        MappingColumns.TARGET_VALUE,
+    ]
+    missing_columns = [c for c in required_columns if c not in wide_df.columns]
+    wide_df[missing_columns] = ""
+
     # Order the columns into a nice order. This isn't necessary but makes it easier to view when debugging.
-    wide_df = order_columns(
-        wide_df,
-        [
-            MappingColumns.SOURCE_CLASS,
-            MappingColumns.SOURCE_SLOT,
-            MappingColumns.TARGET_CLASS,
-        ],
-    )
+    wide_df = order_columns(wide_df, required_columns)
+
+    # Cleanup source/target slot names
+    # ws_columns = [
+    #     MappingColumns.SOURCE_SLOT,
+    #     MappingColumns.TARGET_SLOT,
+    # ]
+    # ws_columns = [c for c in ws_columns if c in wide_df.columns]
+    if MappingColumns.SOURCE_SLOT in wide_df.columns:
+        wide_df[MappingColumns.SOURCE_SLOT] = cleanup_slot_name(
+            wide_df[MappingColumns.SOURCE_SLOT],
+            schema=source_schema,
+            cleanup_options=source_slot_format_operations,
+        )
+    if MappingColumns.TARGET_SLOT in wide_df.columns:
+        wide_df[MappingColumns.TARGET_SLOT] = cleanup_slot_name(
+            wide_df[MappingColumns.TARGET_SLOT],
+            schema=target_schema,
+            cleanup_options=target_slot_format_operations,
+        )
 
     return wide_df.copy()
 
 
-def prepare_enums_df(enums_file: Union[str, Path]) -> pd.DataFrame:
+def prepare_enums_df(
+    enums_file: Union[str, Path],
+    source_schema: SchemaView,
+    target_schema: SchemaView,
+    source_slot_format_operations: Optional[Union[str, List[str]]],
+    target_slot_format_operations: Optional[Union[str, List[str]]],
+) -> pd.DataFrame:
     """Load and prepare the enums configuration file from disk. This DataFrame specifies enumeration
     mappings from source to target enums (note that enums can also be specified in the maps sheet, via
     prepare_maps_df).
 
     Args:
         enums_file (Union[str, Path]): The path to the enumeration configuration file.
+        source_schema (SchemaView): The source schema for the mapping.
+        target_schema (SchemaView): The target schema for the mapping.
+        source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the source schema.
+        target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the target schema.
 
     Returns:
         pd.DataFrame: The DataFrame with the enums mappings from enums_file.
@@ -501,6 +658,18 @@ def prepare_enums_df(enums_file: Union[str, Path]) -> pd.DataFrame:
     # Convert entire DataFrame to strings
     enums_df = enums_df.map(lambda x: "" if pd.isna(x) else str(x))
 
+    # Cleanup slot names (eg. replace whitespace with underscores)
+    enums_df[MappingColumns.SOURCE_SLOT] = cleanup_slot_name(
+        enums_df[MappingColumns.SOURCE_SLOT],
+        schema=source_schema,
+        cleanup_options=source_slot_format_operations,
+    )
+    enums_df[MappingColumns.TARGET_SLOT] = cleanup_slot_name(
+        enums_df[MappingColumns.TARGET_SLOT],
+        schema=target_schema,
+        cleanup_options=target_slot_format_operations,
+    )
+
     return enums_df.copy()
 
 
@@ -510,6 +679,8 @@ def make_wide_derivations(
     class_enum_derivations: List[Dict[str, Dict[str, Dict]]],
     source_schema: SchemaView,
     target_schema: SchemaView,
+    source_slot_format_operations: Optional[Union[str, List[str]]],
+    target_slot_format_operations: Optional[Union[str, List[str]]],
 ) -> List[Dict]:
     """Based on the provided class derivation, make a separate class derivation for each wide column specified
     in custom_wide_df. We will also select all the enum derivations required by the new wide derivations from
@@ -531,6 +702,10 @@ def make_wide_derivations(
             new enum derivation where we simply copy values from the source  enum to the target enum.
         source_schema (SchemaView): The source schema for the class_derivation.
         target_schema (SchemaView): The target schema for the class_derivation.
+        source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the source schema.
+        target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the target schema.
 
     Returns:
         List[Dict]: A list of dictionaries containing all the new derivations. The dictionary has the
@@ -580,7 +755,11 @@ def make_wide_derivations(
 
     # Extract enum derivations from the group. It is in the form group_enum_derivations[source_class][target_class] = { derivations }.
     group_enum_derivations = extract_enum_derivations(
-        custom_wide_df, source_schema=source_schema, target_schema=target_schema
+        custom_wide_df,
+        source_schema=source_schema,
+        target_schema=target_schema,
+        source_slot_format_operations=source_slot_format_operations,
+        target_slot_format_operations=target_slot_format_operations,
     )
 
     # Extract the wide-to-long data. We only use the first row of the group, since the others are identical other than
@@ -653,6 +832,10 @@ def make_wide_derivations(
         target_class_name=target_class_name,
         slot_derivations=class_derivation["slot_derivations"],
         custom_wide_dfs=custom_wide_df,
+        source_schema=source_schema,
+        target_schema=target_schema,
+        source_slot_format_operations=source_slot_format_operations,
+        target_slot_format_operations=target_slot_format_operations,
     )
 
     # Add the enum derivations for each of the expanded class derivations
@@ -790,6 +973,8 @@ def make_mappers(
     source_schema: Union[str, Path],
     target_schema: Union[str, Path],
     source_schema_for_mapping: Union[str, Path],
+    source_slot_format_operations: Optional[Union[str, List[str]]],
+    target_slot_format_operations: Optional[Union[str, List[str]]],
 ):
     """Make all mapper configuration files using the specified mapping, wide column, and enums config files.
 
@@ -804,6 +989,10 @@ def make_mappers(
         target_schema (Union[str, Path]): Path to the target schema of the mapping.
         source_schema_for_mapping (Union[str, Path]): Path to save the modified source_schema to. This LinkML schema contains additional
             slots that are meant to contain generated IDs when doing the actual mapping, for linking between tables.
+        source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the source schema.
+        target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the target schema.
     """
     if mapper_dir:
         os.makedirs(mapper_dir, exist_ok=True)
@@ -817,19 +1006,48 @@ def make_mappers(
 
     # Load all schemas
     source_schema = SchemaView(source_schema)
+    # remove_enum_ontology_ids(source_schema)
     target_schema = SchemaView(target_schema)
 
     # Load and prepare the maps files
-    maps_df = [prepare_maps_df(f) for f in maps_files]
+    maps_df = [
+        prepare_maps_df(
+            f,
+            source_schema=source_schema,
+            target_schema=target_schema,
+            source_slot_format_operations=source_slot_format_operations,
+            target_slot_format_operations=target_slot_format_operations,
+        )
+        for f in maps_files
+    ]
     maps_df = pd.concat([df for df in maps_df if df is not None]).reset_index(drop=True)
     # Load and prepare the wide-columns files
     wide_dfs = []
     if wide_files is not None and len(wide_files) > 0:
-        wide_dfs = [prepare_wide_df(f) for f in wide_files if f]
+        wide_dfs = [
+            prepare_wide_df(
+                f,
+                source_schema=source_schema,
+                target_schema=target_schema,
+                source_slot_format_operations=source_slot_format_operations,
+                target_slot_format_operations=target_slot_format_operations,
+            )
+            for f in wide_files
+            if f
+        ]
     # Load and prepare the enums mapping files
     enums_df = None
     if enums_files is not None and len(enums_files) > 0:
-        enums_df = [prepare_enums_df(f) for f in enums_files]
+        enums_df = [
+            prepare_enums_df(
+                f,
+                source_schema=source_schema,
+                target_schema=target_schema,
+                source_slot_format_operations=source_slot_format_operations,
+                target_slot_format_operations=target_slot_format_operations,
+            )
+            for f in enums_files
+        ]
         enums_df = pd.concat([df for df in enums_df if df is not None])
 
     # Add all auto IDs (eg. id:sampleID) to the LinkML schema
@@ -845,13 +1063,24 @@ def make_mappers(
     # (maps|enums)_enum_derivations is in the format (maps|enums)_enum_derivations[source_class][target_class] = {enum_derivations}
     # all_class_derivations is in the format all_class_derivations[source_class][target_class] = {class_derivations}
     maps_enum_derivations = extract_enum_derivations(
-        maps_df, source_schema=source_schema, target_schema=target_schema
+        maps_df,
+        source_schema=source_schema,
+        target_schema=target_schema,
+        source_slot_format_operations=source_slot_format_operations,
+        target_slot_format_operations=target_slot_format_operations,
     )
     enums_enum_derivations = extract_enum_derivations(
-        enums_df, source_schema=source_schema, target_schema=target_schema
+        enums_df,
+        source_schema=source_schema,
+        target_schema=target_schema,
+        source_slot_format_operations=source_slot_format_operations,
+        target_slot_format_operations=target_slot_format_operations,
     )
     all_class_derivations = extract_class_derivations(
-        maps_df, source_schema=source_schema
+        maps_df,
+        source_schema=source_schema,
+        source_slot_format_operations=source_slot_format_operations,
+        target_slot_format_operations=target_slot_format_operations,
     )
 
     # Go through all wide mapping data, and create the wide class derivations (one class derivation per wide group)
@@ -884,6 +1113,8 @@ def make_mappers(
                 class_enum_derivations=[enums_enum_derivations, maps_enum_derivations],
                 source_schema=source_schema,
                 target_schema=target_schema,
+                source_slot_format_operations=source_slot_format_operations,
+                target_slot_format_operations=target_slot_format_operations,
             )
             if len(custom_wide_results) > 0:
                 results.extend(custom_wide_results)
@@ -947,14 +1178,30 @@ def make_mappers(
         }
 
         # Save mapper specification to disk
+        re_match = r"[^A-Za-z0-9 .,\_]"
+        source_class_tag = re.sub(re_match, "_", source_class)
+        target_class_tag = re.sub(re_match, "_", target_class)
         mapper_file = os.path.join(
-            mapper_dir, f"mapper-{idx:010n}-{source_class}-{target_class}.yaml"
+            mapper_dir, f"mapper-{idx:010n}-{source_class_tag}-{target_class_tag}.yaml"
         )
         logger.info(
             f"Saving mapper spec for '{source_class}' to '{target_class}': {mapper_file}"
         )
         with open(mapper_file, "w") as f:
             yaml.dump(mapper_spec, f, indent=2, sort_keys=False)
+
+
+# def remove_enum_ontology_ids(schema: SchemaView):
+#     print("!!!!REMOVE!")
+#     for enum_name in schema.all_enums():
+#         enum_defn = schema.get_enum(enum_name)
+#         permissible_values = enum_defn.permissible_values
+#         for key in list(permissible_values.keys()):
+#             key_cleaned = re.sub(r" \[([A-Za-z0-9]+)\:([A-Za-z0-9]+)\]$", "", key)
+#             if key_cleaned != key:
+#                 permissible_values[key]["old_name"] = key
+#                 permissible_values[key_cleaned] = permissible_values[key]
+#                 del permissible_values[key]
 
 
 if __name__ == "__main__":
@@ -985,6 +1232,22 @@ if __name__ == "__main__":
             # )
             # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
             # source_schema_for_mapping = f"../gen/nwss_{dictionary_type}_to_v2/linkml_for_mapping/nwss_{dictionary_type}.yaml"
+# %%
+
+
+            source_slot_format_operations = [
+                "alpha_numeric_underscore",
+                "single_underscores",
+                "trim_underscores",
+            ]
+            target_slot_format_operations = [
+                "alpha_numeric_underscore",
+                "single_underscores",
+                "trim_underscores",
+            ]
+
+            # For PHA4GE
+            # source_slot_format_operations = [ "lowercase", '{ remove_chars: "-"}', "alpha_numeric_underscore", "single_underscores", "trim_underscores" ]
     else:
         args = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -1034,6 +1297,20 @@ if __name__ == "__main__":
             help="Location to save the modified source_schema that should be used for mapping. This schema will include additional slots where IDs get generated, for linking between tables in the output, as well as possibly other changes. The resulting schema might be the same as the original.",
             required=True,
         )
+        args.add_argument(
+            "--source_slot_format_operations",
+            type=str,
+            nargs="+",
+            help="Formatting operations to apply to all configured slots from the source schema.",
+            required=False,
+        )
+        args.add_argument(
+            "--target_slot_format_operations",
+            type=str,
+            nargs="+",
+            help="Formatting operations to apply to all configured slots from the target schema.",
+            required=False,
+        )
         opts = args.parse_args()
 
     logger.info("Running...")
@@ -1061,6 +1338,8 @@ if __name__ == "__main__":
         source_schema=opts.source_schema,
         target_schema=opts.target_schema,
         source_schema_for_mapping=opts.source_schema_for_mapping,
+        source_slot_format_operations=opts.source_slot_format_operations,
+        target_slot_format_operations=opts.target_slot_format_operations,
     )
 
     logger.info("Finished!")
