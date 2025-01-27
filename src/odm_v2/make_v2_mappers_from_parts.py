@@ -135,7 +135,11 @@ def make_class_derivations(
     df: pd.DataFrame,
     source_table_name: str,
     max_mapping_only: bool,
-    custom_wide_dfs: Optional[List[pd.DataFrame]] = None,
+    custom_wide_dfs: Optional[List[pd.DataFrame]],
+    source_schema: SchemaView,
+    target_schema: SchemaView,
+    source_slot_format_operations: Optional[Union[str, List[str]]],
+    target_slot_format_operations: Optional[Union[str, List[str]]],
 ) -> List[Dict]:
     """Make a LinkML mapper class_derivation dictionary for converting the source class source_table_name
     to the proper ODM v2 class.
@@ -148,6 +152,8 @@ def make_class_derivations(
             same maximum number of copied columns, then we make derivations for all of them. If False then we
             create derivations to all v2 tables. (Some of these derivations might be useless, for example if
             we only copy over a single column).
+        source_schema (SchemaView): The source schema of the mapping.
+        target_schema (SchemaView): The target schema of the mapping.
         custom_wide_dfs (Optional[List[pd.DataFrame]]): Optional list of DataFrames containing information
             for mapping wide-like source columns to long target rows.
 
@@ -225,6 +231,10 @@ def make_class_derivations(
                 target_class_name=target_class_name,
                 slot_derivations=slot_derivations,
                 custom_wide_dfs=custom_wide_dfs,
+                source_schema=source_schema,
+                target_schema=target_schema,
+                source_slot_format_operations=source_slot_format_operations,
+                target_slot_format_operations=target_slot_format_operations,
             )
             if len(custom_wide_results) > 0:
                 has_expanded_wide = True
