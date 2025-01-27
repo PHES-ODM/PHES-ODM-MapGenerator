@@ -583,7 +583,9 @@ class YAMLtoXLSXMapper(object):
                 continue
 
             value = list(values)[0]
-            source_slot = get_variable_reference(value)
+            source_slot = get_variable_reference(
+                value, schema=None, format_operations=None
+            )
             if col.endswith("_value") and source_slot:
                 row = pd.DataFrame(
                     {
