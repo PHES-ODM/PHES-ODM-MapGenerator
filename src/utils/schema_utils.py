@@ -6,6 +6,7 @@ Utility functions for LinkML schemas.
 from typing import Dict, List, Optional, Any
 from dataclasses import asdict
 import yaml
+import re
 
 from linkml_runtime import SchemaView
 
@@ -44,21 +45,38 @@ def get_ranges_of_slot(cls: str, slot: str, schema: SchemaView) -> List[str]:
     """
     defn = get_slot_definition(cls, slot, schema)
 
+    ranges = None
+
     if defn is not None:
-        defn = defn.get("range", None)
-        if defn is not None:
-            # defn is of type linkml_runtime.linkml_model.meta.ElementName
+        # Try getting the range
+        range_defn = defn.get("range", None)
+        if range_defn is not None:
+            # range_defn is of type linkml_runtime.linkml_model.meta.ElementName
             # We need to convert it to either type str or type List[str]
-            defn = yaml.safe_load(str(defn))
+            ranges = yaml.safe_load(str(range_defn))
+
+        # Try getting any_of
+        any_of_defn = defn.get("any_of", None)
+        if any_of_defn is not None:
+            any_of_ranges = []
+            for cur_defn in any_of_defn:
+                cur_range = cur_defn.get("range", None)
+                if cur_range:
+                    any_of_ranges.append(str(cur_range))
+            if len(any_of_ranges):
+                ranges = any_of_ranges
 
     if isinstance(defn, str):
-        defn = [defn]
+        ranges = [ranges]
 
-    return defn
+    return ranges
 
 
 def get_enum_name_with_permissible_value(
-    enum_names: List[str], permissible_value: Any, schema: SchemaView
+    enum_names: List[str],
+    permissible_value: Any,
+    schema: SchemaView,
+    with_ontology_id: bool = False,
 ) -> Optional[str]:
     """Get the first enumeration name that contains the specified permissible value.
 
@@ -66,6 +84,10 @@ def get_enum_name_with_permissible_value(
         enum_names (List[str]): List of enumeration names (in schema) to look for the permissible value in.
         permissible_value (Any): The permissible value to find.
         schema (SchemaView): The schema view that contains all the enumerations.
+        with_ontology_id (bool): If True then we also allow the permissible_value to match the schema
+            enum values that have an additional ontology ID appended to it (in square brackets). For example,
+            if permissible_value is "degree Celsius (C)" then it will also match a permissible value
+            in the schema of "degree Celsius (C) [UO:0000027]".
 
     Returns:
         Optional[str]: The first enumeration name found in enum_names that has permissible_value as a permissible value.
@@ -77,7 +99,25 @@ def get_enum_name_with_permissible_value(
             permissible_values = list(enum.permissible_values.keys())
             if permissible_value in permissible_values:
                 return enum_name
+            if with_ontology_id:
+                permissible_values = [remove_ontology_id(p) for p in permissible_values]
+                if permissible_value in permissible_values:
+                    return enum_name
     return None
+
+
+def remove_ontology_id(val: str) -> str:
+    """Remove an ontology ID from the end of a value. For example, "degree Celsius (C) [UO:0000027]" would
+        become "degree Celsius (C)"
+
+    Args:
+        val (str): The value to remove the ontology ID from.
+
+    Returns:
+        str: The value with the ontology ID removed. If there was no ontology ID it is returned unchanged.
+    """
+    val = re.sub(r"\[[A-Za-z0-9_]+:[A-Za-z0-9_]+\]$", "", val.strip()).strip()
+    return val
 
 
 def get_enum_names_for_slot(
