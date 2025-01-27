@@ -75,6 +75,8 @@ def add_id_to_schema(schema: SchemaView, cls: str, id_slot_name: str):
 
     # Make sure id_slot_name exists in both slots and slot_usage of the class definition
     class_defn = schema.get_class(cls)
+    if class_defn is None:
+        raise ValueError(f"Class does not exist: {cls}")
     if id_slot_name not in class_defn.slots:
         defn = SlotDefinition(
             id_slot_name,
@@ -117,9 +119,14 @@ def add_auto_ids_to_schema(schema: SchemaView, df: pd.DataFrame):
             and wide_other_slots
             and isinstance(wide_other_slots, str)
         ):
-            wide_other_slots = json.loads(wide_other_slots)
+            try:
+                wide_other_slots = json.loads(wide_other_slots)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"{str(e)}:\n{wide_other_slots}") from None
             for value in wide_other_slots.values():
-                value = get_variable_reference(value)
+                value = get_variable_reference(
+                    value, schema=None, format_operations=None
+                )
                 if value and is_auto_id(value):
                     add_id_to_schema(schema, source_class, value)
 
@@ -130,7 +137,9 @@ def add_auto_ids_to_schema(schema: SchemaView, df: pd.DataFrame):
         if len(wide_target_value_slots) > 0:
             for s in wide_target_value_slots:
                 value = row.get(s)
-                value = get_variable_reference(value)
+                value = get_variable_reference(
+                    value, schema=None, format_operations=None
+                )
                 if value and is_auto_id(value):
                     add_id_to_schema(schema, source_class, value)
 
@@ -178,7 +187,9 @@ def gen_auto_ids(
                 if len(config_row.index) == 1:
                     config_row = config_row.iloc[0]
                     value = config_row[IDConfigColumns.value]
-                    variable = get_variable_reference(value)
+                    variable = get_variable_reference(
+                        value, schema=None, format_operations=None
+                    )
                     if not value or pd.isna(value):
                         id_type = IDType.random
                     elif variable:
