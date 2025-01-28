@@ -473,14 +473,18 @@ def apply_selectors_to_df(
     df[MappingColumns.SELECTORS] = df[MappingColumns.SELECTORS].map(_expand_selectors)
 
     # Do the matching of selectors
-    def _should_keep_row(cur_selectors: List[str]) -> bool:
-        if len(cur_selectors) == 0:
+    def _should_keep_row(df_selectors: List[str]) -> bool:
+        # If the data has no selectors, then always include the row
+        if len(df_selectors) == 0:
             return True
-        if len([v for v in cur_selectors if v in exclude_selectors]) > 0:
+        # If any exclude_selector is found, then do not include the row
+        if len([v for v in df_selectors if v in exclude_selectors]) > 0:
             return False
-        if len([v for v in cur_selectors if v in selectors]) > 0:
-            return True
-        return len(selectors) + len(exclude_selectors) == 0
+        # If any selector is not found, then do not include the row
+        if len([v for v in df_selectors if v not in selectors]) > 0:
+            return False
+        # No exclude_selector was found, and all selectors were found
+        return True
 
     df = df[df[MappingColumns.SELECTORS].map(_should_keep_row)]
     df = df[[c for c in df.columns if c != MappingColumns.SELECTORS]]
