@@ -429,13 +429,19 @@ def apply_selectors_to_df(
 ) -> pd.DataFrame:
     """Apply selectors to the DataFrame, dropping rows where the selectors do not match properly.
 
-    If a row in the DataFrame has a blank selector value, then it is always included.
+    For a given value of selectors in the data, we separate the negated selectors from the
+    non-negated selectors. The following two conditions must pass:
 
-    If a row has selector value(s), but none of those values are found in the selectors parameter, then
-    we drop the row.
+    1. For negated selectors: None of these selectors must have been specified from
+    in the `selectors` parameter (ie. we perform an AND operation for all negated
+    selectors). If there are no negated selectors then this rule always passes.
+    2. For non-negated selectors: Any of these selectors must have been specified
+    in the `selectors` parameter (ie. we perform an OR operation for all non-negated
+    selectors). If there are no non-negated selectors then this rule always
+    passes.
 
-    If the row has selector value(s) that are preceded by an exclamation mark, and any of these exclamation
-    selectors are found in the selectors parameter, then we drop the row.
+    Following the above rules, if the data has a row that is blank in the `selectors` column,
+    then that row is always retained.
 
     Args:
         df (pd.DataFrame): The DataFrame to drop rows from based on the selectors parameter. A copy of this
@@ -504,7 +510,7 @@ def prepare_maps_df(
         selectors (Optional[List[str]], optional): For rows in the mapping config file that have a value in the "selectors" column, only use the
             row if any of these selectors is found. The "selectors" column has a comma-separated list of selector values. A selector
             value in the data can also be preceded by an exclamation mark, meaning only select the row if the
-            selector value is NOT specified.
+            selector value is NOT specified. For details see apply_selectors_to_df.
         source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
             all slot names, found in the configuration file, for the source schema.
         target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
@@ -587,7 +593,7 @@ def prepare_wide_df(
         selectors (Optional[List[str]], optional): For rows in the mapping config file that have a value in the "selectors" column, only use the
             row if any of these selectors is found. The "selectors" column has a comma-separated list of selector values. A selector
             value in the data can also be preceded by an exclamation mark, meaning only select the row if the
-            selector value is NOT specified.
+            selector value is NOT specified. For details see apply_selectors_to_df.
         source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
             all slot names, found in the configuration file, for the source schema.
         target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
@@ -703,7 +709,7 @@ def prepare_enums_df(
         selectors (Optional[List[str]], optional): For rows in the mapping config file that have a value in the "selectors" column, only use the
             row if any of these selectors is found. The "selectors" column has a comma-separated list of selector values. A selector
             value in the data can also be preceded by an exclamation mark, meaning only select the row if the
-            selector value is NOT specified.
+            selector value is NOT specified. For details see apply_selectors_to_df.
         source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
             all slot names, found in the configuration file, for the source schema.
         target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
