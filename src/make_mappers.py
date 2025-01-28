@@ -9,7 +9,7 @@ mappings.
 import argparse
 import pandas as pd
 from pathlib import Path
-from typing import Union, List, Dict, Optional
+from typing import Union, List, Dict, Optional, Any
 import os
 import yaml
 import json
@@ -424,10 +424,68 @@ def extract_enum_derivations(
     return all_enum_derivations
 
 
+def apply_selectors_to_df(
+    df: pd.DataFrame, selectors: Optional[List[str]]
+) -> pd.DataFrame:
+    """Apply selectors to the DataFrame, dropping rows where the selectors do not match properly.
+
+    If a row in the DataFrame has a blank selector value, then it is always included.
+
+    If a row has selector value(s), but none of those values are found in the selectors parameter, then
+    we drop the row.
+
+    If the row has selector value(s) that are preceded by an exclamation mark, and any of these exclamation
+    selectors are found in the selectors parameter, then we drop the row.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to drop rows from based on the selectors parameter. A copy of this
+            DataFrame is made and the original is left unchanged.
+        selectors (Optional[List[str]]): The selectors specifying which rows to retain or drop.
+
+    Returns:
+        pd.DataFrame: The DataFrame with rows dropped according to the rules described above.
+    """
+    if len(df) == 0:
+        return df.copy()
+    df = df.copy()
+    if MappingColumns.SELECTORS not in df.columns:
+        df[MappingColumns.SELECTORS] = None
+    if pd.isna(selectors):
+        selectors = []
+    exclude_selectors = [s.lstrip("!").strip() for s in selectors if s.startswith("!")]
+    selectors = [s.strip() for s in selectors if not s.startswith("!")]
+
+    # Expand the selectors (in the DataFrame) from a comma-separated string to a list of strings
+    def _expand_selectors(v: Any) -> List[str]:
+        if pd.isna(v):
+            return []
+        v = str(v)
+        v = v.split(",")
+        v = [x.strip() for x in v]
+        return v
+
+    df[MappingColumns.SELECTORS] = df[MappingColumns.SELECTORS].map(_expand_selectors)
+
+    # Do the matching of selectors
+    def _should_keep_row(cur_selectors: List[str]) -> bool:
+        if len(cur_selectors) == 0:
+            return True
+        if len([v for v in cur_selectors if v in exclude_selectors]) > 0:
+            return False
+        if len([v for v in cur_selectors if v in selectors]) > 0:
+            return True
+        return len(selectors) + len(exclude_selectors) == 0
+
+    df = df[df[MappingColumns.SELECTORS].map(_should_keep_row)]
+    df = df[[c for c in df.columns if c != MappingColumns.SELECTORS]]
+    return df.reset_index(drop=True).copy()
+
+
 def prepare_maps_df(
     maps_file: Union[str, Path],
     source_schema: SchemaView,
     target_schema: SchemaView,
+    selectors: Optional[List[str]],
     source_slot_format_operations: Optional[Union[str, List[str]]],
     target_slot_format_operations: Optional[Union[str, List[str]]],
 ) -> pd.DataFrame:
@@ -443,6 +501,10 @@ def prepare_maps_df(
             MappingColumns.
         source_schema (SchemaView): The source schema for the mapping.
         target_schema (SchemaView): The target schema for the mapping.
+        selectors (Optional[List[str]], optional): For rows in the mapping config file that have a value in the "selectors" column, only use the
+            row if any of these selectors is found. The "selectors" column has a comma-separated list of selector values. A selector
+            value in the data can also be preceded by an exclamation mark, meaning only select the row if the
+            selector value is NOT specified.
         source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
             all slot names, found in the configuration file, for the source schema.
         target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
@@ -458,12 +520,10 @@ def prepare_maps_df(
     maps_df = maps_df.dropna(axis=0, how="all")
 
     # @TODO: Remove this once the maps_file is finalized
-    if "Complete" in maps_df.columns:
-        maps_df = (
-            maps_df[maps_df["Complete"] == 1]
-            .drop("Complete", axis="columns")
-            .reset_index(drop=True)
-        )
+    maps_df = drop_incomplete_rows(maps_df)
+
+    # Only use the rows based on the values in the selectors column
+    maps_df = apply_selectors_to_df(maps_df, selectors=selectors)
 
     keep_columns = [
         MappingColumns.SOURCE_CLASS,
@@ -506,6 +566,7 @@ def prepare_wide_df(
     wide_file: Union[str, Path],
     source_schema: SchemaView,
     target_schema: SchemaView,
+    selectors: Optional[List[str]],
     source_slot_format_operations: Optional[Union[str, List[str]]],
     target_slot_format_operations: Optional[Union[str, List[str]]],
 ) -> pd.DataFrame:
@@ -523,6 +584,10 @@ def prepare_wide_df(
             when pivoting.
         source_schema (SchemaView): The source schema for the mapping.
         target_schema (SchemaView): The target schema for the mapping.
+        selectors (Optional[List[str]], optional): For rows in the mapping config file that have a value in the "selectors" column, only use the
+            row if any of these selectors is found. The "selectors" column has a comma-separated list of selector values. A selector
+            value in the data can also be preceded by an exclamation mark, meaning only select the row if the
+            selector value is NOT specified.
         source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
             all slot names, found in the configuration file, for the source schema.
         target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
@@ -538,12 +603,10 @@ def prepare_wide_df(
     wide_df = wide_df.dropna(axis=0, how="all")
 
     # @TODO: Remove this once the wide_file is finalized
-    if "Complete" in wide_df.columns:
-        wide_df = (
-            wide_df[wide_df["Complete"] == 1]
-            .drop("Complete", axis="columns")
-            .reset_index(drop=True)
-        )
+    wide_df = drop_incomplete_rows(wide_df)
+
+    # Only use the rows based on the values in the selectors column
+    wide_df = apply_selectors_to_df(wide_df, selectors=selectors)
 
     # Convert SOURCE_SLOT to strings
     wide_df[MappingColumns.SOURCE_SLOT] = wide_df[MappingColumns.SOURCE_SLOT].map(
@@ -601,10 +664,31 @@ def prepare_wide_df(
     return wide_df.copy()
 
 
+def drop_incomplete_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """Drop all rows in the DataFrame where the "Complete" column is not True.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to drop incomplete rows from. A copy is made
+            and the original DataFrame is left unchanged.
+
+    Returns:
+        pd.DataFrame: The DataFrame with incomplete rows removed.
+    """
+    if "Complete" in df.columns:
+        return (
+            df[df["Complete"] == 1]
+            .drop("Complete", axis="columns")
+            .reset_index(drop=True)
+        )
+
+    return df.copy()
+
+
 def prepare_enums_df(
     enums_file: Union[str, Path],
     source_schema: SchemaView,
     target_schema: SchemaView,
+    selectors: Optional[List[str]],
     source_slot_format_operations: Optional[Union[str, List[str]]],
     target_slot_format_operations: Optional[Union[str, List[str]]],
 ) -> pd.DataFrame:
@@ -616,6 +700,10 @@ def prepare_enums_df(
         enums_file (Union[str, Path]): The path to the enumeration configuration file.
         source_schema (SchemaView): The source schema for the mapping.
         target_schema (SchemaView): The target schema for the mapping.
+        selectors (Optional[List[str]], optional): For rows in the mapping config file that have a value in the "selectors" column, only use the
+            row if any of these selectors is found. The "selectors" column has a comma-separated list of selector values. A selector
+            value in the data can also be preceded by an exclamation mark, meaning only select the row if the
+            selector value is NOT specified.
         source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
             all slot names, found in the configuration file, for the source schema.
         target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
@@ -634,12 +722,10 @@ def prepare_enums_df(
     enums_df = enums_df.dropna(axis=0, how="all")
 
     # @TODO: Remove this once the wide_file is finalized
-    if "Complete" in enums_df.columns:
-        enums_df = (
-            enums_df[enums_df["Complete"] == 1]
-            .drop("Complete", axis="columns")
-            .reset_index(drop=True)
-        )
+    enums_df = drop_incomplete_rows(enums_df)
+
+    # Only use the rows based on the values in the selectors column
+    enums_df = apply_selectors_to_df(enums_df, selectors=selectors)
 
     # Keep only relevant columns, and make sure the columns exist
     keep_columns = [
@@ -973,6 +1059,7 @@ def make_mappers(
     source_schema: Union[str, Path],
     target_schema: Union[str, Path],
     source_schema_for_mapping: Union[str, Path],
+    selectors: Optional[List[str]],
     source_slot_format_operations: Optional[Union[str, List[str]]],
     target_slot_format_operations: Optional[Union[str, List[str]]],
 ):
@@ -989,6 +1076,10 @@ def make_mappers(
         target_schema (Union[str, Path]): Path to the target schema of the mapping.
         source_schema_for_mapping (Union[str, Path]): Path to save the modified source_schema to. This LinkML schema contains additional
             slots that are meant to contain generated IDs when doing the actual mapping, for linking between tables.
+        selectors (Optional[List[str]], optional): For rows in the mapping config file that have a value in the "selectors" column, only use the
+            row if any of these selectors is found. The "selectors" column has a comma-separated list of selector values. A selector
+            value in the data can also be preceded by an exclamation mark, meaning only select the row if the
+            selector value is NOT specified.
         source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
             all slot names, found in the configuration file, for the source schema.
         target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
@@ -1015,6 +1106,7 @@ def make_mappers(
             f,
             source_schema=source_schema,
             target_schema=target_schema,
+            selectors=selectors,
             source_slot_format_operations=source_slot_format_operations,
             target_slot_format_operations=target_slot_format_operations,
         )
@@ -1029,6 +1121,7 @@ def make_mappers(
                 f,
                 source_schema=source_schema,
                 target_schema=target_schema,
+                selectors=selectors,
                 source_slot_format_operations=source_slot_format_operations,
                 target_slot_format_operations=target_slot_format_operations,
             )
@@ -1043,6 +1136,7 @@ def make_mappers(
                 f,
                 source_schema=source_schema,
                 target_schema=target_schema,
+                selectors=selectors,
                 source_slot_format_operations=source_slot_format_operations,
                 target_slot_format_operations=target_slot_format_operations,
             )
@@ -1215,6 +1309,7 @@ if __name__ == "__main__":
             mapper_dir = "../gen/odm_v1_to_v2/mappers"
             source_schema = "../data/odm_v1/linkml/odm_v1.yaml"
             target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
+            selectors = []
             source_schema_for_mapping = (
                 "../gen/odm_v1_to_v2/linkml_for_mapping/odm_v1.yaml"
             )
@@ -1232,8 +1327,6 @@ if __name__ == "__main__":
             # )
             # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
             # source_schema_for_mapping = f"../gen/nwss_{dictionary_type}_to_v2/linkml_for_mapping/nwss_{dictionary_type}.yaml"
-# %%
-
 
             source_slot_format_operations = [
                 "alpha_numeric_underscore",
@@ -1292,6 +1385,13 @@ if __name__ == "__main__":
             required=True,
         )
         args.add_argument(
+            "--selectors",
+            type=str,
+            nargs="+",
+            help="Selectors, to select rows in the mapping config file that has any of these values in the selectors column. If the value in the selectors column is empty then that row is always included.",
+            required=False,
+        )
+        args.add_argument(
             "--source_schema_for_mapping",
             type=str,
             help="Location to save the modified source_schema that should be used for mapping. This schema will include additional slots where IDs get generated, for linking between tables in the output, as well as possibly other changes. The resulting schema might be the same as the original.",
@@ -1337,6 +1437,7 @@ if __name__ == "__main__":
         mapper_dir=opts.mapper_dir,
         source_schema=opts.source_schema,
         target_schema=opts.target_schema,
+        selectors=opts.selectors,
         source_schema_for_mapping=opts.source_schema_for_mapping,
         source_slot_format_operations=opts.source_slot_format_operations,
         target_slot_format_operations=opts.target_slot_format_operations,

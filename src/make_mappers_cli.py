@@ -49,6 +49,7 @@ def make_mappers_cli(
     enums_files: Union[List[Union[str, Path]], Union[str, Path]],
     source_schema: Union[str, Path],
     target_schema: Union[str, Path],
+    selectors: Optional[List[str]],
     source_slot_format_operations: Optional[Union[str, List[str]]],
     target_slot_format_operations: Optional[Union[str, List[str]]],
 ):
@@ -71,6 +72,10 @@ def make_mappers_cli(
         enum_files (Union[List[Union[str, Path]], Union[str, Path]]): Path to CSV or TSV files that contain the enum configurations.
         source_schema (Union[str, Path]): The source dataset schema LinkML YAML file.
         target_schema (Union[str, Path]): The target dataset schema LinkML YAML file.
+        selectors (Optional[List[str]], optional): For rows in the mapping config file that have a value in the "selectors" column, only use the
+            row if any of these selectors is found. The "selectors" column has a comma-separated list of selector values. A selector
+            value in the data can also be preceded by an exclamation mark, meaning only select the row if the
+            selector value is NOT specified.
         source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
             all slot names, found in the configuration file, for the source schema.
         target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
@@ -162,6 +167,7 @@ def make_mappers_cli(
             source_schema=source_schema,
             target_schema=target_schema,
             source_schema_for_mapping=source_schema_for_mapping,
+            selectors=selectors,
             source_slot_format_operations=source_slot_format_operations,
             target_slot_format_operations=target_slot_format_operations,
         )
@@ -259,7 +265,7 @@ if __name__ == "__main__":
             
             # PHA4GE to ODM v2
             # source_schema = "../data/pha4ge/linkml/pha4ge.yaml"
-            source_schema = "/Users/martinwellman/Documents/Health/Wastewater/PHES-ODM-Mapper/PHA4GE/schema-WastewaterSARC-CoV-2.yaml"
+            source_schema = "../../../PHES-ODM-Data/PHA4GE/schema-WastewaterSARC-CoV-2.yaml"
             target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
             mapping_excel_file = "../data/mapping_config_files/pha4ge_to_odm_v2_mapping.xlsx"
             excel_maps_sheets = [
@@ -298,6 +304,7 @@ if __name__ == "__main__":
             maps_files = []
             wide_files = []
             enums_files = []
+            selectors = []
             output_dir = Path("../gen/pha4ge_to_v2")
             source_slot_format_operations = [ "lowercase", '{ remove_chars: "-"}', "alpha_numeric_underscore", "single_underscores", "trim_underscores" ]
             target_slot_format_operations = ["alpha_numeric_underscore", "single_underscores", "trim_underscores"]
@@ -373,6 +380,13 @@ if __name__ == "__main__":
             required=False,
         )
         args.add_argument(
+            "--selectors",
+            type=str,
+            nargs="+",
+            help="Selectors, to select rows in the mapping config file that has any of these values in the selectors column. If the value in the selectors column is empty then that row is always included.",
+            required=False,
+        )
+        args.add_argument(
             "--source_slot_format_operations",
             type=str,
             nargs="+",
@@ -400,6 +414,7 @@ if __name__ == "__main__":
         enums_files=opts.enums_files,
         source_schema=opts.source_schema,
         target_schema=opts.target_schema,
+        selectors=opts.selectors,
         source_slot_format_operations=opts.source_slot_format_operations,
         target_slot_format_operations=opts.target_slot_format_operations,
     )

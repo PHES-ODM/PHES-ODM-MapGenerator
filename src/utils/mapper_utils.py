@@ -48,6 +48,9 @@ class MappingColumns:
     TARGET_EXPR = "targetExpr"
     CUSTOM_DATA = "customData"
 
+    # Can be present in any tab (enums, wide, or maps)
+    SELECTORS = "selectors"
+
     # These columns should only be present in the enums tabs of the mapping files
     SOURCE_ENUM = "sourceEnum"
     TARGET_ENUM = "targetEnum"
