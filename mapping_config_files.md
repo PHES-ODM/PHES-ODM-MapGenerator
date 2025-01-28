@@ -39,7 +39,7 @@ Below is an example table with a `selectors` column:
 | Color   | selectors     |
 |:--------|:--------------|
 | Red     | amr           |
-| Orange  | agnostic      |
+| Orange  | !agnostic,!amr,other      |
 | Yellow  | amr           |
 | Green   | amr           |
 | Blue    | !agnostic,amr |
@@ -48,23 +48,35 @@ Below is an example table with a `selectors` column:
 | Cyan    | amr,agnostic  |
 | Magenta |               |
 
-A comma in the `selectors` column can be interpreted as an AND operation. If
-the selector is not negated (ie. no preceding exclamation mark), then the row
-is included only if that selector was specified on the command line. If the
-selector is negated (ie. has a preceding exclamation mark), then the row is
-included only if that selector was NOT specified on the command line.
+For a given value of selectors, we separate the negated selectors from the
+non-negated selectors. The following two conditions must pass:
 
-If the `selectors` column for a row is empty, then that row is always included.
+1. For negated selectors: None of these selectors must have been specified from
+   the command-line (ie. we perform an AND operation for all negated
+   selectors). If there are no negated selectors then this rule always passes.
+2. For non-negated selectors: Any of these selectors must have been specified
+   from the command-line (ie. we perform an OR operation for all non-negated
+   selectors). If there are no non-negated selectors then this rule always
+   passes.
 
-So for the row with `Color` equal to `Blue`, we keep the row if 1) "agnostic"
-was not specified form the command-line, and 2) "amr" was specified from the
+Following the above rules, if the `selectors` column is empty for a row, then
+that row is always retained.
+
+So for the row with `Color` equal to `Blue`, the selectors are "!agnostic,amr".
+We keep the row if 1) "agnostic" was not specified form the command-line, and
+2) "amr" was specified from the command-line.
+
+For the row with `Color` equal to `Cyan`, the selectors are "amr,agnostic". We
+keep the row if either (or both) "amr" or "agnostic" were specified from the
 command-line.
 
-For the row with `Color` equal to `Cyan`, we keep the row if both "amr" and
-"agnostic" were specified from the command-line.
+For the row with `Color` equal to `Yellow`, the selectors are "amr". We keep
+the row if "amr" was specified from the command-line.
 
-For the row with `Color` equal to `Yellow`, we keep the row if "amr" was
-specified from the command-line.
+For the row with `Color` equal to `Orange`, the selectors are
+"!agnostic,!amr,other". We keep the row if neither "agnostic" or "amr" were
+specified from the command-line, and "other" was specified from the
+command-line.
 
 ### sourceClass
 
