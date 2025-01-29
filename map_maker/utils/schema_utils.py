@@ -66,7 +66,7 @@ def get_ranges_of_slot(cls: str, slot: str, schema: SchemaView) -> List[str]:
             if len(any_of_ranges):
                 ranges = any_of_ranges
 
-    if isinstance(defn, str):
+    if isinstance(ranges, str):
         ranges = [ranges]
 
     return ranges
