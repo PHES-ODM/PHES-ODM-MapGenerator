@@ -90,10 +90,8 @@ def make_mappers(
     target_schema: Annotated[
         Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
     ],
-    max_mapping_only: Optional[bool] = typer.Option(
-        default=False, help=MAX_MAPPING_ONLY_HELP
-    ),
-    custom_wide_dir: List[Path] = typer.Option(default=None, help=CUSTOM_WIDE_DIR_HELP),
+    max_mapping_only: Annotated[Optional[bool], typer.Option(help=MAX_MAPPING_ONLY_HELP)] = False,
+    custom_wide_dir: Annotated[List[Path], typer.Option(help=CUSTOM_WIDE_DIR_HELP)] = None,
 ) -> List[Dict]:
     """Make the LinkML mapper specifications for mapping from all source tables to all ODM v2 tables
     where a mapping between the tables exists. A separate specification is created for each source table to

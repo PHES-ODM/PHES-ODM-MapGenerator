@@ -186,7 +186,7 @@ def main(
     data_source: Annotated[
         str, typer.Option(show_default=False, help=DATA_SOURCE_HELP)
     ],
-    max_errors: int = typer.Option(default=0),
+    max_errors: Annotated[int, typer.Option(help=MAX_ERRORS_HELP)] = 0,
 ):
     """Run LinkML validator on some data.
 
