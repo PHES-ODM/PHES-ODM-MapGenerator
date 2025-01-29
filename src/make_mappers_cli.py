@@ -125,29 +125,29 @@ def main(
     any taret dataset, as specified in the mapping_excel_file.
 
     Args:
-        output_dir (Union[str, Path]): Directory to save all outputs to, including the final mapper files.
+        output_dir (Path): Directory to save all outputs to, including the final mapper files.
             Various sub-directories will be created, with the mappers in the "mappers" subdirectory.
-        mapping_excel_file (Union[str, Path]): The mapping configuration Excel file that specifies how to map from
+        mapping_excel_file (Path): The mapping configuration Excel file that specifies how to map from
             the source dataset (eg. NWSS) to the target dataset (eg. ODM v2).
-        excel_maps_sheets (Union[List[str], str]): Name of the map tab(s)/sheet(s) in the mapping_excel_file Excel file.
+        excel_maps_sheets (List[str]): Name of the map tab(s)/sheet(s) in the mapping_excel_file Excel file.
             (eg. "maps")
-        excel_wide_sheets (Union[List[str], str]): Name of the wide tab(s)/sheet(s) in the mapping_excel_file Excel file.
+        excel_wide_sheets (List[str]): Name of the wide tab(s)/sheet(s) in the mapping_excel_file Excel file.
             (eg. "wide")
-        excel_enums_sheets (Union[List[str], str]): Name of the enums tab(s)/sheet(s) in the mapping_excel_file Excel file.
+        excel_enums_sheets (List[str]): Name of the enums tab(s)/sheet(s) in the mapping_excel_file Excel file.
             (eg. "enums")
-        maps_files (Union[List[Union[str, Path]], Union[str, Path]]): Path to CSV or TSV files that contain the maps configurations.
-        wide_files (Union[List[Union[str, Path]], Union[str, Path]]): Path to CSV or TSV files that contain the wide configurations.
-        enum_files (Union[List[Union[str, Path]], Union[str, Path]]): Path to CSV or TSV files that contain the enum configurations.
-        source_schema (Union[str, Path]): The source dataset schema LinkML YAML file.
-        target_schema (Union[str, Path]): The target dataset schema LinkML YAML file.
+        maps_files (List[Path]): Path to CSV or TSV files that contain the maps configurations.
+        wide_files (List[Path]): Path to CSV or TSV files that contain the wide configurations.
+        enum_files (List[Path]): Path to CSV or TSV files that contain the enum configurations.
+        source_schema (Path): The source dataset schema LinkML YAML file.
+        target_schema (Path): The target dataset schema LinkML YAML file.
         selectors (Optional[List[str]], optional): For rows in the mapping config file that have a value in the "selectors" column, only use the
             row if any of these selectors is found. The "selectors" column has a comma-separated list of selector values. A selector
             value in the data can also be preceded by an exclamation mark, meaning only select the row if the
-            selector value is NOT specified.
-        source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
-            all slot names, found in the configuration file, for the source schema.
-        target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
-            all slot names, found in the configuration file, for the target schema.
+            selector value is NOT specified. Defaults to None
+        source_slot_format_operations (Optional[List[str]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the source schema. Defaults to None.
+        target_slot_format_operations (Optional[List[str]], optional): Formatting options to apply to
+            all slot names, found in the configuration file, for the target schema. Defaults to None.
     """
     output_dir = Path(output_dir)
 
