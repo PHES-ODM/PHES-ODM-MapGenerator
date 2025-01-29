@@ -15,12 +15,12 @@ import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-import argparse
 import pandas as pd
 from pathlib import Path
 import yaml
 import os
-from typing import Union, Dict, List, Optional
+from typing import Union, Dict, List, Optional, Annotated
+import typer
 
 from linkml_runtime import SchemaView
 
@@ -38,6 +38,240 @@ V2_PART_ID_COL = "partID"
 V2_ENUM_NAME_COL = "v2EnumName"
 
 logger = get_logger(__name__)
+
+app = typer.Typer(
+    pretty_exceptions_show_locals=False,
+    rich_markup_mode="rich",
+)
+
+MAIN_HELP = """Make the LinkML mapper specifications for mapping from ODM v1
+tables to ODM v2 tables"""
+
+CONFIG_HELP = """Location of the config file for mapping from ODM v1 to v2.
+              Includes information on which source tables should map to which
+              target tables and other config details."""
+
+MAPPER_DIR_HELP = """The directory to save the mapper specifications to (they
+                  are all YAML files)."""
+
+PREPARED_PARTS_FILE_HELP = """The ODM v2 data dictionary parts list, after
+                           being prepared by
+                           odm_v2.prepare_parts.prepare_parts."""
+
+SOURCE_SCHEMA_HELP = """The LinkML schema for the source of the
+                     mapping."""
+
+TARGET_SCHEMA_HELP = """The LinkML schema for the target of the
+                     mapping."""
+
+MAX_MAPPING_ONLY_HELP = """If True then for each source table we only make
+                        derivations to a single v2 table. That v2 table is
+                        chosen by selecting the v2 table that would result in
+                        copying over the most columns from the source table. If
+                        False then we create derivations to all v2 tables.
+                        (Some of these derivations might be useless, for
+                        example if we only copy over a single column)."""
+
+CUSTOM_WIDE_DIR_HELP = """Directory or list of directories that contain CSV
+                       files for custom mapping details for mapping wide-like
+                       source columns to long ODM v2."""
+
+
+@app.command(help=MAIN_HELP)
+def make_mappers(
+    config: Annotated[Path, typer.Option(show_default=False, help=CONFIG_HELP)],
+    mapper_dir: Annotated[Path, typer.Option(show_default=False, help=MAPPER_DIR_HELP)],
+    prepared_parts_file: Annotated[
+        Path, typer.Option(show_default=False, help=PREPARED_PARTS_FILE_HELP)
+    ],
+    source_schema: Annotated[
+        Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
+    ],
+    target_schema: Annotated[
+        Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
+    ],
+    max_mapping_only: Optional[bool] = typer.Option(
+        default=False, help=MAX_MAPPING_ONLY_HELP
+    ),
+    custom_wide_dir: List[Path] = typer.Option(default=None, help=CUSTOM_WIDE_DIR_HELP),
+) -> List[Dict]:
+    """Make the LinkML mapper specifications for mapping from all source tables to all ODM v2 tables
+    where a mapping between the tables exists. A separate specification is created for each source table to
+    v2 table mapping.
+
+    Args:
+        config (Union[str, Path]): Location of the config file for mapping from ODM v1 to v2. Includes
+            information on which source tables should map to which target tables and other config details.
+        mapper_dir (Union[str, Path]): The directory to save the mapper specifications to (they are
+            all YAML files).
+        prepared_parts_file (Union[str, Path]): The ODM v2 data dictionary parts list, after being prepared
+            by odm_v2.prepare_parts.prepare_parts.
+        source_schema (Union[str, Path]): The LinkML schema for the source of the mapping.
+        target_schema (Union[str, Path]): The LinkML schema for the target of the mapping.
+        max_mapping_only (Optional[bool]): If True then for each source table we only make derivations to a
+            single v2 table. That v2 table is chosen by selecting the v2 table that would result in copying over
+            the most columns from the source table. If False then we create derivations to all v2 tables. (Some of
+            these derivations might be useless, for example if we only copy over a single column). Defaults to True.
+        custom_wide_dir (List[Path]): Directory or list of directories
+            that contain CSV files for custom mapping details for mapping wide-like source columns to long
+            ODM v2. Defaults to None.
+
+    Returns:
+        List[Dict]: A list of dictionaries, where each dictionary contains the source type (source class),
+            target type (ODM v2 class), and the path to the mapper spec file for mapping from
+            the source type to target type.
+    """
+    logger.info("Running...")
+
+    with open(config, "r") as f:
+        config = yaml.safe_load(f)
+
+    source_schema = SchemaView(source_schema)
+    target_schema = SchemaView(target_schema)
+
+    if isinstance(custom_wide_dir, (str, Path)):
+        custom_wide_dir = [custom_wide_dir]
+
+    custom_wide_dfs = None
+    if custom_wide_dir is not None:
+        custom_wide_files = [
+            [os.path.join(d, f) for f in os.listdir(d)] for d in custom_wide_dir
+        ]
+        custom_wide_files = [f for cf in custom_wide_files for f in cf]
+        custom_wide_files = [
+            f
+            for f in custom_wide_files
+            if os.path.splitext(f)[1].lower() in [".csv", ".tsv", ".txt"]
+        ]
+        custom_wide_files = sorted(custom_wide_files, key=lambda x: os.path.basename(x))
+        custom_wide_dfs = [
+            read_data_frame(f, keep_default_na=False, na_values=[""])
+            for f in custom_wide_files
+        ]
+
+    # Create the output directory where we save the mapper configurations
+    if mapper_dir:
+        os.makedirs(mapper_dir, exist_ok=True)
+
+    # Read the parts and sets files
+    logger.info("Reading dictionary...")
+    df = read_data_frame(prepared_parts_file, keep_default_na=False, na_values=[""])
+
+    # Make enum derivations using the parts files
+    logger.info("Making enum derivations...")
+    # Get all known source enumeration names from the parts list
+    all_source_enums = sorted(
+        df.loc[
+            ~pd.isna(df[V2MappingColumns.SOURCE_ENUM_NAME]),
+            V2MappingColumns.SOURCE_ENUM_NAME,
+        ].unique()
+    )
+    enum_derivations = {}
+    # Create the derivations for each source enumeration to map to a v2 enumeration
+    for source_enum_name in all_source_enums:
+        cur_derivations = make_enum_derivations(df, source_enum_name)
+        existing_names = set(enum_derivations.keys())
+        new_names = set(cur_derivations.keys())
+
+        # Check if any of the v2 enum names (ie the keys of the derivations) already exists
+        # These are made-up names and so this test should always pass
+        names_intersection = list(existing_names.intersection(new_names))
+        if len(names_intersection) != 0:
+            raise RuntimeError(
+                f"v2 enum names {names_intersection} already exists in the enum derivations when creating the derivation for {source_enum_name}"
+            )
+
+        enum_derivations.update(cur_derivations)
+
+    logger.info("Making class derivations...")
+    # Get all known source table names from the parts list
+    all_source_tables = sorted(
+        df.loc[
+            ~pd.isna(df[V2MappingColumns.SOURCE_TABLE]), V2MappingColumns.SOURCE_TABLE
+        ].unique()
+    )
+
+    class_derivations: Dict[str, List[Dict]] = {}
+
+    # Create a class derivation for all source tables to a v2 table.
+    v1_to_v2_classes = config["v1_to_v2_classes"]
+    do_all_mappings = isinstance(v1_to_v2_classes, str) and v1_to_v2_classes == "all"
+    for source_table_name in all_source_tables:
+        for cur_results in make_class_derivations(
+            df,
+            source_table_name,
+            max_mapping_only=max_mapping_only,
+            custom_wide_dfs=custom_wide_dfs,
+            source_schema=source_schema,
+            target_schema=target_schema,
+            source_slot_format_operations=None,
+            target_slot_format_operations=None,
+        ):
+            cur_source_name = cur_results["source_class"]
+            cur_target_name = cur_results["target_class"]
+
+            cur_source_class_name = get_class_name_from_file_name(cur_source_name)
+            cur_target_class_name = get_class_name_from_file_name(cur_target_name)
+            if (
+                not do_all_mappings
+                and cur_target_class_name
+                not in v1_to_v2_classes.get(cur_source_class_name, [])
+            ):
+                continue
+
+            cur_dict = cur_results["class_derivation"]
+            if cur_target_name is None:
+                continue
+            logger.info(
+                f"Adding class derivation from {cur_source_name} to {cur_target_name}"
+            )
+            if cur_target_name not in class_derivations.keys():
+                class_derivations[cur_target_name] = []
+            class_derivations[cur_target_name].append(cur_dict)
+
+    # Add additional slot derivations from the config file
+    add_slot_derivations = config.get("add_slot_derivations", None)
+    if add_slot_derivations is not None:
+        for cur_add_derivations in add_slot_derivations:
+            # Get all values from the config
+            source_class = cur_add_derivations["source_class"]
+            target_class = cur_add_derivations["target_class"]
+            if isinstance(source_class, str):
+                source_class = [source_class]
+            if isinstance(target_class, str):
+                target_class = [target_class]
+            slot_derivations = cur_add_derivations["slot_derivations"]
+
+            # Get all derivations for the target class
+            matching_target_derivations = [
+                d
+                for target_name, d in class_derivations.items()
+                if get_class_name_from_file_name(target_name) in target_class
+            ]
+            if not len(matching_target_derivations):
+                continue
+
+            # Each of the matching_target_derivations is an array of derivations mapping to target_class.
+            # Iterate over them and update the ones that populate from the source_class.
+            for target_derivations in matching_target_derivations:
+                for target_derivation in target_derivations:
+                    if target_derivation["populated_from"] not in source_class:
+                        continue
+                    for k, v in slot_derivations.items():
+                        if v is None:
+                            del target_derivation["slot_derivations"][k]
+                        else:
+                            target_derivation["slot_derivations"][k] = v
+
+    res = save_all_mappers(
+        class_derivations,
+        enum_derivations=enum_derivations,
+        schema=source_schema,
+        output_dir=mapper_dir,
+    )
+
+    logger.info("Finished!")
+    return res
 
 
 def make_enum_derivations(df: pd.DataFrame, source_enum_name: str) -> Dict[str, Dict]:
@@ -257,187 +491,6 @@ def make_class_derivations(
     return results
 
 
-def make_mappers(
-    config: Union[str, Path],
-    mapper_dir: Union[str, Path],
-    prepared_parts_file: Union[str, Path],
-    source_schema_file: Union[str, Path],
-    max_mapping_only: Optional[bool] = True,
-    custom_wide_dir: Optional[Union[List[Union[str, Path]], Union[str, Path]]] = None,
-) -> List[Dict]:
-    """Make the LinkML mapper specifications for mapping from all source tables to all ODM v2 tables
-    where a mapping between the tables exists. A separate specification is created for each source table to
-    v2 table mapping.
-
-    Args:
-        config (Union[str, Path]): Location of the config file for mapping from ODM v1 to v2. Includes
-            information on which source tables should map to which target tables and other config details.
-        mapper_dir (Union[str, Path]): The directory to save the mapper specifications to (they are
-            all YAML files).
-        prepared_parts_file (Union[str, Path]): The ODM v2 data dictionary parts list, after being prepared
-            by odm_v2.prepare_parts.prepare_parts.
-        source_schema_file (Union[str, Path]): The LinkML schema for the source of the mapping.
-        max_mapping_only (Optional[bool]): If True then for each source table we only make derivations to a
-            single v2 table. That v2 table is chosen by selecting the v2 table that would result in copying over
-            the most columns from the source table. If False then we create derivations to all v2 tables. (Some of
-            these derivations might be useless, for example if we only copy over a single column). Defaults to True.
-        custom_wide_dir (Optional[Union[List[Union[str, Path]], Union[str, Path]]]): Directory or list of directories
-            that contain CSV files for custom mapping details for mapping wide-like source columns to long
-            ODM v2. Defaults to None.
-
-    Returns:
-        List[Dict]: A list of dictionaries, where each dictionary contains the source type (source class),
-            target type (ODM v2 class), and the path to the mapper spec file for mapping from
-            the source type to target type.
-    """
-    logger.info("Running...")
-
-    with open(config, "r") as f:
-        config = yaml.safe_load(f)
-
-    schema = SchemaView(source_schema_file)
-
-    if isinstance(custom_wide_dir, (str, Path)):
-        custom_wide_dir = [custom_wide_dir]
-
-    custom_wide_dfs = None
-    if custom_wide_dir is not None:
-        custom_wide_files = [
-            [os.path.join(d, f) for f in os.listdir(d)] for d in custom_wide_dir
-        ]
-        custom_wide_files = [f for cf in custom_wide_files for f in cf]
-        custom_wide_files = [
-            f
-            for f in custom_wide_files
-            if os.path.splitext(f)[1].lower() in [".csv", ".tsv", ".txt"]
-        ]
-        custom_wide_files = sorted(custom_wide_files, key=lambda x: os.path.basename(x))
-        custom_wide_dfs = [
-            read_data_frame(f, keep_default_na=False, na_values=[""])
-            for f in custom_wide_files
-        ]
-
-    # Create the output directory where we save the mapper configurations
-    if mapper_dir:
-        os.makedirs(mapper_dir, exist_ok=True)
-
-    # Read the parts and sets files
-    logger.info("Reading dictionary...")
-    df = read_data_frame(prepared_parts_file, keep_default_na=False, na_values=[""])
-
-    # Make enum derivations using the parts files
-    logger.info("Making enum derivations...")
-    # Get all known source enumeration names from the parts list
-    all_source_enums = sorted(
-        df.loc[
-            ~pd.isna(df[V2MappingColumns.SOURCE_ENUM_NAME]),
-            V2MappingColumns.SOURCE_ENUM_NAME,
-        ].unique()
-    )
-    enum_derivations = {}
-    # Create the derivations for each source enumeration to map to a v2 enumeration
-    for source_enum_name in all_source_enums:
-        cur_derivations = make_enum_derivations(df, source_enum_name)
-        existing_names = set(enum_derivations.keys())
-        new_names = set(cur_derivations.keys())
-
-        # Check if any of the v2 enum names (ie the keys of the derivations) already exists
-        # These are made-up names and so this test should always pass
-        names_intersection = list(existing_names.intersection(new_names))
-        if len(names_intersection) != 0:
-            raise RuntimeError(
-                f"v2 enum names {names_intersection} already exists in the enum derivations when creating the derivation for {source_enum_name}"
-            )
-
-        enum_derivations.update(cur_derivations)
-
-    logger.info("Making class derivations...")
-    # Get all known source table names from the parts list
-    all_source_tables = sorted(
-        df.loc[
-            ~pd.isna(df[V2MappingColumns.SOURCE_TABLE]), V2MappingColumns.SOURCE_TABLE
-        ].unique()
-    )
-
-    class_derivations: Dict[str, List[Dict]] = {}
-
-    # Create a class derivation for all source tables to a v2 table.
-    v1_to_v2_classes = config["v1_to_v2_classes"]
-    do_all_mappings = isinstance(v1_to_v2_classes, str) and v1_to_v2_classes == "all"
-    for source_table_name in all_source_tables:
-        for cur_results in make_class_derivations(
-            df,
-            source_table_name,
-            max_mapping_only=max_mapping_only,
-            custom_wide_dfs=custom_wide_dfs,
-        ):
-            cur_source_name = cur_results["source_class"]
-            cur_target_name = cur_results["target_class"]
-
-            cur_source_class_name = get_class_name_from_file_name(cur_source_name)
-            cur_target_class_name = get_class_name_from_file_name(cur_target_name)
-            if (
-                not do_all_mappings
-                and cur_target_class_name
-                not in v1_to_v2_classes.get(cur_source_class_name, [])
-            ):
-                continue
-
-            cur_dict = cur_results["class_derivation"]
-            if cur_target_name is None:
-                continue
-            logger.info(
-                f"Adding class derivation from {cur_source_name} to {cur_target_name}"
-            )
-            if cur_target_name not in class_derivations.keys():
-                class_derivations[cur_target_name] = []
-            class_derivations[cur_target_name].append(cur_dict)
-
-    # Add additional slot derivations from the config file
-    add_slot_derivations = config.get("add_slot_derivations", None)
-    if add_slot_derivations is not None:
-        for cur_add_derivations in add_slot_derivations:
-            # Get all values from the config
-            source_class = cur_add_derivations["source_class"]
-            target_class = cur_add_derivations["target_class"]
-            if isinstance(source_class, str):
-                source_class = [source_class]
-            if isinstance(target_class, str):
-                target_class = [target_class]
-            slot_derivations = cur_add_derivations["slot_derivations"]
-
-            # Get all derivations for the target class
-            matching_target_derivations = [
-                d
-                for target_name, d in class_derivations.items()
-                if get_class_name_from_file_name(target_name) in target_class
-            ]
-            if not len(matching_target_derivations):
-                continue
-
-            # Each of the matching_target_derivations is an array of derivations mapping to target_class.
-            # Iterate over them and update the ones that populate from the source_class.
-            for target_derivations in matching_target_derivations:
-                for target_derivation in target_derivations:
-                    if target_derivation["populated_from"] not in source_class:
-                        continue
-                    for k, v in slot_derivations.items():
-                        if v is None:
-                            del target_derivation["slot_derivations"][k]
-                        else:
-                            target_derivation["slot_derivations"][k] = v
-
-    res = save_all_mappers(
-        class_derivations,
-        enum_derivations=enum_derivations,
-        schema=schema,
-        output_dir=mapper_dir,
-    )
-
-    logger.info("Finished!")
-    return res
-
-
 def save_all_mappers(
     class_derivations: Dict,
     enum_derivations: Dict,
@@ -530,67 +583,15 @@ def save_all_mappers(
 
 if __name__ == "__main__":
     if "get_ipython" in globals():
-
-        class opts:
-            config = "../../data/odm_v1/odm_v1_to_v2_config.yaml"
-            prepared_parts_file = "../../gen/odm_v1_to_v2/configs/parts_prepared.csv"
-            data_output_dir = "../../gen/odm_v1_to_v2/mapped_data"
-            mapper_dir = "../../gen/odm_v1_to_v2/mappers"
-            source_schema = "../../data/odm_v1/linkml/odm_v1.yaml"
-            max_mapping_only = False
-            custom_wide_dir = "../../data/odm_v1/custom_wide"
+        opts = {
+            "config": "../../data/odm_v1/odm_v1_to_v2_config.yaml",
+            "prepared_parts_file": "../../gen/odm_v1_to_v2/configs/parts_prepared.csv",
+            "mapper_dir": "../../gen/odm_v1_to_v2/mappers",
+            "source_schema": "../../data/odm_v1/linkml/odm_v1.yaml",
+            "target_schema": "../../data/odm_v2/linkml/odm_v2.yaml",
+            "max_mapping_only": False,
+            "custom_wide_dir": "../../data/odm_v1/custom_wide",
+        }
+        make_mappers(**opts)
     else:
-        args = argparse.ArgumentParser(
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter
-        )
-        args.add_argument(
-            "--config",
-            type=str,
-            help="Location of the configuration file for mapping ODM v1 to ODM v2",
-            required=True,
-        )
-        args.add_argument(
-            "--prepared_parts_file",
-            type=str,
-            help="The prepared parts file (prepared by prepare_parts.py) from the ODM v2 data dictionary. Can be a CSV or TSV file",
-            required=True,
-        )
-        args.add_argument(
-            "--mapper_dir",
-            type=str,
-            help="Location to save all mapper config files to",
-            required=True,
-        )
-        args.add_argument(
-            "--data_output_dir",
-            type=str,
-            help="Location to save all mapped data to",
-            required=True,
-        )
-        args.add_argument(
-            "--source_schema",
-            type=str,
-            help="Location of the source LinkML schema",
-            required=True,
-        )
-        args.add_argument(
-            "--custom_wide_dir",
-            help="Directory of CSV files containing custom mappings for wide to long mappings",
-            required=False,
-        )
-        args.add_argument(
-            "--max_mapping_only",
-            help="For each source table, map to only one v2 target table, which is the table that has the most columns to map. If not set then make mapper specs for all source tables to all v2 tables",
-            action="store_true",
-            required=True,
-        )
-        opts = args.parse_args()
-
-    make_mappers(
-        config=opts.config,
-        mapper_dir=opts.mapper_dir,
-        prepared_parts_file=opts.prepared_parts_file,
-        source_schema_file=opts.source_schema,
-        max_mapping_only=opts.max_mapping_only,
-        custom_wide_dir=opts.custom_wide_dir,
-    )
+        app()

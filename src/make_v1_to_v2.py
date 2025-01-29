@@ -9,8 +9,8 @@ the mappings. See make_mappers.py, and see make_mappers_cli.py for an example.
 """
 
 from pathlib import Path
-from typing import Union
-import argparse
+from typing import Annotated
+import typer
 
 from odm_v2.make_v2_mappers_from_parts import make_mappers
 from odm_v2.prepare_parts import prepare_parts
@@ -19,6 +19,11 @@ from utils.general_utils import clear_dirs, extract_sheets, get_logger
 
 logger = get_logger(__name__)
 
+app = typer.Typer(
+    pretty_exceptions_show_locals=False,
+    rich_markup_mode="rich",
+)
+
 map_columns = {
     "version1Table": V2MappingColumns.SOURCE_TABLE,
     "version1Location": V2MappingColumns.SOURCE_LOCATION,
@@ -26,15 +31,52 @@ map_columns = {
     "version1Category": V2MappingColumns.SOURCE_CATEGORY,
 }
 
+MAIN_HELP = """Make the LinkML mapper configuration (YAML) files required for
+mapping from ODM v1 to ODM v2."""
 
-def make_v1_to_v2(
-    config: Union[str, Path],
-    output_dir: Union[str, Path],
-    v2_data_dictionary: Union[str, Path],
-    source_schema: Union[str, Path],
-    target_schema: Union[str, Path],
-    wide_dir: Union[str, Path],
-    max_mapping_only: bool,
+CONFIG_HELP = """Location of the config file for mapping from ODM v1 to v2.
+              Includes information on which source tables should map to which
+              target tables and other config details."""
+
+OUTPUT_DIR_HELP = """Directory to save all the output to. Various
+                  subdirectories will be created for the different outputs. The
+                  final mapper config files will be in the "mappers"
+                  sub-directory."""
+
+V2_DATA_DICTIONARY_HELP = """Path to the ODM v2 Excel data dictionary. Must
+                          contain a sheet called "parts" which contains all the
+                          ODM v2 metadata and ODM v1 mapping data."""
+
+SOURCE_SCHEMA_HELP = """The path to the source (ODM v1) LinkML schema."""
+
+TARGET_SCHEMA_HELP = """The path to the target (ODM v2) LinkML schema."""
+
+WIDE_DIR_HELP = """Directory that contains all wide-column information. All CSV
+                files in this directory are used."""
+
+MAX_MAPPING_ONLY_HELP = """If True then for each source (ODM v1) table, only
+                        create the mapping config files that map to the ODM v2
+                        table where the maximum number of columns are copied
+                        over from ODM v1. This helps eliminate useless mappings
+                        (eg. ones where a single column such as an identifier
+                        is copied over)."""
+
+
+@app.command(help=MAIN_HELP)
+def main(
+    config: Annotated[Path, typer.Option(show_default=False, help=CONFIG_HELP)],
+    output_dir: Annotated[Path, typer.Option(show_default=False, help=OUTPUT_DIR_HELP)],
+    v2_data_dictionary: Annotated[
+        Path, typer.Option(show_default=False, help=V2_DATA_DICTIONARY_HELP)
+    ],
+    source_schema: Annotated[
+        Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
+    ],
+    target_schema: Annotated[
+        Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
+    ],
+    wide_dir: Path = typer.Option(default=None, help=WIDE_DIR_HELP),
+    max_mapping_only: bool = typer.Option(default=False, help=MAX_MAPPING_ONLY_HELP),
 ):
     """Make the LinkML mapper configuration (YAML) files required for mapping from ODM v1 to ODM v2.
 
@@ -92,6 +134,7 @@ def make_v1_to_v2(
         mapper_dir=mapper_dir,
         prepared_parts_file=prepared_parts_file,
         source_schema_file=source_schema,
+        target_schema_file=target_schema,
         max_mapping_only=max_mapping_only,
         custom_wide_dir=wide_dir,
     )
@@ -99,69 +142,16 @@ def make_v1_to_v2(
 
 if __name__ == "__main__":
     if "get_ipython" in globals():
+        opts = {
+            "config": "../data/odm_v1/odm_v1_to_v2_config.yaml",
+            "source_schema": "../data/odm_v1/linkml/odm_v1.yaml",
+            "target_schema": "../data/odm_v2/linkml/odm_v2.yaml",
+            "wide_dir": "../data/odm_v1/custom_wide",
+            "output_dir": "../gen/odm_v1_to_v2",
+            "v2_data_dictionary": "../data/odm_v2/v2 ODM dictionary.xlsx",
+            "max_mapping_only": False,
+        }
 
-        class opts:
-            config = "../data/odm_v1/odm_v1_to_v2_config.yaml"
-            source_schema = "../data/odm_v1/linkml/odm_v1.yaml"
-            target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
-            wide_dir = "../data/odm_v1/custom_wide"
-            output_dir = "../gen/odm_v1_to_v2"
-            v2_data_dictionary = "../data/odm_v2/v2 ODM dictionary.xlsx"
-            max_mapping_only = False
+        main(**opts)
     else:
-        args = argparse.ArgumentParser(
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter
-        )
-        args.add_argument(
-            "--config",
-            type=str,
-            help="Location of the configuration file for mapping ODM v1 to ODM v2",
-            required=True,
-        )
-        args.add_argument(
-            "--source_schema",
-            type=str,
-            help="Location of the source (ODM v1) LinkML schema",
-            required=True,
-        )
-        args.add_argument(
-            "--target_schema",
-            type=str,
-            help="Location of the target (ODM v2) LinkML schema",
-            required=True,
-        )
-        args.add_argument(
-            "--wide_dir",
-            type=str,
-            help="Directory containing all wide-column mapping configurations.",
-            required=False,
-        )
-        args.add_argument(
-            "--output_dir",
-            type=str,
-            help="The directory to save the results to, including the final LinkML mapper config files. Various sub-directories are created with the different outputs.",
-            required=True,
-        )
-        args.add_argument(
-            "--v2_data_dictionary",
-            type=str,
-            help="Location of the ODM v2 data dictionary (Excel file).",
-            required=True,
-        )
-        args.add_argument(
-            "--max_mapping_only",
-            action="store_true",
-            help="If set, then for each source class, only create the mapper spec where the mapping will result in copying the maximum number of source slots to target slots. If more than one mapping has an equal number of copies, then all of the corresponding mapper specs are created. If not set then mappings from each source class to ALL target classes are created (even if only one or a few columns are copied).",
-        )
-
-        opts = args.parse_args()
-
-    make_v1_to_v2(
-        config=opts.config,
-        output_dir=opts.output_dir,
-        v2_data_dictionary=opts.v2_data_dictionary,
-        source_schema=opts.source_schema,
-        target_schema=opts.target_schema,
-        wide_dir=opts.wide_dir,
-        max_mapping_only=opts.max_mapping_only,
-    )
+        app()
