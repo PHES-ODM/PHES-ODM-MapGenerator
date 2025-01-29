@@ -5,7 +5,7 @@ import argparse
 import os
 import shutil
 
-from make_mappers import make_mappers
+from make_mappers import MakeMappers
 from utils.general_utils import clear_dirs, extract_sheets, get_logger
 from utils.mapper_utils import CONFIG_READ_KWARGS
 
@@ -159,7 +159,7 @@ def make_mappers_cli(
         logger.error("No maps configurations found")
     else:
         # Create the mapper specs
-        make_mappers(
+        maker = MakeMappers(
             maps_files=output_maps_files,
             wide_files=output_wide_files,
             enums_files=output_enums_files,
@@ -171,6 +171,7 @@ def make_mappers_cli(
             source_slot_format_operations=source_slot_format_operations,
             target_slot_format_operations=target_slot_format_operations,
         )
+        maker.make_mappers()
 
     logger.info("Finished!")
 
