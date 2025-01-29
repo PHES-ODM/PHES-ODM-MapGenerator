@@ -100,26 +100,38 @@ def main(
     target_schema: Annotated[
         Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
     ],
-    mapping_excel_file: Path = typer.Option(default=None, help=MAPPING_EXCEL_FILE_HELP),
-    excel_maps_sheets: List[str] = typer.Option(
-        default=None, help=EXCEL_MAPS_SHEETS_HELP
-    ),
-    excel_wide_sheets: List[str] = typer.Option(
-        default=None, help=EXCEL_WIDE_SHEETS_HELP
-    ),
-    excel_enums_sheets: List[str] = typer.Option(
-        default=None, help=EXCEL_ENUMS_SHEETS_HELP
-    ),
-    maps_files: List[Path] = typer.Option(default=None, help=MAPS_FILES_HELP),
-    wide_files: List[Path] = typer.Option(default=None, help=WIDE_FILES_HELP),
-    enums_files: List[Path] = typer.Option(default=None, help=ENUMS_FILES_HELP),
-    selectors: Optional[List[str]] = typer.Option(default=None, help=SELECTORS_HELP),
-    source_slot_format_operations: Optional[List[str]] = typer.Option(
-        default=None, help=SOURCE_SLOT_FORMAT_OPERATIONS_HELP
-    ),
-    target_slot_format_operations: Optional[List[str]] = typer.Option(
-        default=None, help=TARGET_SLOT_FORMAT_OPERATIONS_HELP
-    ),
+    mapping_excel_file: Annotated[
+        Path, typer.Option(show_default=False, help=MAPPING_EXCEL_FILE_HELP)
+    ] = None,
+    excel_maps_sheets: Annotated[
+        List[str], typer.Option(show_default=False, help=EXCEL_MAPS_SHEETS_HELP)
+    ] = None,
+    excel_wide_sheets: Annotated[
+        List[str], typer.Option(show_default=False, help=EXCEL_WIDE_SHEETS_HELP)
+    ] = None,
+    excel_enums_sheets: Annotated[
+        List[str], typer.Option(show_default=False, help=EXCEL_ENUMS_SHEETS_HELP)
+    ] = None,
+    maps_files: Annotated[
+        List[Path], typer.Option(show_default=False, help=MAPS_FILES_HELP)
+    ] = None,
+    wide_files: Annotated[
+        List[Path], typer.Option(show_default=False, help=WIDE_FILES_HELP)
+    ] = None,
+    enums_files: Annotated[
+        List[Path], typer.Option(show_default=False, help=ENUMS_FILES_HELP)
+    ] = None,
+    selectors: Annotated[
+        Optional[List[str]], typer.Option(show_default=False, help=SELECTORS_HELP)
+    ] = None,
+    source_slot_format_operations: Annotated[
+        Optional[List[str]],
+        typer.Option(show_default=False, help=SOURCE_SLOT_FORMAT_OPERATIONS_HELP),
+    ] = None,
+    target_slot_format_operations: Annotated[
+        Optional[List[str]],
+        typer.Option(show_default=False, help=TARGET_SLOT_FORMAT_OPERATIONS_HELP),
+    ] = None,
 ):
     """Make the LinkML Mapper spec (YAML) files required for mapping from any source data set to
     any taret dataset, as specified in the mapping_excel_file.
@@ -279,71 +291,71 @@ if __name__ == "__main__":
             # "target_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_underscores"],
 
             # NWSS to ODM v2
-            "source_schema": f"data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml",
-            "target_schema": "data/odm_v2/linkml/odm_v2.yaml",
-            "mapping_excel_file": "data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx",
-            # "mapping_excel_file": "../gen/nwss_reporting_to_v2/xlsx_mappers_from_yaml/mapping_config.xlsx",
-            "excel_maps_sheets": ["maps"],
-            # "excel_maps_sheets": ["measureSets", "contacts", "samples", "addresses", "polygons", "datasets", "sites", "organizations", "protocols", "instruments"],
-            "excel_wide_sheets": [
-                "wide_measures",
-                "wide_protocolRelationships",
-                "wide_protocolSteps",
-                "wide_qualityReports",
-            ],
-            "excel_enums_sheets": ["enums"],
-            "maps_files": [],
-            "wide_files": [],
-            "enums_files": [],
-            "output_dir": Path(f"../gen/nwss_{dictionary_type}_to_v2"),
-            "selectors": [],
-            "source_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_underscores"],
-            "target_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_underscores"],
-
-            # PHA4GE to ODM v2
-            # "source_schema": "../../../PHES-ODM-Data/PHA4GE/schema-WastewaterSARC-CoV-2.yaml",
+            # "source_schema": f"data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml",
             # "target_schema": "data/odm_v2/linkml/odm_v2.yaml",
-            # "mapping_excel_file": "data/mapping_config_files/pha4ge_to_odm_v2_mapping.xlsx",
-            # "excel_maps_sheets": [
-            #     "maps_OTHER",
-            #     "maps_sites",
-            #     "maps_samples",
-            #     "maps_repositories",
-            #     "maps_polygons",
-            #     "maps_measures",
-            #     "maps_instruments",
-            #     "maps_datasets",
-            #     "maps_addresses",
-            #     "maps_accessions",
-
-            #     # "maps_qualityReports",
-            #     # "maps_protocolSteps",
-            #     # "maps_protocols",
-            # ],
+            # "mapping_excel_file": "data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx",
+            # # "mapping_excel_file": "../gen/nwss_reporting_to_v2/xlsx_mappers_from_yaml/mapping_config.xlsx",
+            # "excel_maps_sheets": ["maps"],
+            # # "excel_maps_sheets": ["measureSets", "contacts", "samples", "addresses", "polygons", "datasets", "sites", "organizations", "protocols", "instruments"],
             # "excel_wide_sheets": [
-            #     "wide_samples",
-            #     "wide_sampleRelationships",
-            #     "wide_repositories",
             #     "wide_measures",
-            #     "wide_datasets",
-            #     "wide_contacts",
-
-            #     # "wide_protocolSteps",
-            #     # "wide_protocols",
+            #     "wide_protocolRelationships",
+            #     "wide_protocolSteps",
+            #     "wide_qualityReports",
             # ],
-            # "excel_enums_sheets": [
-            #     "enums_samples",
-            #     "enums_measures",
-            #     "enums_addresses",
-            # ],
-            # # "excel_enums_sheets": [],
+            # "excel_enums_sheets": ["enums"],
             # "maps_files": [],
             # "wide_files": [],
             # "enums_files": [],
+            # "output_dir": Path(f"../gen/nwss_{dictionary_type}_to_v2"),
             # "selectors": [],
-            # "output_dir": Path("../gen/pha4ge_to_v2"),
-            # "source_slot_format_operations": [ "lowercase", '{ remove_chars: "-"}', "alpha_numeric_underscore", "single_underscores", "trim_underscores" ],
+            # "source_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_underscores"],
             # "target_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_underscores"],
+
+            # PHA4GE to ODM v2
+            "source_schema": "../../../PHES-ODM-Data/PHA4GE/schema-WastewaterSARC-CoV-2.yaml",
+            "target_schema": "data/odm_v2/linkml/odm_v2.yaml",
+            "mapping_excel_file": "data/mapping_config_files/pha4ge_to_odm_v2_mapping.xlsx",
+            "excel_maps_sheets": [
+                "maps_OTHER",
+                "maps_sites",
+                "maps_samples",
+                "maps_repositories",
+                "maps_polygons",
+                "maps_measures",
+                "maps_instruments",
+                "maps_datasets",
+                "maps_addresses",
+                "maps_accessions",
+
+                # "maps_qualityReports",
+                # "maps_protocolSteps",
+                # "maps_protocols",
+            ],
+            "excel_wide_sheets": [
+                "wide_samples",
+                "wide_sampleRelationships",
+                "wide_repositories",
+                "wide_measures",
+                "wide_datasets",
+                "wide_contacts",
+
+                # "wide_protocolSteps",
+                # "wide_protocols",
+            ],
+            "excel_enums_sheets": [
+                "enums_samples",
+                "enums_measures",
+                "enums_addresses",
+            ],
+            # "excel_enums_sheets": [],
+            "maps_files": [],
+            "wide_files": [],
+            "enums_files": [],
+            "selectors": [],
+            "output_dir": Path("../gen/pha4ge_to_v2"),
+            "source_slot_format_operations": [ "lowercase", '{ remove_chars: "-"}', "alpha_numeric_underscore", "single_underscores", "trim_underscores" ],
+            "target_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_underscores"],
         }
         # fmt: on
 
