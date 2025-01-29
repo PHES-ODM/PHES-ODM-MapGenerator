@@ -36,17 +36,17 @@ exclamation mark.
 
 Below is an example table with a `selectors` column:
 
-| Color   | selectors     |
-|:--------|:--------------|
-| Red     | amr           |
-| Orange  | !agnostic,!amr,other      |
-| Yellow  | amr           |
-| Green   | amr           |
-| Blue    | !agnostic,amr |
-| Indigo  |               |
-| Violet  |               |
-| Cyan    | amr,agnostic  |
-| Magenta |               |
+| Color   | selectors                   |
+|:--------|:----------------------------|
+| Red     | amr                         |
+| Orange  | !agnostic,!amr,other,other2 |
+| Yellow  | amr                         |
+| Green   | amr                         |
+| Blue    | !agnostic,amr               |
+| Indigo  |                             |
+| Violet  |                             |
+| Cyan    | amr,agnostic                |
+| Magenta |                             |
 
 For a given value of selectors, we separate the negated selectors from the
 non-negated selectors. The following two conditions must pass:
@@ -74,9 +74,13 @@ For the row with `Color` equal to `Yellow`, the selectors are "amr". We keep
 the row if "amr" was specified from the command-line.
 
 For the row with `Color` equal to `Orange`, the selectors are
-"!agnostic,!amr,other". We keep the row if neither "agnostic" or "amr" were
-specified from the command-line, and "other" was specified from the
-command-line.
+"!agnostic,!amr,other,other2". We keep the row if neither "agnostic" or "amr"
+were specified from the command-line, and either "other" or "other2" was
+specified from the command-line. For example, command-line selectors of
+"agnostic,other,other2" will result in dropping the `Orange` row; command-line
+selectors of "other" will result in retaining the row; command-line selectors
+of "other,other2" will result in retaining the row, and command-line selectors
+of "other3,other" will result in retaining the row.
 
 ### sourceClass
 
