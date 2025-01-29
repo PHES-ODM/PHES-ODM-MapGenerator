@@ -25,7 +25,10 @@ from odm_map_maker.utils.general_utils import (
     TREE_ROOT_CLASS_NAME,
     get_class_name_from_file_name,
 )
-from odm_map_maker.utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations
+from odm_map_maker.utils.mapper_utils import (
+    select_required_enum_derivations,
+    expand_wide_derivations,
+)
 from odm_map_maker.odm_v2.v2_utils import v2_get_header_rows, v2_class_names
 from odm_map_maker.odm_v2.v2_mapping import V2MappingColumns, V2MappingVariableLocations
 
