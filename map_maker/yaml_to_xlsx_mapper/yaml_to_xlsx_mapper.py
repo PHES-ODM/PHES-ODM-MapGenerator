@@ -6,10 +6,10 @@ import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-import argparse
+import typer
 import re
 from pathlib import Path
-from typing import Union, List, Tuple, Dict
+from typing import Union, List, Tuple, Dict, Annotated
 import yaml
 import pandas as pd
 
@@ -19,6 +19,11 @@ from utils.general_utils import get_class_name_from_file_name, TREE_ROOT_CLASS_N
 from utils.mapper_utils import MappingColumns, get_logger, get_variable_reference
 
 logger = get_logger(__name__)
+
+app = typer.Typer(
+    pretty_exceptions_show_locals=False,
+    rich_markup_mode="rich",
+)
 
 
 class DataKeys:
@@ -41,6 +46,34 @@ def unquoted_string(s: str) -> bool:
     if not pd.isna(noquote_s) and noquote_s != s:
         return noquote_s
     return None
+
+
+MAIN_HELP = """Bootstrap an Excel mapping configuration file from a collection
+            of LinkML-Map schemas."""
+
+SOURCE_DIR_HELP = """The directory containing the LinkML-Map schemas."""
+
+SOURCE_SCHEMA_HELP = """The LinkML schema for the source dataset."""
+
+TARGET_SCHEMA_HELP = """The LinkML schema for the target dataset."""
+
+OUTPUT_DIR_HELP = """The directory to save the final mapping configuration file
+                  to."""
+
+
+@app.command(help=MAIN_HELP)
+def main(
+    source_dir: Annotated[Path, typer.Option(show_default=False, help=SOURCE_DIR_HELP)],
+    source_schema: Annotated[
+        Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
+    ],
+    target_schema: Annotated[
+        Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
+    ],
+    output_dir: Annotated[Path, typer.Option(show_default=False, help=OUTPUT_DIR_HELP)],
+):
+    mapper = YAMLtoXLSXMapper(source_dir, source_schema, target_schema, output_dir)
+    mapper.convert()
 
 
 class YAMLtoXLSXMapper(object):
@@ -637,50 +670,18 @@ class YAMLtoXLSXMapper(object):
 
 if __name__ == "__main__":
     if "get_ipython" in globals():
-
-        class opts:
+        opts = {
             # ODM v1 to v2
-            source_dir = "../../gen/odm_v1_to_v2/mappers"
-            source_schema = "../data/odm_v1/linkml/odm_v1.yaml"
-            target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
-            output_dir = "../../gen/odm_v1_to_v2/xlsx_mappers_from_yaml"
-
+            "source_dir": "../../gen/odm_v1_to_v2/mappers",
+            "source_schema": "../data/odm_v1/linkml/odm_v1.yaml",
+            "target_schema": "../data/odm_v2/linkml/odm_v2.yaml",
+            "output_dir": "../../gen/odm_v1_to_v2/xlsx_mappers_from_yaml",
             # NWSS to ODM v2
-            # source_dir = "../../gen/nwss_reporting_to_v2/mappers"
-            # source_schema = "../../gen/nwss_reporting_to_v2/linkml_for_mapping/nwss_reporting.yaml"
-            # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
-            # output_dir = "../../gen/nwss_reporting_to_v2/xlsx_mappers_from_yaml"
+            # "source_dir": "../../gen/nwss_reporting_to_v2/mappers",
+            # "source_schema": "../../gen/nwss_reporting_to_v2/linkml_for_mapping/nwss_reporting.yaml",
+            # "target_schema": "../data/odm_v2/linkml/odm_v2.yaml",
+            # "output_dir": "../../gen/nwss_reporting_to_v2/xlsx_mappers_from_yaml",
+        }
+        main(**opts)
     else:
-        args = argparse.ArgumentParser(
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter
-        )
-        args.add_argument(
-            "--source_dir",
-            type=str,
-            help="Directory where all YAML LinkML-Map mappers are located, to convert to CSV format.",
-            required=True,
-        )
-        args.add_argument(
-            "--source_schema",
-            type=str,
-            help="LinkML schema for the source dataset.",
-            required=True,
-        )
-        args.add_argument(
-            "--target_schema",
-            type=str,
-            help="LinkML schema for the target dataset.",
-            required=True,
-        )
-        args.add_argument(
-            "--output_dir",
-            type=str,
-            help="Directory to save the CSV mappers to.",
-            required=True,
-        )
-        opts = args.parse_args()
-
-    mapper = YAMLtoXLSXMapper(
-        opts.source_dir, opts.source_schema, opts.target_schema, opts.output_dir
-    )
-    mapper.convert()
+        app()
