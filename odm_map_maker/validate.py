@@ -17,8 +17,8 @@ from linkml.validator.plugins.jsonschema_validation_plugin import (
 from linkml_runtime import SchemaView
 from linkml.validator.report import Severity
 
-from utils.general_utils import parse_numeric, get_logger
-from utils.schema_utils import get_ranges_of_slot
+from odm_map_maker.utils.general_utils import parse_numeric, get_logger
+from odm_map_maker.utils.schema_utils import get_ranges_of_slot
 
 logger = get_logger(__name__)
 

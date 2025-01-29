@@ -19,7 +19,7 @@ from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model.meta import SchemaDefinition
 from linkml_runtime.utils.schema_as_dict import schema_as_dict
 
-from utils.general_utils import (
+from odm_map_maker.utils.general_utils import (
     read_data_frame,
     strip_whitespace,
     get_logger,
@@ -27,12 +27,12 @@ from utils.general_utils import (
     EMPTY_PERMISSIBLE_VALUE,
     TREE_ROOT_CLASS_NAME,
 )
-from utils.schema_utils import (
+from odm_map_maker.utils.schema_utils import (
     get_enum_names_for_slot,
     get_enum_name_with_permissible_value,
     add_ontoid_to_enum_value,
 )
-from utils.mapper_utils import (
+from odm_map_maker.utils.mapper_utils import (
     select_required_enum_derivations,
     expand_wide_derivations,
     get_variable_reference,
@@ -44,7 +44,7 @@ from utils.mapper_utils import (
     cleanup_slot_name,
     CONFIG_READ_KWARGS,
 )
-from utils.auto_id import add_auto_ids_to_schema
+from odm_map_maker.utils.auto_id import add_auto_ids_to_schema
 
 logger = get_logger(__name__)
 

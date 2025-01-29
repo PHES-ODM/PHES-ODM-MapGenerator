@@ -5,9 +5,9 @@ import os
 import shutil
 import typer
 
-from make_mappers import MakeMappers
-from utils.general_utils import clear_dirs, extract_sheets, get_logger
-from utils.mapper_utils import CONFIG_READ_KWARGS
+from odm_map_maker.make_mappers import MakeMappers
+from odm_map_maker.utils.general_utils import clear_dirs, extract_sheets, get_logger
+from odm_map_maker.utils.mapper_utils import CONFIG_READ_KWARGS
 
 logger = get_logger(__name__)
 

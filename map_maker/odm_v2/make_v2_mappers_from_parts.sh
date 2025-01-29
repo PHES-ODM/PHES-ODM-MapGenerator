@@ -1,2 +1,0 @@
-#!/bin/bash
-python3 make_v2_mappers_from_parts.py --config ../../data/odm_v1/odm_v1_to_v2_config.yaml --prepared-parts-file ../../gen/odm_v1_to_v2/configs/parts_prepared.csv --mapper-dir ../../gen/odm_v1_to_v2/mappers --source-schema ../../data/odm_v1/linkml/odm_v1.yaml --target-schema ../../data/odm_v2/linkml/odm_v2.yaml --custom-wide-dir ../../data/odm_v1/custom_wide 

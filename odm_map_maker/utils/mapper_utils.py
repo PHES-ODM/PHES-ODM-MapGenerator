@@ -2,11 +2,6 @@
 Utility functions for LinkML Mapper
 """
 
-import sys
-import os
-
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
 from typing import Dict, List, Union, Any, Optional
 import pandas as pd
 import re
@@ -14,8 +9,8 @@ import yaml
 
 from linkml_runtime import SchemaView
 
-from utils.general_utils import get_logger
-from utils.schema_utils import get_enum_names_for_slot
+from odm_map_maker.utils.general_utils import get_logger
+from odm_map_maker.utils.schema_utils import get_enum_names_for_slot
 
 logger = get_logger(__name__)
 

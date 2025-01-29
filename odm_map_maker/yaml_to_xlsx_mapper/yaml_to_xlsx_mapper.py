@@ -1,11 +1,6 @@
 # %%
 """ """
 
-import sys
-import os
-
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
 import typer
 import re
 from pathlib import Path
@@ -15,8 +10,8 @@ import pandas as pd
 
 from linkml_runtime import SchemaView
 
-from utils.general_utils import get_class_name_from_file_name, TREE_ROOT_CLASS_NAME
-from utils.mapper_utils import MappingColumns, get_logger, get_variable_reference
+from odm_map_maker.utils.general_utils import get_class_name_from_file_name, TREE_ROOT_CLASS_NAME
+from odm_map_maker.utils.mapper_utils import MappingColumns, get_logger, get_variable_reference
 
 logger = get_logger(__name__)
 

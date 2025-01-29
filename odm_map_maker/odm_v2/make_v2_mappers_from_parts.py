@@ -10,11 +10,6 @@ and contacts.lastName from it?
 - Reporter table is empty, is this alright?
 """
 
-import sys
-import os
-
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
 import pandas as pd
 from pathlib import Path
 import yaml
@@ -24,15 +19,15 @@ import typer
 
 from linkml_runtime import SchemaView
 
-from utils.general_utils import (
+from odm_map_maker.utils.general_utils import (
     read_data_frame,
     get_logger,
     TREE_ROOT_CLASS_NAME,
     get_class_name_from_file_name,
 )
-from utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations
-from odm_v2.v2_utils import v2_get_header_rows, v2_class_names
-from odm_v2.v2_mapping import V2MappingColumns, V2MappingVariableLocations
+from odm_map_maker.utils.mapper_utils import select_required_enum_derivations, expand_wide_derivations
+from odm_map_maker.odm_v2.v2_utils import v2_get_header_rows, v2_class_names
+from odm_map_maker.odm_v2.v2_mapping import V2MappingColumns, V2MappingVariableLocations
 
 V2_PART_ID_COL = "partID"
 V2_ENUM_NAME_COL = "v2EnumName"
