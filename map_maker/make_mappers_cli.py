@@ -194,13 +194,8 @@ def main(
     mapper_dir = output_dir / "mappers"
     mapped_dir = output_dir / "mapped_data"
 
-    source_schema_for_mapping_dir = output_dir / "linkml_for_mapping"
-    source_schema_for_mapping = source_schema_for_mapping_dir / os.path.basename(
-        source_schema
-    )
-
     # Clean up directories (ie. delete old csv, tsv, and yaml files)
-    clear_dirs([configs_dir, mapper_dir, mapped_dir, source_schema_for_mapping_dir])
+    clear_dirs([configs_dir, mapper_dir, mapped_dir])
 
     # Extract the required maps/wide/enums sheets from the mapping config/Excel file
     if mapping_excel_file:
@@ -246,7 +241,6 @@ def main(
             mapper_dir=mapper_dir,
             source_schema=source_schema,
             target_schema=target_schema,
-            source_schema_for_mapping=source_schema_for_mapping,
             selectors=selectors,
             source_slot_format_operations=source_slot_format_operations,
             target_slot_format_operations=target_slot_format_operations,
