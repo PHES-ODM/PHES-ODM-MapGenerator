@@ -1161,8 +1161,8 @@ if __name__ == "__main__":
             # wide_files = []
             # enums_files = []
             # mapper_dir = "../gen/odm_v1_to_v2/mappers"
-            # source_schema = "../data/odm_v1/linkml/odm_v1.yaml"
-            # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
+            # source_schema = "data/odm_v1/linkml/odm_v1.yaml"
+            # target_schema = "data/odm_v2/linkml/odm_v2.yaml"
             # selectors = []
             # source_schema_for_mapping = (
             #     "../gen/odm_v1_to_v2/linkml_for_mapping/odm_v1.yaml"
@@ -1177,9 +1177,9 @@ if __name__ == "__main__":
             # enums_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/enums0.csv"]
             # mapper_dir = f"../gen/nwss_{dictionary_type}_to_v2/mappers"
             # source_schema = (
-            #     f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
+            #     f"data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
             # )
-            # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
+            # target_schema = "data/odm_v2/linkml/odm_v2.yaml"
             # source_schema_for_mapping = f"../gen/nwss_{dictionary_type}_to_v2/linkml_for_mapping/nwss_{dictionary_type}.yaml"
 
             maps_files = [
@@ -1208,8 +1208,8 @@ if __name__ == "__main__":
                 "../gen/pha4ge_to_v2/configs/enums2.csv",
             ]
             mapper_dir = "../gen/pha4ge_to_v2/mappers"
-            source_schema = "../data/pha4ge/linkml/pha4ge.yaml"
-            target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
+            source_schema = "data/pha4ge/linkml/pha4ge.yaml"
+            target_schema = "data/odm_v2/linkml/odm_v2.yaml"
             source_schema_for_mapping = (
                 "../gen/pha4ge_to_v2/linkml_for_mapping/pha4ge.yaml"
             )
@@ -1306,7 +1306,7 @@ if __name__ == "__main__":
     # Extract the required sheets from the NWSS to ODM 2 mapping file
     # from utils.general_utils import extract_sheets
 
-    # mapping_config_file = "../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx"
+    # mapping_config_file = "data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx"
     # configs_dir = f"../gen/nwss_{dictionary_type}_to_v2/configs/"
     # extract_sheets(
     #     mapping_config_file,

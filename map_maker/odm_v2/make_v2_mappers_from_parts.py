@@ -584,13 +584,13 @@ def save_all_mappers(
 if __name__ == "__main__":
     if "get_ipython" in globals():
         opts = {
-            "config": "../../data/odm_v1/odm_v1_to_v2_config.yaml",
+            "config": "../data/odm_v1/odm_v1_to_v2_config.yaml",
             "prepared_parts_file": "../../gen/odm_v1_to_v2/configs/parts_prepared.csv",
             "mapper_dir": "../../gen/odm_v1_to_v2/mappers",
-            "source_schema": "../../data/odm_v1/linkml/odm_v1.yaml",
-            "target_schema": "../../data/odm_v2/linkml/odm_v2.yaml",
+            "source_schema": "../data/odm_v1/linkml/odm_v1.yaml",
+            "target_schema": "../data/odm_v2/linkml/odm_v2.yaml",
             "max_mapping_only": False,
-            "custom_wide_dir": "../../data/odm_v1/custom_wide",
+            "custom_wide_dir": "../data/odm_v1/custom_wide",
         }
         make_mappers(**opts)
     else:

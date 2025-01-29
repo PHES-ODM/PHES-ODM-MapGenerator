@@ -133,8 +133,8 @@ def main(
         config=config,
         mapper_dir=mapper_dir,
         prepared_parts_file=prepared_parts_file,
-        source_schema_file=source_schema,
-        target_schema_file=target_schema,
+        source_schema=source_schema,
+        target_schema=target_schema,
         max_mapping_only=max_mapping_only,
         custom_wide_dir=wide_dir,
     )
@@ -143,12 +143,12 @@ def main(
 if __name__ == "__main__":
     if "get_ipython" in globals():
         opts = {
-            "config": "../data/odm_v1/odm_v1_to_v2_config.yaml",
-            "source_schema": "../data/odm_v1/linkml/odm_v1.yaml",
-            "target_schema": "../data/odm_v2/linkml/odm_v2.yaml",
-            "wide_dir": "../data/odm_v1/custom_wide",
+            "config": "data/odm_v1/odm_v1_to_v2_config.yaml",
+            "source_schema": "data/odm_v1/linkml/odm_v1.yaml",
+            "target_schema": "data/odm_v2/linkml/odm_v2.yaml",
+            "wide_dir": "data/odm_v1/custom_wide",
             "output_dir": "../gen/odm_v1_to_v2",
-            "v2_data_dictionary": "../data/odm_v2/v2 ODM dictionary.xlsx",
+            "v2_data_dictionary": "data/odm_v2/v2 ODM dictionary.xlsx",
             "max_mapping_only": False,
         }
 
