@@ -1,15 +1,68 @@
 # %%
 from pathlib import Path
-from typing import Union, List, Optional
-import argparse
+from typing import Union, List, Optional, Annotated
 import os
 import shutil
+import typer
 
 from make_mappers import MakeMappers
 from utils.general_utils import clear_dirs, extract_sheets, get_logger
 from utils.mapper_utils import CONFIG_READ_KWARGS
 
 logger = get_logger(__name__)
+
+app = typer.Typer(
+    pretty_exceptions_show_locals=False,
+    rich_markup_mode="rich",
+)
+
+MAIN_HELP = """Create LinkML-Map mapping schemas from tabular mapping config files."""
+
+OUTPUT_DIR_HELP = """Directory to save all outputs to, including the final
+mapper files. Various sub-directories will be created, with
+the mappers in the "mappers" subdirectory."""
+
+MAPPING_EXCEL_FILE_HELP = """The mapping configuration Excel file that
+                          specifies how to map from the source dataset (eg.
+                          NWSS) to the target dataset (eg. ODM v2)."""
+
+
+EXCEL_MAPS_SHEETS_HELP = """Name of the map tab(s)/sheet(s) in the
+                         mapping_excel_file Excel file. (eg. "maps")"""
+
+EXCEL_WIDE_SHEETS_HELP = """Name of the wide tab(s)/sheet(s) in the
+                         mapping_excel_file Excel file. (eg. "wide")"""
+
+EXCEL_ENUMS_SHEETS_HELP = """Name of the enums tab(s)/sheet(s) in the
+                          mapping_excel_file Excel file. (eg. "enums")"""
+
+MAPS_FILES_HELP = """Path to CSV or TSV files that contain the maps
+                  configurations."""
+
+WIDE_FILES_HELP = """Path to CSV or TSV files that contain the wide
+                  configurations."""
+
+ENUMS_FILES_HELP = """Path to CSV or TSV files that contain the enum
+                   configurations."""
+
+SOURCE_SCHEMA_HELP = """The source dataset schema LinkML YAML file."""
+
+TARGET_SCHEMA_HELP = """The target dataset schema LinkML YAML file."""
+
+SELECTORS_HELP = """For rows in the mapping config file that have a value in
+                 the "selectors" column, only use the row if any of these
+                 selectors is found. The "selectors" column has a
+                 comma-separated list of selector values. A selector value in
+                 the data can also be preceded by an exclamation mark, meaning
+                 only select the row if the selector value is NOT specified."""
+
+SOURCE_SLOT_FORMAT_OPERATIONS_HELP = """Formatting options to apply to all slot
+                                     names, found in the configuration file,
+                                     for the source schema."""
+
+TARGET_SLOT_FORMAT_OPERATIONS_HELP = """Formatting options to apply to all slot
+                                     names, found in the configuration file,
+                                     for the target schema."""
 
 
 def get_available_file_path(
@@ -38,20 +91,35 @@ def get_available_file_path(
     return target_dir / target_name
 
 
-def make_mappers_cli(
-    output_dir: Union[str, Path],
-    mapping_excel_file: Union[str, Path],
-    excel_maps_sheets: Union[List[str], str],
-    excel_wide_sheets: Union[List[str], str],
-    excel_enums_sheets: Union[List[str], str],
-    maps_files: Union[List[Union[str, Path]], Union[str, Path]],
-    wide_files: Union[List[Union[str, Path]], Union[str, Path]],
-    enums_files: Union[List[Union[str, Path]], Union[str, Path]],
-    source_schema: Union[str, Path],
-    target_schema: Union[str, Path],
-    selectors: Optional[List[str]],
-    source_slot_format_operations: Optional[Union[str, List[str]]],
-    target_slot_format_operations: Optional[Union[str, List[str]]],
+@app.command(help=MAIN_HELP)
+def main(
+    output_dir: Annotated[Path, typer.Option(show_default=False, help=OUTPUT_DIR_HELP)],
+    source_schema: Annotated[
+        Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
+    ],
+    target_schema: Annotated[
+        Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
+    ],
+    mapping_excel_file: Path = typer.Option(default=None, help=MAPPING_EXCEL_FILE_HELP),
+    excel_maps_sheets: List[str] = typer.Option(
+        default=None, help=EXCEL_MAPS_SHEETS_HELP
+    ),
+    excel_wide_sheets: List[str] = typer.Option(
+        default=None, help=EXCEL_WIDE_SHEETS_HELP
+    ),
+    excel_enums_sheets: List[str] = typer.Option(
+        default=None, help=EXCEL_ENUMS_SHEETS_HELP
+    ),
+    maps_files: List[Path] = typer.Option(default=None, help=MAPS_FILES_HELP),
+    wide_files: List[Path] = typer.Option(default=None, help=WIDE_FILES_HELP),
+    enums_files: List[Path] = typer.Option(default=None, help=ENUMS_FILES_HELP),
+    selectors: Optional[List[str]] = typer.Option(default=None, help=SELECTORS_HELP),
+    source_slot_format_operations: Optional[List[str]] = typer.Option(
+        default=None, help=SOURCE_SLOT_FORMAT_OPERATIONS_HELP
+    ),
+    target_slot_format_operations: Optional[List[str]] = typer.Option(
+        default=None, help=TARGET_SLOT_FORMAT_OPERATIONS_HELP
+    ),
 ):
     """Make the LinkML Mapper spec (YAML) files required for mapping from any source data set to
     any taret dataset, as specified in the mapping_excel_file.
@@ -181,42 +249,42 @@ if __name__ == "__main__":
         dictionary_type = "reporting"
 
         # fmt: off
-        class opts:
-            # source_schema = f"../data/test/source.yaml"
-            # target_schema = f"../data/test/target.yaml"
-            # mapping_excel_file = f"../data/test/test-map.xlsx"
-            # excel_maps_sheets = ["maps"]
-            # excel_wide_sheets = []
-            # excel_enums_sheets = ["enums"]
-            # maps_files = []
-            # wide_files = []
-            # enums_files = []
-            # output_dir = f"../data/test/output"
-            # input_data_dir = f"../data/test/output/uncleaned_data"
-            # input_max_rows = None
-            # id_config_file = None
-            # filter_config_file = None
+        opts = {
+            # "source_schema": f"../data/test/source.yaml",
+            # "target_schema": f"../data/test/target.yaml",
+            # "mapping_excel_file": f"../data/test/test-map.xlsx",
+            # "excel_maps_sheets": ["maps"],
+            # "excel_wide_sheets": [],
+            # "excel_enums_sheets": ["enums"],
+            # "maps_files": [],
+            # "wide_files": [],
+            # "enums_files": [],
+            # "output_dir": f"../data/test/output",
+            # "input_data_dir": f"../data/test/output/uncleaned_data",
+            # "input_max_rows": None,
+            # "id_config_file": None,
+            # "filter_config_file": None,
 
-            # source_schema = f"../data/lights/lights.yaml"
-            # target_schema = f"../data/lights/lights_inventory.yaml"
-            # mapping_excel_file = "../data/lights/lights-mapping.xlsx"
-            # excel_maps_sheets = ["maps"]
-            # excel_wide_sheets = None
-            # excel_enums_sheets = ["enums"]
-            # maps_files = []
-            # wide_files = []
-            # enums_files = []
-            # output_dir = f"../data/lights/output"
-            # input_data_dir = f"../data/lights/data"
-            # input_max_rows = None
-            # id_config_file = None
-            # filter_config_file = None
+            # "source_schema": f"../data/lights/lights.yaml",
+            # "target_schema": f"../data/lights/lights_inventory.yaml",
+            # "mapping_excel_file": "../data/lights/lights-mapping.xlsx",
+            # "excel_maps_sheets": ["maps"],
+            # "excel_wide_sheets": None,
+            # "excel_enums_sheets": ["enums"],
+            # "maps_files": [],
+            # "wide_files": [],
+            # "enums_files": [],
+            # "output_dir": f"../data/lights/output",
+            # "input_data_dir": f"../data/lights/data",
+            # "input_max_rows": None,
+            # "id_config_file": None,
+            # "filter_config_file": None,
 
             # ODM v1 to ODM v2
-            # source_schema = "../data/odm_v1/linkml/odm_v1.yaml"
-            # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
-            # mapping_excel_file = "../gen/odm_v1_to_v2/xlsx_mappers_from_yaml/mapping_config.xlsx"
-            # excel_maps_sheets = [
+            # "source_schema": "../data/odm_v1/linkml/odm_v1.yaml",
+            # "target_schema": "../data/odm_v2/linkml/odm_v2.yaml",
+            # "mapping_excel_file": "../gen/odm_v1_to_v2/xlsx_mappers_from_yaml/mapping_config.xlsx",
+            # "excel_maps_sheets":
             #     "measures",
             #     "qualityReports",
             #     "polygons",
@@ -226,50 +294,50 @@ if __name__ == "__main__":
             #     "sites",
             #     "organizations",
             #     "protocols",
-            # ]
-            # excel_wide_sheets = ["wide_protocolSteps"]
-            # excel_enums_sheets = ["enums"]
-            # maps_files = []
-            # wide_files = []
-            # enums_files = []
-            # output_dir = "../gen/odm_v1_to_v2"
-            # input_data_dir = "../../../PHES-ODM-Data/odm_v1_data/centreau_qc/updated"
-            # input_max_rows = 50  # 25
-            # id_config_file = None
-            # filter_config_file = None
-            # source_slot_format_operations = ["alpha_numeric_underscore", "single_underscores", "trim_underscores"]
-            # target_slot_format_operations = ["alpha_numeric_underscore", "single_underscores", "trim_underscores"]
+            # ],
+            # "excel_wide_sheets": ["wide_protocolSteps"],
+            # "excel_enums_sheets": ["enums"],
+            # "maps_files": [],
+            # "wide_files": [],
+            # "enums_files": [],
+            # "output_dir": "../gen/odm_v1_to_v2",
+            # "input_data_dir": "../../../PHES-ODM-Data/odm_v1_data/centreau_qc/updated",
+            # "input_max_rows": 50,  # 25,
+            # "id_config_file": None,
+            # "filter_config_file": None,
+            # "source_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_underscores"],
+            # "target_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_underscores"],
 
             # NWSS to ODM v2
-            # source_schema = f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
-            # target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
-            # mapping_excel_file = (
-            #     "../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx"
-            #     # "../gen/nwss_reporting_to_v2/xlsx_mappers_from_yaml/mapping_config.xlsx"
-            # )
-            # excel_maps_sheets = ["maps"]
-            # # excel_maps_sheets = ["measureSets", "contacts", "samples", "addresses", "polygons", "datasets", "sites", "organizations", "protocols", "instruments"]
-            # excel_wide_sheets = [
+            # "source_schema": f"../data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml",
+            # "target_schema": "../data/odm_v2/linkml/odm_v2.yaml",
+            # "mapping_excel_file": (,
+            #     "../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx",
+            #     # "../gen/nwss_reporting_to_v2/xlsx_mappers_from_yaml/mapping_config.xlsx",
+            # ),
+            # "excel_maps_sheets": ["maps"],
+            # # "excel_maps_sheets": ["measureSets", "contacts", "samples", "addresses", "polygons", "datasets", "sites", "organizations", "protocols", "instruments"],
+            # "excel_wide_sheets": [
             #     "wide_measures",
             #     "wide_protocolRelationships",
             #     "wide_protocolSteps",
             #     "wide_qualityReports",
-            # ]
-            # excel_enums_sheets = ["enums"]
-            # # excel_enums_sheets = []
-            # maps_files = []
-            # wide_files = []
-            # enums_files = []
-            # output_dir = Path(f"../gen/nwss_{dictionary_type}_to_v2")
-            # source_slot_format_operations = ["alpha_numeric_underscore", "single_underscores", "trim_underscores"]
-            # target_slot_format_operations = ["alpha_numeric_underscore", "single_underscores", "trim_underscores"]
-            
+            # ],
+            # "excel_enums_sheets": ["enums"],
+            # # "excel_enums_sheets": [],
+            # "maps_files": [],
+            # "wide_files": [],
+            # "enums_files": [],
+            # "output_dir": Path(f"../gen/nwss_{dictionary_type}_to_v2"),
+            # "source_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_underscores"],
+            # "target_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_underscores"],
+
             # PHA4GE to ODM v2
-            # source_schema = "../data/pha4ge/linkml/pha4ge.yaml"
-            source_schema = "../../../PHES-ODM-Data/PHA4GE/schema-WastewaterSARC-CoV-2.yaml"
-            target_schema = "../data/odm_v2/linkml/odm_v2.yaml"
-            mapping_excel_file = "../data/mapping_config_files/pha4ge_to_odm_v2_mapping.xlsx"
-            excel_maps_sheets = [
+            # "source_schema": "../data/pha4ge/linkml/pha4ge.yaml",
+            "source_schema": "../../../PHES-ODM-Data/PHA4GE/schema-WastewaterSARC-CoV-2.yaml",
+            "target_schema": "../data/odm_v2/linkml/odm_v2.yaml",
+            "mapping_excel_file": "../data/mapping_config_files/pha4ge_to_odm_v2_mapping.xlsx",
+            "excel_maps_sheets": [
                 "maps_OTHER",
                 "maps_sites",
                 "maps_samples",
@@ -284,8 +352,8 @@ if __name__ == "__main__":
                 # "maps_qualityReports",
                 # "maps_protocolSteps",
                 # "maps_protocols",
-            ]
-            excel_wide_sheets = [
+            ],
+            "excel_wide_sheets": [
                 "wide_samples",
                 "wide_sampleRelationships",
                 "wide_repositories",
@@ -295,127 +363,23 @@ if __name__ == "__main__":
 
                 # "wide_protocolSteps",
                 # "wide_protocols",
-            ]
-            excel_enums_sheets = [
+            ],
+            "excel_enums_sheets": [
                 "enums_samples",
                 "enums_measures",
                 "enums_addresses",
-            ]
-            # excel_enums_sheets = []
-            maps_files = []
-            wide_files = []
-            enums_files = []
-            selectors = []
-            output_dir = Path("../gen/pha4ge_to_v2")
-            source_slot_format_operations = [ "lowercase", '{ remove_chars: "-"}', "alpha_numeric_underscore", "single_underscores", "trim_underscores" ]
-            target_slot_format_operations = ["alpha_numeric_underscore", "single_underscores", "trim_underscores"]
+            ],
+            # "excel_enums_sheets": [],
+            "maps_files": [],
+            "wide_files": [],
+            "enums_files": [],
+            "selectors": [],
+            "output_dir": Path("../gen/pha4ge_to_v2"),
+            "source_slot_format_operations": [ "lowercase", '{ remove_chars: "-"}', "alpha_numeric_underscore", "single_underscores", "trim_underscores" ],
+            "target_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_underscores"],
+        }
         # fmt: on
+
+        main(**opts)
     else:
-        args = argparse.ArgumentParser(
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter
-        )
-        args.add_argument(
-            "--source_schema",
-            type=str,
-            help="Location of the source dataset LinkML schema",
-            required=True,
-        )
-        args.add_argument(
-            "--target_schema",
-            type=str,
-            help="Location of the target dataset LinkML schema",
-            required=True,
-        )
-        args.add_argument(
-            "--output_dir",
-            type=str,
-            help="Directory to save all output to, including where the mapper config files are saved. Various sub-directories are created for the different outputs.",
-            required=True,
-        )
-        args.add_argument(
-            "--mapping_excel_file",
-            type=str,
-            help="The Excel mapping file that contains the mapping, wide, and enums configuration sheets (see excel_maps_sheets, excel_wide_sheets, and excel_enums_sheets).",
-            required=False,
-        )
-        args.add_argument(
-            "--excel_maps_sheets",
-            type=str,
-            nargs="+",
-            help="The sheet(s) in the mapping Excel file (mapping_excel_file) that contain the mapping configuration.",
-            required=False,
-        )
-        args.add_argument(
-            "--excel_wide_sheets",
-            type=str,
-            nargs="+",
-            help="The sheet(s) in the mapping Excel file (mapping_excel_file) that contain the wide-column configuration.",
-            required=False,
-        )
-        args.add_argument(
-            "--excel_enums_sheets",
-            type=str,
-            nargs="+",
-            help="The sheet(s) in the mapping Excel file (mapping_excel_file) that contain the enums configuration.",
-            required=False,
-        )
-        args.add_argument(
-            "--maps_files",
-            type=str,
-            nargs="+",
-            help="The file(s) that contain the mapping configuration, in addition to what is already extracted from mapping_excel_file.",
-            required=False,
-        )
-        args.add_argument(
-            "--wide_files",
-            type=str,
-            nargs="+",
-            help="The file(s) that contain the wide-column configuration, in addition to what is already extracted from mapping_excel_file.",
-            required=False,
-        )
-        args.add_argument(
-            "--enums_files",
-            type=str,
-            nargs="+",
-            help="The file(s) that contain the enums configuration, in addition to what is already extracted from mapping_excel_file.",
-            required=False,
-        )
-        args.add_argument(
-            "--selectors",
-            type=str,
-            nargs="+",
-            help="Selectors, to select rows in the mapping config file that has any of these values in the selectors column. If the value in the selectors column is empty then that row is always included.",
-            required=False,
-        )
-        args.add_argument(
-            "--source_slot_format_operations",
-            type=str,
-            nargs="+",
-            help="Formatting operations to apply to all configured slots from the source schema.",
-            required=False,
-        )
-        args.add_argument(
-            "--target_slot_format_operations",
-            type=str,
-            nargs="+",
-            help="Formatting operations to apply to all configured slots from the target schema.",
-            required=False,
-        )
-
-        opts = args.parse_args()
-
-    make_mappers_cli(
-        output_dir=opts.output_dir,
-        mapping_excel_file=opts.mapping_excel_file,
-        excel_maps_sheets=opts.excel_maps_sheets,
-        excel_wide_sheets=opts.excel_wide_sheets,
-        excel_enums_sheets=opts.excel_enums_sheets,
-        maps_files=opts.maps_files,
-        wide_files=opts.wide_files,
-        enums_files=opts.enums_files,
-        source_schema=opts.source_schema,
-        target_schema=opts.target_schema,
-        selectors=opts.selectors,
-        source_slot_format_operations=opts.source_slot_format_operations,
-        target_slot_format_operations=opts.target_slot_format_operations,
-    )
+        app()
