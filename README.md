@@ -32,23 +32,24 @@ pip3 install -r requirements.txt
 
 ## Getting Familiar
 
-Currently both ODM v1 to ODM v2 and NWSS to ODM v2 are partially supported (ie. they are not yet complete). ODM v1 to ODM v2 involves parsing the ODM v2 data dictionary, whereas NWSS to ODM v2 uses a separate mapping configuration file (located at [data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx](data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)). Mapping from ODM v1 to ODM v2 will be switched over to use a mapping configuration file in the near future. Therefore, if you're trying to get familiar with this repo and its code it is best to ignore ODM v1 to ODM v2 (including [src/make_v1_to_v2.py](src/make_v1_to_v2.py) and all code in [src/odm_v2](src/odm_v2)) and look at NWSS to ODM v2 instead. The main entrypoint for NWSS to ODM v2 is [src/make_mappers_cli.py](src/make_mappers_cli.py).
+Currently both ODM v1 to ODM v2 and NWSS to ODM v2 are partially supported (ie. they are not yet complete). ODM v1 to ODM v2 involves parsing the ODM v2 data dictionary, whereas NWSS to ODM v2 uses a separate mapping configuration file (located at [map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx](map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)). Mapping from ODM v1 to ODM v2 will be switched over to use a mapping configuration file in the near future. Therefore, if you're trying to get familiar with this repo and its code it is best to ignore ODM v1 to ODM v2 (including [map_maker/make_v1_to_v2.py](map_maker/make_v1_to_v2.py) and all code in [map_maker/odm_v2](map_maker/odm_v2)) and look at NWSS to ODM v2 instead. The main entrypoint for NWSS to ODM v2 is [map_maker/make_mappers_cli.py](map_maker/make_mappers_cli.py).
 
 ## ODM v1 to ODM v2
 
-Generating the LinkML mapping specification files for mapping between ODM v1 and v2 involves parsing the ODM v2 Data Dictionary to extract all information pertaining to mapping between slots and enumerations. Generating the ODM v1 to ODM v2 LinkML mapping specification files is the only mapping between datasets that does not use [Mapping Files](#mapping-files) and the [General CLI](#general-cli). In the future, ODM v1 to ODM v2 will be switched over to use [Mapping Files](#mapping-files). The script [src/make_v1_to_v2.py](src/make_v1_to_v2.py) will generate all mapping spec (YAML) files to map from ODM v1 to ODM v2. To run the script, execute:
+Generating the LinkML mapping specification files for mapping between ODM v1 and v2 involves parsing the ODM v2 Data Dictionary to extract all information pertaining to mapping between slots and enumerations. Generating the ODM v1 to ODM v2 LinkML mapping specification files is the only mapping between datasets that does not use [Mapping Files](#mapping-files) and the [General CLI](#general-cli). In the future, ODM v1 to ODM v2 will be switched over to use [Mapping Files](#mapping-files). The script [map_maker/make_v1_to_v2.py](map_maker/make_v1_to_v2.py) will generate all mapping spec (YAML) files to map from ODM v1 to ODM v2. To run the script, execute:
 
 ```console
-cd src
-python3 make_v1_to_v2.py --source_schema "../data/odm_v1/linkml/odm_v1.yaml" \
-    --target_schema "../data/odm_v2/linkml/odm_v2.yaml" \
-    --wide_dir "../data/odm_v1/custom_wide" \
-    --output_dir "../gen/odm_v1_to_v2" \
-    --v2_data_dictionary "../data/odm_v2/v2 ODM dictionary.xlsx" \
-    --max_mapping_only
+cd map_maker
+python3 make_v1_to_v2.py \
+    --config data/odm_v1/odm_v1_to_v2_config.yaml \
+    --source-schema data/odm_v1/linkml/odm_v1.yaml \
+    --target-schema data/odm_v2/linkml/odm_v2.yaml \
+    --wide-dir data/odm_v1/custom_wide \
+    --output-dir ../gen/odm_v1_to_v2 \
+    --v2-data-dictionary "data/odm_v2/v2 ODM dictionary.xlsx"
 ```
 
-A separate mapper specification (YAML) file is created for each mapping from a single v1 table to a single v2 table. These are saved at the location specified by `output_dir` on the command-line (`../gen/odm_v1_to_v2`).
+A separate mapper specification (YAML) file is created for each mapping from a single v1 table to a single v2 table. These are saved at the location specified by `output-dir` on the command-line (`../gen/odm_v1_to_v2`).
 
 For more details on the steps performed by this script, see [make_v1_to_v2.md](make_v1_to_v2.md).
 
@@ -63,50 +64,41 @@ In order to generate the LinkML mapping specification files to map from a source
 1. The source LinkML schema
 2. The target LinkML schema
 3. Mapping configuration files (with at least one maps datasheet, and optionally any number of wide or enums datasheets)
-4. Optional data in the source dataset, to perform some actual mappings using the generated mapping specification files
 
-The script for the CLI is at [src/make_mappers_cli.py](src/make_mappers_cli.py). Command-line parameters are listed below (see [NWSS to ODM v2](#nwss-to-odm-v2) for an example):
+The script for the CLI is at [map_maker/make_mappers_cli.py](map_maker/make_mappers_cli.py). Command-line parameters are listed below (see [NWSS to ODM v2](#nwss-to-odm-v2) for an example):
 
-**--source_schema** (Required)  
+**--source-schema** (Required)  
 Required full path to the source dataset LinkML schema.
 
-**--target_schema** (Required)  
+**--target-schema** (Required)  
 Required full path to the target dataset LinkML schema.
 
-**--output_dir** (Required)  
+**--output-dir** (Required)  
 The directory to save all generated output to. Various sub-directories will be created:
 
-- *configs*: Contains all the maps, wide, and enums configuration files, extracted from *mapping_excel_file*, and copied from *maps_files*, *wide_files*, and *enums_files*. These specify all the mappings to perform from the source to target datasets, including basic mappings, enumeration mappings, wide-to-long mappings, etc.
+- *configs*: Contains all the maps, wide, and enums configuration files, extracted from *mapping-excel-file*, and copied from *maps-files*, *wide-files*, and *enums-files*. These specify all the mappings to perform from the source to target datasets, including basic mappings, enumeration mappings, wide-to-long mappings, etc.
 - *mappers*: Contains all generated [LinkML Map](https://github.com/linkml/linkml-map) schemas to perform the mappings from the source to target datasets. These are the main artifacts generated by the script.
-- *cleaned_data*: Contains all input data, from the source dataset, that has been cleaned from *input_data_dir*. Cleaning of data involves doing some minor cleanup, such as correcting capitalization and data types. If *input_data_dir* is specified then mapping will be performed on this cleaned data using the generated LinkML map schemas.
-- *mapped_data*: Contains the mapped data using the generated LinkML Map schemas and the data found in the *cleaned_data* directory.
 
-**--mapping_excel_file** (Optional)  
-The Excel mapping configuration file. This can include multiple maps, wide, and enums configuration sheets, with the sheets specified by the *excel_maps_sheets*, *excel_wide_sheets*, and the *excel_enums_sheets* command-line options. Additional configuration sheets that are available in CSV or TSV format can also be specified with the *maps_files*, *wide_files*, and *enums_files* options. At least one *maps* sheet or file must be specified.
+**--mapping-excel-file** (Optional)  
+The Excel mapping configuration file. This can include multiple maps, wide, and enums configuration sheets, with the sheets specified by the *excel-maps-sheets*, *excel-wide-sheets*, and the *excel-enums-sheets* command-line options. Additional configuration sheets that are available in CSV or TSV format can also be specified with the *maps-files*, *wide-files*, and *enums-files* options. At least one *maps* sheet or file must be specified.
 
-**--excel_maps_sheets** (Optional)  
-If *mapping_excel_file* is specified, then this option is a list of strings specifying the names of the sheets in the Excel file that are maps configuration sheets. Any number of maps sheets can be specified. These will be used in addition to all maps files specified with *maps_files*.
+**--excel-maps-sheets** (Optional)  
+If *mapping-excel-file* is specified, then this option is one or more strings specifying the names of the sheets in the Excel file that are mapping configuration sheets. Any number of maps sheets can be specified, and each specified sheet must be preceded by a *--excel-maps-sheets* flag. These will be used in addition to all maps files specified with *maps-files*.
 
-**--excel_wide_sheets** (Optional)  
-If *mapping_excel_file* is specified, then this option is a list of strings specifying the names of the sheets in the Excel file that are wide configuration sheets. Any number of wide sheets can be specified. These will be used in addition to all wide files specified with *wide_files*.
+**--excel-wide-sheets** (Optional)  
+If *mapping-excel-file* is specified, then this option is one or more strings specifying the names of the sheets in the Excel file that are wide configuration sheets. Any number of wide sheets can be specified, and each specified sheet must be preceded by a *--excel-wide-sheets* flag. These will be used in addition to all wide files specified with *wide-files*.
 
-**--excel_enums_sheets** (Optional)  
-If *mapping_excel_file* is specified, then this option is a list of strings specifying the names of the sheets in the Excel file that are enum configuration sheets. Any number of enum sheets can be specified. These will be used in addition to all enums files specified with *enums_files*.
+**--excel-enums-sheets** (Optional)  
+If *mapping-excel-file* is specified, then this option is one or more strings specifying the names of the sheets in the Excel file that are enum configuration sheets. Any number of enum sheets can be specified, and each specified sheet must be preceded by a *--exce-enums-sheets* flag. These will be used in addition to all enums files specified with *enums-files*.
 
-**--maps_files** (Optional)  
-A list of full paths to any maps configuration files to use, in CSV or TSV format. These will be used in addition to all the maps sheets specified by *mapping_excel_file* and *excel_maps_sheets*.
+**--maps-files** (Optional)  
+One or more full paths to any maps configuration files to use, in CSV or TSV format. Each specified file must be preceded by a *--maps-files* flag. These will be used in addition to all the maps sheets specified by *mapping-excel-file* and *excel-maps-sheets*.
 
-**--wide_files** (Optional)  
-A list of full paths to any wide configuration files to use, in CSV or TSV format. These will be used in addition to all the wide sheets specified by *mapping_excel_file* and *excel_wide_sheets*.
+**--wide-files** (Optional)  
+One or more full paths to any wide configuration files to use, in CSV or TSV format. Each specified file must be preceded by a *--wide-files* flag. These will be used in addition to all the wide sheets specified by *mapping-excel-file* and *excel-wide-sheets*.
 
-**--enums_files** (Optional)  
-A list of full paths to any enums configuration files to use, in CSV or TSV format. These will be used in addition to all the enums sheets specified by *mapping_excel_file* and *excel_enums_sheets*.
-
-**--input_data_dir** (Optional)  
-Optional directory containing data files (CSV or TSV) from the source dataset that we want to transform after generating all the LinkML Map spec files. The file names must be the name of the source class (table) that the file is for, followed by any optional text in square brackets. For example, `SiteMeasure[extra text].csv` should contain the data for the `SiteMeasure` table.
-
-**--input_max_rows** (Optional)  
-If *input_data_dir* is specified, then only transform at most this many rows in the source dataset files. If 0 or not specified then all rows are transformed. Defaults to 0.
+**--enums-files** (Optional)  
+One or more full paths to any enums configuration files to use, in CSV or TSV format. Each specified file must be preceded by a *--enums-files* flag. These will be used in addition to all the enums sheets specified by *mapping-excel-file* and *excel-enums-sheets*.
 
 ## NWSS to ODM v2
 
@@ -115,32 +107,20 @@ Mapping NWSS to ODM follows the instructions found in the section [General CLI](
 To generate the NWSS reporting to ODM v2 mapper specs, execute:
 
 ```console
-cd src
-python3 make_mappers_cli.py --source_schema "../data/nwss_reporting/linkml/nwss_reporting.yaml" \
-    --target_schema "../data/odm_v2/linkml/odm_v2.yaml" \
-    --mapping_excel_file "../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx" \
-    --excel_maps_sheets "maps" \
-    --excel_wide_sheets "wide" \
-    --excel_enums_sheets "enums" \
-    --output_dir "../gen/nwss_reporting_to_v2"
+cd map_maker
+python3 make_mappers_cli.py \
+    --source-schema "data/nwss_reporting/linkml/nwss_reporting.yaml" \
+    --target-schema "data/odm_v2/linkml/odm_v2.yaml" \
+    --mapping-excel-file "data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx" \
+    --excel-maps-sheets maps \
+    --excel-wide-sheets wide_measures \
+    --excel-wide-sheets wide_protocolRelationships \
+    --excel-wide-sheets wide_protocolSteps \
+    --excel-wide-sheets wide_qualityReports \
+    --excel-enums-sheets enums \
+    --output-dir "../gen/nwss_reporting_to_v2"
 ```
 
 ## Mapping Data
 
-Once all the mapping spec (YAML) files are created, data can be mapped from source to target datasets. Data files are required and are not currently included in this repository. However, if you have example data you can follow the instructions in this section. The code for mapping will eventually move to a separate repository.
-
-Using NWSS to ODM v2 as an example, run the following, replacing values as necessary:
-
-```console
-cd src
-python3 map_data.py --source_schema "../data/nwss_reporting/linkml/nwss_reporting.yaml" \
-    --target_schema "../data/odm_v2/linkml/odm_v2.yaml" \
-    --mapper_dir "../gen/nwss_reporting_to_v2/mappers" \
-    --data_dir "path/to/input/data/dir" \
-    --output_dir "../gen/nwss_reporting_to_v2/mapped_data" \
-    --max_processes 1
-```
-
-Using all generated mapping spec (YAML) files in the directory specified by `mapper_dir`, all data files in `data_dir` will be mapped from NWSS to ODM v2, with the results saved in `output_dir`. If the dataset is large, you can try increasing `max_processes` for performance improvements, but for small datasets larger values of `max_processes` may end up being slower.
-
-The data files in `data_dir` should be named after the class or table that the data are for. After the table name, any additional information about the file can be appended in square brackets, which is ignored. For example, NWSS has a single class or table called "nwss", so a data file for NWSS might be called "nwss[my sample data].csv". For ODM v1, data for the "SiteMeasure" table might be called "SiteMeasure.csv" or "SiteMeasure[My Data].csv". CSV, TSV, and TXT files are supported. TSV and TXT files are treated as tab-separated.
+Once all the mapping spec (YAML) files are created, data can be mapped from source to target datasets. To perform these mappings, as well as other operations such as cleaning the data and generating IDs, see the [PHES-ODM-Mapper](https://github.com/Big-Life-Lab/PHES-ODM-Mapper) repo.
