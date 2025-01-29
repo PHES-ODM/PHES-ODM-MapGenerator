@@ -106,6 +106,33 @@ def get_enum_name_with_permissible_value(
     return None
 
 
+def add_ontoid_to_enum_value(
+    schema: SchemaView, enum_name: str, enum_value: str
+) -> str:
+    """Add an ontology ID to an enum value, if an ontology ID is present for that enum value
+    in the schema. For example, an enum value of "degree Celsius (C)" might be changed to
+    "degree Celsius (C) [UO:0000027]".
+
+    Args:
+        schema (SchemaView): The schema the enum value belongs to.
+        enum_name (str): The enumeration name that the enum value belongs to.
+        enum_value (str): The enum value to an ontology ID to, if the ontology ID is present
+            in the schema.
+
+    Returns:
+        str: The enumeration value, possibly with an ontology ID added to it.
+    """
+    if not enum_name:
+        return enum_value
+    enum_defn = schema.get_enum(enum_name)
+    if not enum_defn:
+        return enum_value
+    for permissible_value in enum_defn.permissible_values.keys():
+        if remove_ontology_id(str(permissible_value)) == enum_value:
+            return permissible_value
+    return enum_value
+
+
 def remove_ontology_id(val: str) -> str:
     """Remove an ontology ID from the end of a value. For example, "degree Celsius (C) [UO:0000027]" would
         become "degree Celsius (C)"
