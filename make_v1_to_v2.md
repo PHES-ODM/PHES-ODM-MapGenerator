@@ -1,6 +1,6 @@
 # Generating the ODM v1 to ODM v2 Mapper Specifications
 
-The script [src/make_v1_to_v2.py](src/make_v1_to_v2.py) creates all the LinkML Mapping specifications for mapping from ODM v1 to ODM v2 tables. Each specification file is for a single v1 table to a single v2 table, along with some additional specifications for cases where a v1 table has columns that should be treated as "wide" columns (ie. we do a wide-to-long mappings). The v1 table `AssayMethod` has wide columns.
+The script [map_maker/make_v1_to_v2.py](map_maker/make_v1_to_v2.py) creates all the LinkML Mapping specifications for mapping from ODM v1 to ODM v2 tables. Each specification file is for a single v1 table to a single v2 table, along with some additional specifications for cases where a v1 table has columns that should be treated as "wide" columns (ie. we do a wide-to-long mappings). The v1 table `AssayMethod` has wide columns.
 
 The steps this script performs are detailed below.
 
@@ -18,6 +18,4 @@ The extracted parts sheet requires a bit of extra processing before being used. 
 
 ## make_v2_mappers_from_parts.make_mappers
 
-Using the prepared parts sheet from the previous step, this function will create all Mapper specification files. For each pair of v1 table and v2 table, a separate specification file is created. These specification files can be used from the command line (using the `linkml-tr` command) or from Python code using the LinkML and LinkML Mapper APIs. For an example mapping in Python using the LinkML-Map API, see [src/map_data.py](src/map_data.py)
-
-By specifying the `max_mapping_only` flag, each v1 table only gets mapped to a single v2 table. The v2 table chosen to map to is the one where the mapping would result in copying over the most columns from the v1 table. It's also possible to generate a mapping specification for each v1 table to *every* v2 table. Some of these mappings may be useless, for example if only one column gets copied over. In order to generate these additional mapping specs, pass `max_mapping_only=False` to make_mappers (or exclude the `max_mapping_only` flag from the command-line).
+Using the prepared parts sheet from the previous step, this function will create all Mapper specification files. For each pair of v1 table and v2 table, a separate specification file is created. These specification files can be used from the command line (using the `linkml-tr` command) or from Python code using the LinkML and LinkML Mapper APIs. For an example mapping in Python using the LinkML-Map API, see [map_maker/map_data.py](map_maker/map_data.py)
