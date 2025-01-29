@@ -75,8 +75,8 @@ def main(
     target_schema: Annotated[
         Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
     ],
-    wide_dir: Path = typer.Option(default=None, help=WIDE_DIR_HELP),
-    max_mapping_only: bool = typer.Option(default=False, help=MAX_MAPPING_ONLY_HELP),
+    wide_dir: Annotated[Path, typer.Option(help=WIDE_DIR_HELP)] = None,
+    max_mapping_only: Annotated[bool, typer.Option(help=MAX_MAPPING_ONLY_HELP)] = False,
 ):
     """Make the LinkML mapper configuration (YAML) files required for mapping from ODM v1 to ODM v2.
 
