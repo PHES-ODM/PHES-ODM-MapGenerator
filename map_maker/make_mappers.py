@@ -6,10 +6,10 @@ specify both the mappings between source and target classes, wide-to-long column
 mappings.
 """
 
-import argparse
+import typer
 import pandas as pd
 from pathlib import Path
-from typing import Union, List, Dict, Optional, Any
+from typing import Union, List, Dict, Optional, Any, Annotated
 import os
 import yaml
 import json
@@ -48,6 +48,11 @@ from utils.auto_id import add_auto_ids_to_schema
 
 logger = get_logger(__name__)
 
+app = typer.Typer(
+    pretty_exceptions_show_locals=False,
+    rich_markup_mode="rich",
+)
+
 
 class MakeMappers(object):
     def __init__(
@@ -58,7 +63,6 @@ class MakeMappers(object):
         mapper_dir: Union[str, Path],
         source_schema: Union[str, Path],
         target_schema: Union[str, Path],
-        source_schema_for_mapping: Union[str, Path],
         selectors: Optional[List[str]],
         source_slot_format_operations: Optional[Union[str, List[str]]],
         target_slot_format_operations: Optional[Union[str, List[str]]],
@@ -74,8 +78,6 @@ class MakeMappers(object):
             mapper_dir (Union[str, Path]): Directory to save all the mapping config files to.
             source_schema (Union[str, Path]): Path to the source schema of the mapping.
             target_schema (Union[str, Path]): Path to the target schema of the mapping.
-            source_schema_for_mapping (Union[str, Path]): Path to save the modified source_schema to. This LinkML schema contains additional
-                slots that are meant to contain generated IDs when doing the actual mapping, for linking between tables.
             selectors (Optional[List[str]], optional): For rows in the mapping config file that have a value in the "selectors" column, only use the
                 row if any of these selectors is found. The "selectors" column has a comma-separated list of selector values. A selector
                 value in the data can also be preceded by an exclamation mark, meaning only select the row if the
@@ -86,7 +88,6 @@ class MakeMappers(object):
                 all slot names, found in the configuration file, for the target schema.
         """
         self.mapper_dir = mapper_dir
-        self.source_schema_for_mapping = source_schema_for_mapping
         self.selectors = selectors
         self.source_slot_format_operations = source_slot_format_operations
         self.target_slot_format_operations = target_slot_format_operations
@@ -128,12 +129,6 @@ class MakeMappers(object):
         add_auto_ids_to_schema(self.source_schema, maps_df)
         for wide_df in wide_dfs:
             add_auto_ids_to_schema(self.source_schema, wide_df)
-        logger.info(
-            f"Saving modified source schema for mapping to {self.source_schema_for_mapping}"
-        )
-        self.save_schema_definition(
-            self.source_schema.schema, self.source_schema_for_mapping
-        )
 
         # Extract all enum and class derivations from the maps file and enums files.
         # (maps|enums)_enum_derivations is in the format (maps|enums)_enum_derivations[source_class][target_class] = {enum_derivations}
@@ -1152,37 +1147,99 @@ class MakeMappers(object):
         logger.info(f"LinkML schema saved to '{output_file}'")
 
 
+MAIN_HELP = """Create LinkML-Map schemas."""
+
+MAPS_FILES_HELP = """The mapping config files."""
+
+WIDE_FILES_HELP = """The wide column config files."""
+
+ENUMS_FILES_HELP = """The enumerations config files."""
+
+MAPPER_DIR_HELP = """Directory to save all the mapping config files to."""
+
+SOURCE_SCHEMA_HELP = """Path to the source schema of the mapping."""
+
+TARGET_SCHEMA_HELP = """Path to the target schema of the mapping."""
+
+SELECTORS_HELP = """For rows in the mapping config file that have a value in
+                 the "selectors" column, only use the row if any of these
+                 selectors is found. The "selectors" column has a
+                 comma-separated list of selector values. A selector value in
+                 the data can also be preceded by an exclamation mark, meaning
+                 only select the row if the selector value is NOT specified."""
+
+SOURCE_SLOT_FORMAT_OPERATIONS_HELP = """Formatting options to apply to all slot
+                                     names, found in the configuration file,
+                                     for the source schema."""
+
+TARGET_SLOT_FORMAT_OPERATIONS_HELP = """Formatting options to apply to all slot
+                                     names, found in the configuration file,
+                                     for the target schema."""
+
+
+@app.command(help=MAIN_HELP)
+def main(
+    source_schema: Annotated[
+        Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
+    ],
+    target_schema: Annotated[
+        Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
+    ],
+    mapper_dir: Annotated[Path, typer.Option(show_default=False, help=MAPPER_DIR_HELP)],
+    maps_files: Annotated[
+        List[Path], typer.Option(show_default=False, help=MAPS_FILES_HELP)
+    ],
+    wide_files: Annotated[List[Path], typer.Option(help=WIDE_FILES_HELP)] = None,
+    enums_files: Annotated[List[Path], typer.Option(help=ENUMS_FILES_HELP)] = None,
+    selectors: Annotated[Optional[List[str]], typer.Option(help=SELECTORS_HELP)] = None,
+    source_slot_format_operations: Annotated[
+        Optional[List[str]], typer.Option(help=SOURCE_SLOT_FORMAT_OPERATIONS_HELP)
+    ] = None,
+    target_slot_format_operations: Annotated[
+        Optional[List[str]], typer.Option(help=TARGET_SLOT_FORMAT_OPERATIONS_HELP)
+    ] = None,
+):
+    maker = MakeMappers(
+        maps_files=maps_files,
+        wide_files=wide_files,
+        enums_files=enums_files,
+        mapper_dir=mapper_dir,
+        source_schema=source_schema,
+        target_schema=target_schema,
+        selectors=selectors,
+        source_slot_format_operations=source_slot_format_operations,
+        target_slot_format_operations=target_slot_format_operations,
+    )
+    maker.make_mappers()
+
+    logger.info("Finished!")
+
+
 if __name__ == "__main__":
     if "get_ipython" in globals():
         dictionary_type = "reporting"
 
-        class opts:
-            # maps_files = ["../gen/odm_v1_to_v2/configs/maps0.csv"]
-            # wide_files = []
-            # enums_files = []
-            # mapper_dir = "../gen/odm_v1_to_v2/mappers"
-            # source_schema = "data/odm_v1/linkml/odm_v1.yaml"
-            # target_schema = "data/odm_v2/linkml/odm_v2.yaml"
-            # selectors = []
-            # source_schema_for_mapping = (
-            #     "../gen/odm_v1_to_v2/linkml_for_mapping/odm_v1.yaml"
-            # )
-
-            # maps_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/maps0.csv"]
-            # wide_files = [
+        opts = {
+            # "maps_files": ["../gen/odm_v1_to_v2/configs/maps0.csv"],
+            # "wide_files": [],
+            # "enums_files": [],
+            # "mapper_dir": "../gen/odm_v1_to_v2/mappers",
+            # "source_schema": "data/odm_v1/linkml/odm_v1.yaml",
+            # "target_schema": "data/odm_v2/linkml/odm_v2.yaml",
+            # "selectors": [],
+            # "maps_files": [f"../gen/nwss_{dictionary_type}_to_v2/configs/maps0.csv"],
+            # "wide_files": [
             #     f"../gen/nwss_{dictionary_type}_to_v2/configs/wide0.csv",
             #     f"../gen/nwss_{dictionary_type}_to_v2/configs/wide1.csv",
             #     f"../gen/nwss_{dictionary_type}_to_v2/configs/wide2.csv",
-            # ]
-            # enums_files = [f"../gen/nwss_{dictionary_type}_to_v2/configs/enums0.csv"]
-            # mapper_dir = f"../gen/nwss_{dictionary_type}_to_v2/mappers"
-            # source_schema = (
-            #     f"data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml"
-            # )
-            # target_schema = "data/odm_v2/linkml/odm_v2.yaml"
-            # source_schema_for_mapping = f"../gen/nwss_{dictionary_type}_to_v2/linkml_for_mapping/nwss_{dictionary_type}.yaml"
-
-            maps_files = [
+            # ],
+            # "enums_files": [f"../gen/nwss_{dictionary_type}_to_v2/configs/enums0.csv"],
+            # "mapper_dir": f"../gen/nwss_{dictionary_type}_to_v2/mappers",
+            # "source_schema": (,
+            #     f"data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml",
+            # ),
+            # "target_schema": "data/odm_v2/linkml/odm_v2.yaml",
+            "maps_files": [
                 "../gen/pha4ge_to_v2/configs/maps0.csv",
                 "../gen/pha4ge_to_v2/configs/maps1.csv",
                 "../gen/pha4ge_to_v2/configs/maps2.csv",
@@ -1193,142 +1250,37 @@ if __name__ == "__main__":
                 "../gen/pha4ge_to_v2/configs/maps7.csv",
                 "../gen/pha4ge_to_v2/configs/maps8.csv",
                 "../gen/pha4ge_to_v2/configs/maps9.csv",
-            ]
-            wide_files = [
+            ],
+            "wide_files": [
                 "../gen/pha4ge_to_v2/configs/wide0.csv",
                 "../gen/pha4ge_to_v2/configs/wide1.csv",
                 "../gen/pha4ge_to_v2/configs/wide2.csv",
                 "../gen/pha4ge_to_v2/configs/wide3.csv",
                 "../gen/pha4ge_to_v2/configs/wide4.csv",
                 "../gen/pha4ge_to_v2/configs/wide5.csv",
-            ]
-            enums_files = [
+            ],
+            "enums_files": [
                 "../gen/pha4ge_to_v2/configs/enums0.csv",
                 "../gen/pha4ge_to_v2/configs/enums1.csv",
                 "../gen/pha4ge_to_v2/configs/enums2.csv",
-            ]
-            mapper_dir = "../gen/pha4ge_to_v2/mappers"
-            source_schema = "data/pha4ge/linkml/pha4ge.yaml"
-            target_schema = "data/odm_v2/linkml/odm_v2.yaml"
-            source_schema_for_mapping = (
-                "../gen/pha4ge_to_v2/linkml_for_mapping/pha4ge.yaml"
-            )
-
-            source_slot_format_operations = [
+            ],
+            "mapper_dir": "../gen/pha4ge_to_v2/mappers",
+            "source_schema": "data/pha4ge/linkml/pha4ge.yaml",
+            "target_schema": "data/odm_v2/linkml/odm_v2.yaml",
+            "source_slot_format_operations": [
                 "lowercase",
                 '{ remove_chars: "-"}',
                 "alpha_numeric_underscore",
                 "single_underscores",
                 "trim_underscores",
-            ]
-            target_slot_format_operations = [
+            ],
+            "target_slot_format_operations": [
                 "alpha_numeric_underscore",
                 "single_underscores",
                 "trim_underscores",
-            ]
-
-            selectors = []
+            ],
+            "selectors": [],
+        }
+        main(**opts)
     else:
-        args = argparse.ArgumentParser(
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter
-        )
-        args.add_argument(
-            "--maps_files",
-            type=str,
-            nargs="+",
-            help="The configuration file(s) specifying how to map slots from the source dataset to the target dataset. Can be a CSV or TSV file",
-            required=True,
-        )
-        args.add_argument(
-            "--wide_files",
-            type=str,
-            nargs="+",
-            help="The configuration file(s) specifying any wide columns in the mapping. Can be CSV or TSV files",
-            required=False,
-        )
-        args.add_argument(
-            "--enums_files",
-            type=str,
-            nargs="+",
-            help="The configuration file(s) specifying any enumerations in the mapping. Can be CSV or TSV files",
-            required=False,
-        )
-        args.add_argument(
-            "--mapper_dir",
-            type=str,
-            help="Location to save all mapping config files to",
-            required=True,
-        )
-        args.add_argument(
-            "--source_schema",
-            type=str,
-            help="Location of the source LinkML schema",
-            required=True,
-        )
-        args.add_argument(
-            "--target_schema",
-            type=str,
-            help="Location of the target LinkML schema",
-            required=True,
-        )
-        args.add_argument(
-            "--selectors",
-            type=str,
-            nargs="+",
-            help="Selectors, to select rows in the mapping config file that has any of these values in the selectors column. If the value in the selectors column is empty then that row is always included.",
-            required=False,
-        )
-        args.add_argument(
-            "--source_schema_for_mapping",
-            type=str,
-            help="Location to save the modified source_schema that should be used for mapping. This schema will include additional slots where IDs get generated, for linking between tables in the output, as well as possibly other changes. The resulting schema might be the same as the original.",
-            required=True,
-        )
-        args.add_argument(
-            "--source_slot_format_operations",
-            type=str,
-            nargs="+",
-            help="Formatting operations to apply to all configured slots from the source schema.",
-            required=False,
-        )
-        args.add_argument(
-            "--target_slot_format_operations",
-            type=str,
-            nargs="+",
-            help="Formatting operations to apply to all configured slots from the target schema.",
-            required=False,
-        )
-        opts = args.parse_args()
-
-    logger.info("Running...")
-
-    # @TODO Remove extract_sheets, this is done in make_mappers_cli.py
-    # Extract the required sheets from the NWSS to ODM 2 mapping file
-    # from utils.general_utils import extract_sheets
-
-    # mapping_config_file = "data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx"
-    # configs_dir = f"../gen/nwss_{dictionary_type}_to_v2/configs/"
-    # extract_sheets(
-    #     mapping_config_file,
-    #     ["maps", "wide", "enums"],
-    #     configs_dir,
-    #     output_names=["maps0", "wide0", "enums0"],
-    #     na_values={},
-    #     default_na_values=[""],
-    # )
-
-    maker = MakeMappers(
-        maps_files=opts.maps_files,
-        wide_files=opts.wide_files,
-        enums_files=opts.enums_files,
-        mapper_dir=opts.mapper_dir,
-        source_schema=opts.source_schema,
-        target_schema=opts.target_schema,
-        selectors=opts.selectors,
-        source_schema_for_mapping=opts.source_schema_for_mapping,
-        source_slot_format_operations=opts.source_slot_format_operations,
-        target_slot_format_operations=opts.target_slot_format_operations,
-    )
-    maker.make_mappers()
-
-    logger.info("Finished!")
+        app()
