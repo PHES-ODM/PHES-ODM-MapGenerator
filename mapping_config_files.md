@@ -78,6 +78,7 @@ For the row with `Color` equal to `Orange`, the selectors are
 were specified from the command-line, and either "other" or "other2" was
 specified from the command-line. For example, command-line selectors of
 "agnostic,other,other2" will result in dropping the `Orange` row; command-line
+selectors of "agnostic,other" will result in dropping the row; command-line
 selectors of "other" will result in retaining the row; command-line selectors
 of "other,other2" will result in retaining the row, and command-line selectors
 of "other3,other" will result in retaining the row.
