@@ -11,9 +11,9 @@ import typer
 import pandas as pd
 from typing import Union, List, Any, Optional, Dict, Annotated
 
+from odm_map_maker.utils.logger import get_logger
 from odm_map_maker.utils.general_utils import (
     save_data_frame,
-    get_logger,
     expand_multi_rows,
 )
 from odm_map_maker.odm_v2.v2_mapping import V2MappingColumns, V2MappingVariableLocations
