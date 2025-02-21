@@ -17,7 +17,8 @@ from linkml.validator.plugins.jsonschema_validation_plugin import (
 from linkml_runtime import SchemaView
 from linkml.validator.report import Severity
 
-from odm_map_maker.utils.general_utils import parse_numeric, get_logger
+from odm_map_maker.utils.logger import get_logger
+from odm_map_maker.utils.general_utils import parse_numeric
 from odm_map_maker.utils.schema_utils import get_ranges_of_slot
 
 logger = get_logger(__name__)
@@ -233,10 +234,12 @@ def main(
 if __name__ == "__main__":
     if "get_ipython" in globals():
         opts = {
-            # "schema": "data/nwss_restricted_analytics/linkml/nwss_restricted_analytics.yaml",
-            "schema": "data/nwss_reporting/linkml/nwss_reporting.yaml",
-            "source_class": "nwss",
-            "data_source": "../../../PHES-ODM-Data/nwss/nwss_renamed/nwss[cdc-nwss-restricted-dataset-wastewater-20240730].csv",
+            # "schema": "data/nwss_reporting/linkml/nwss_reporting.yaml",
+            # "source_class": "nwss",
+            # "data_source": "../../../PHES-ODM-Data/nwss/nwss_renamed/nwss[cdc-nwss-restricted-dataset-wastewater-20240730].csv",
+            "schema": "data/pha4ge/linkml/pha4ge.yaml",
+            "source_class": "PHA4GE",
+            "data_source": "../../../PHES-ODM-Data/PHA4GE/WW-SC2_examples_20250108.csv",
             "max_errors": 500,
         }
 
