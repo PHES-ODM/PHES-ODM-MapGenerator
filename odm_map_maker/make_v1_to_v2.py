@@ -15,7 +15,8 @@ import typer
 from odm_map_maker.odm_v2.make_v2_mappers_from_parts import make_mappers
 from odm_map_maker.odm_v2.prepare_parts import prepare_parts
 from odm_map_maker.odm_v2.v2_mapping import V2MappingColumns
-from odm_map_maker.utils.general_utils import clear_dirs, extract_sheets, get_logger
+from odm_map_maker.utils.general_utils import clear_dirs, extract_sheets
+from odm_map_maker.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
