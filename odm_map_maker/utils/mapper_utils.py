@@ -6,10 +6,11 @@ from typing import Dict, List, Union, Any, Optional
 import pandas as pd
 import re
 import yaml
+import ast
 
 from linkml_runtime import SchemaView
 
-from odm_map_maker.utils.general_utils import get_logger
+from odm_map_maker.utils.logger import get_logger
 from odm_map_maker.utils.schema_utils import get_enum_names_for_slot
 
 logger = get_logger(__name__)
@@ -54,6 +55,20 @@ class MappingColumns:
     WIDE_GROUP = "wideGroup"
     WIDE_ROW_NUMBER = "wideRowNumber"
     WIDE_OTHER_SLOTS = "wideOtherSlots"
+
+    # For wide tabs, we can include an optional wideID column which is a way to identify the wide config row
+    # that a mapped row was populated from. An example would be to use a wideID equal to unique integers.
+    # We would know that in the mapped output, if TargetColumns.WIDE_ID is equal to 0 then that row was
+    # populated from row 0 in the wide tab, and similarly if TargetColumns.WIDE_ID is equal to 1 then that
+    # row was populated from row 1 in the wide tab.
+    # WIDE_ID = "wideID"
+
+
+MATCH_COLUMN_PREFIX = "match:"
+TARGET_MATCH_COLUMN_FORMAT = "(__match:{}__)"
+
+# class TargetColumns:
+#     WIDE_ID = "(__wide_id__)"
 
 
 # Additional arguments to pass to pd.read_csv, pd.read_excel, etc for reading in the mapping configuration files.
@@ -200,13 +215,269 @@ def get_variable_reference(
     return cleanup_slot_name(match[1], schema=schema, cleanup_options=format_operations)
 
 
+# def select_required_enum_derivations(
+#     source_class: str,
+#     target_class: str,
+#     class_derivation: Dict,
+#     enum_derivations: List[Dict],
+#     schema: SchemaView,
+#     mirror_missing_enum_derivations: bool = True,
+# ) -> Dict:
+#     """Select all the enumeration derivations required by the specified class derivation.
+#     @TODO: Update this: The parameters and parameter types have changed
+
+#     To select the enum derivations we go through each slot derivation and get the derivation's populated_from field.
+#     The populated_from field is a slot in the source schema for the class, so we extract the slot's definition.
+#     If the slot definition has a range that's an enum, we keep the enum derivation for that range.
+
+#     Args:
+#         class_name (str): The class
+#         class_derivation (Dict): A single class derivation dictionary.
+#         enum_derivations (Dict): All available enum derivations. We will select only the required ones from this.
+#         schema (SchemaView): The source schema.
+#         mirror_missing_enum_derivations (bool): If True, then if a categorical variable is found in class_derivation
+#             that does not have an existing enum derivation, then we create a basic enum derivation where all values
+#             are mirrored (ie. the enum values are copied over unchanged).
+
+#     Returns:
+#         Dict: A dictionary that is the same as enum_derivations but where only the required enum derivations are included.
+#     """
+#     enum_derivations = [e[source_class] for e in enum_derivations if source_class in e] + [e[""] for e in enum_derivations if "" in e]
+#     enum_derivations = [e[target_class] for e in enum_derivations if target_class in e] + [e[""] for e in enum_derivations if "" in e]
+#     class_name = class_derivation["populated_from"]
+#     selected_derivations = {}
+
+#     class_definition = schema.get_class(class_name)
+#     if class_definition is None:
+#         raise ValueError(f"Class {class_name} does not exist!")
+
+#     # Go through all slot derivations and get the populated_from field. If the populated_from field
+#     # is an enumeration in the source schema, then we keep its enum derivation.
+#     for slot_derivation in class_derivation["slot_derivations"].values():
+#         if "populated_from" not in slot_derivation:
+#             continue
+
+#         # Get the source and target slot names for the current slot derivation
+#         source_slot_name = slot_derivation["populated_from"]
+#         target_slot_name = slot_derivation["name"]
+
+#         # Get the enum name for the source slot
+#         enum_names = get_enum_names_for_slot(class_name, source_slot_name, schema)
+#         if enum_names is None:
+#             continue
+
+#         cur_enum_derivations = [e[source_slot_name] for e in enum_derivations if source_slot_name in e] + [e[""] for e in enum_derivations if "" in e]
+#         cur_enum_derivations = [e[target_slot_name] for e in cur_enum_derivations if target_slot_name in e] + [e[""] for e in cur_enum_derivations if "" in e]
+
+#         for enum_name in enum_names:
+#             # Try to get the enum derivation for the enum name. If an enum derivation exists then we keep it.
+#             derivations = []
+#             for d in cur_enum_derivations:
+#                 derivations += [
+#                     k
+#                     for k, v in d.items()
+#                     if v["populated_from"] == enum_name
+#                 ]
+#             if len(derivations) > 1:
+#                 raise RuntimeError(
+#                     f"Found multiple target enum derivations {derivations} populating from the same source enum {enum_name} (from source slot {source_slot_name}). This is not allowed by LinkML Mapper!"
+#                 )
+#             if mirror_missing_enum_derivations and len(derivations) == 0:
+#                 # No enum derivation found, but caller is requesting to create a mirror enum derivation in this case.
+#                 logger.warning(
+#                     f"No enum derivation found for {enum_name} in select_required_enum_derivations, creating a mirrored enum derivation"
+#                 )
+#                 target_enum_name = f"{enum_name}[=mirrored=]"
+#                 selected_derivations[target_enum_name] = {
+#                     "name": target_enum_name,
+#                     "mirror_source": True,
+#                     "populated_from": enum_name,
+#                 }
+#             else:
+#                 for derivation_name in derivations:
+#                     # if enum_name == "AlkalinityMeasurementUnitMenu":
+#                     #     print("!!!!!", cur_enum_derivations)
+#                     # selected_derivations[derivation_name] = cur_enum_derivations[
+#                     #     derivation_name
+#                     # ]
+#                     matching_derivations = [e for e in cur_enum_derivations if derivation_name in e]
+#                     selected_derivations[derivation_name] = matching_derivations[0][derivation_name]
+
+#     return selected_derivations
+
+
+# def select_required_enum_derivations(
+#     source_class: str,
+#     target_class: str,
+#     class_derivation: Dict,
+#     enum_derivations: List[Dict],
+#     schema: SchemaView,
+#     mirror_missing_enum_derivations: bool = True,
+# ) -> Dict:
+#     """Select all the enumeration derivations required by the specified class derivation.
+#     @TODO: Update this: The parameters and parameter types have changed
+
+#     To select the enum derivations we go through each slot derivation and get the derivation's populated_from field.
+#     The populated_from field is a slot in the source schema for the class, so we extract the slot's definition.
+#     If the slot definition has a range that's an enum, we keep the enum derivation for that range.
+
+#     Args:
+#         class_name (str): The class
+#         class_derivation (Dict): A single class derivation dictionary.
+#         enum_derivations (Dict): All available enum derivations. We will select only the required ones from this.
+#         schema (SchemaView): The source schema.
+#         mirror_missing_enum_derivations (bool): If True, then if a categorical variable is found in class_derivation
+#             that does not have an existing enum derivation, then we create a basic enum derivation where all values
+#             are mirrored (ie. the enum values are copied over unchanged).
+
+#     Returns:
+#         Dict: A dictionary that is the same as enum_derivations but where only the required enum derivations are included.
+#     """
+#     enum_derivations = [e[source_class] for e in enum_derivations if source_class in e] + [e[""] for e in enum_derivations if "" in e]
+#     enum_derivations = [e[target_class] for e in enum_derivations if target_class in e] + [e[""] for e in enum_derivations if "" in e]
+#     class_name = class_derivation["populated_from"]
+#     selected_derivations = {}
+
+#     class_definition = schema.get_class(class_name)
+#     if class_definition is None:
+#         raise ValueError(f"Class {class_name} does not exist!")
+
+#     # Go through all slot derivations and get the populated_from field. If the populated_from field
+#     # is an enumeration in the source schema, then we keep its enum derivation.
+#     for slot_derivation in class_derivation["slot_derivations"].values():
+#         if "populated_from" not in slot_derivation:
+#             continue
+
+#         # Get the source and target slot names for the current slot derivation
+#         source_slot_name = slot_derivation["populated_from"]
+#         target_slot_name = slot_derivation["name"]
+
+#         # Get the enum name for the source slot
+#         enum_names = get_enum_names_for_slot(class_name, source_slot_name, schema)
+#         if enum_names is None:
+#             continue
+
+#         cur_enum_derivations = [e[source_slot_name] for e in enum_derivations if source_slot_name in e] + [e[""] for e in enum_derivations if "" in e]
+#         cur_enum_derivations = [e[target_slot_name] for e in cur_enum_derivations if target_slot_name in e] + [e[""] for e in cur_enum_derivations if "" in e]
+
+#         for enum_name in enum_names:
+#             # Try to get the enum derivation for the enum name. If an enum derivation exists then we keep it.
+#             derivations = []
+#             for d in cur_enum_derivations:
+#                 derivations += [
+#                     k
+#                     for k, v in d.items()
+#                     if v["populated_from"] == enum_name
+#                 ]
+#             if len(derivations) > 1:
+#                 raise RuntimeError(
+#                     f"Found multiple target enum derivations {derivations} populating from the same source enum {enum_name} (from source slot {source_slot_name}). This is not allowed by LinkML Mapper!"
+#                 )
+#             if mirror_missing_enum_derivations and len(derivations) == 0:
+#                 # No enum derivation found, but caller is requesting to create a mirror enum derivation in this case.
+#                 logger.warning(
+#                     f"No enum derivation found for {enum_name} in select_required_enum_derivations, creating a mirrored enum derivation"
+#                 )
+#                 target_enum_name = f"{enum_name}[=mirrored=]"
+#                 selected_derivations[target_enum_name] = {
+#                     "name": target_enum_name,
+#                     "mirror_source": True,
+#                     "populated_from": enum_name,
+#                 }
+#             else:
+#                 for derivation_name in derivations:
+#                     # if enum_name == "AlkalinityMeasurementUnitMenu":
+#                     #     print("!!!!!", cur_enum_derivations)
+#                     # selected_derivations[derivation_name] = cur_enum_derivations[
+#                     #     derivation_name
+#                     # ]
+#                     matching_derivations = [e for e in cur_enum_derivations if derivation_name in e]
+#                     selected_derivations[derivation_name] = matching_derivations[0][derivation_name]
+
+#     # Select all the enum derivations for a populated_from that has not been used. This is
+#     # to account for any possibly enumeration mappings that result from expr values, instead of populated_from
+#     # values
+#     existing_populated_from_enums = [e["populated_from"] for e in selected_derivations.values()]
+#     # additional_enum_derivations = list(enum_derivations.values())
+#     # enum_derivations is an array of dictionaries, where the top key of each dictionary is the
+#     # source slot (possibly "" for wildcard) and the second level key is the target slot (possibly "" for wildcard)
+#     # We first get rid of these two upper-level slots, to get an array of dictionaries, where the
+#     # dictionaries have the top-level key as the derivation name.
+#     additional_enum_derivations = [sub_e for e in enum_derivations for sub_e in e.values()]
+#     additional_enum_derivations = [sub_e for e in additional_enum_derivations for sub_e in e.values()]
+#     # Get all the enum derivations where the "populated_from" field does not already exist in selected_derivations
+#     additional_enum_derivations = [{sub_k: sub_e} for e in additional_enum_derivations for sub_k, sub_e in e.items() if sub_e["populated_from"] not in existing_populated_from_enums]
+#     # Add each of the additional_enum_derivations to selected_derivations
+#     # print("****", additional_enum_derivations)
+#     for d in additional_enum_derivations:
+#         for name, deriv in d.items():
+#             if name not in selected_derivations:
+#                 selected_derivations[name] = deriv
+
+#     return selected_derivations
+
+
+def get_used_slots(expr: str, recognized_globals: List[str] = ["emap"]) -> List[str]:
+    """Get all the slots referenced in the Python code specified in expr. Slots are any
+    attributes taken on the global variables in recognized_globals. For example, if
+    recognized_globals is ["enum"], then any attribute of enum is returned. If
+    expr has "enum.collection_device" somewhere in the code, then the returned
+    list will have the value "collection_device" in it.
+
+    Args:
+        expr (str): The code to get the referenced slots from.
+        recognized_globals (List[str], optional): The recognized global variables that
+            we want to get the slots of that are referened in the code. If recognized_globals
+            has "enum", then if "enum.slot_name" is found in expr then "slot_name" will be
+            part of the returned list. Defaults to ["emap"].
+
+    Returns:
+        List[str]: List of slots referenced in the code specified by expr.
+    """
+    used_slots = []
+    s = ast.parse(expr)
+    for i in ast.walk(s):
+        if isinstance(i, ast.Attribute):
+            slots = parse_used_slots(i)
+            if len(slots) >= 2:
+                if slots[0] in recognized_globals:
+                    used_slots += [slots[1]]
+    return list(dict.fromkeys(used_slots))
+
+
+def parse_used_slots(node: ast.Attribute, path: List[str] = []) -> List[str]:
+    """Recursively parse the slots in the attribute node. The returned path will be an array
+    of names/variables that are used to make up the whole attribute. For example, for the attribute
+    "enum.collection_device", the returned path will be ["enum", "collection_device"].
+
+    Args:
+        i (ast.Attribute): The attribute node to recursively parse.
+        path (List[str], optional): The current path of the attribute that gets passed in recursively.
+            Defaults to [].
+
+    Returns:
+        List[str]: The slots associated with the attribute.
+    """
+    attr = node.attr
+    v = node.value
+    if isinstance(v, ast.Attribute):
+        path = [attr] + path
+        path = parse_used_slots(v, path)
+    elif isinstance(v, ast.Name):
+        path = [v.id, attr] + path
+    return path
+
+
 def select_required_enum_derivations(
+    source_class: str,
+    target_class: str,
     class_derivation: Dict,
-    enum_derivations: Dict,
+    enum_derivations: List[Dict],
     schema: SchemaView,
     mirror_missing_enum_derivations: bool = True,
 ) -> Dict:
     """Select all the enumeration derivations required by the specified class derivation.
+    @TODO: Update this: The parameters and parameter types have changed
 
     To select the enum derivations we go through each slot derivation and get the derivation's populated_from field.
     The populated_from field is a slot in the source schema for the class, so we extract the slot's definition.
@@ -224,6 +495,12 @@ def select_required_enum_derivations(
     Returns:
         Dict: A dictionary that is the same as enum_derivations but where only the required enum derivations are included.
     """
+    enum_derivations = [
+        e[source_class] for e in enum_derivations if source_class in e
+    ] + [e[""] for e in enum_derivations if "" in e]
+    enum_derivations = [
+        e[target_class] for e in enum_derivations if target_class in e
+    ] + [e[""] for e in enum_derivations if "" in e]
     class_name = class_derivation["populated_from"]
     selected_derivations = {}
 
@@ -234,41 +511,89 @@ def select_required_enum_derivations(
     # Go through all slot derivations and get the populated_from field. If the populated_from field
     # is an enumeration in the source schema, then we keep its enum derivation.
     for slot_derivation in class_derivation["slot_derivations"].values():
-        if "populated_from" not in slot_derivation:
-            continue
-        source_slot_name = slot_derivation["populated_from"]
-
-        # Get the enum name for the slot
-        enum_names = get_enum_names_for_slot(class_name, source_slot_name, schema)
-        if enum_names is None:
+        if "populated_from" not in slot_derivation and "expr" not in slot_derivation:
             continue
 
-        for enum_name in enum_names:
-            # Try to get the enum derivation for the enum name. If an enum derivation exists then we keep it.
-            derivations = [
-                k
-                for k, v in enum_derivations.items()
-                if v["populated_from"] == enum_name
-            ]
-            if len(derivations) > 1:
-                raise RuntimeError(
-                    f"Found multiple target enum derivations {derivations} populating from the same source enum {enum_name} (from source slot {source_slot_name}). This is not allowed by LinkML Mapper!"
-                )
-            if mirror_missing_enum_derivations and len(derivations) == 0:
-                logger.warning(
-                    f"No enum derivation found for {enum_name} in select_required_enum_derivations, creating a mirrored enum derivation"
-                )
-                target_enum_name = f"{enum_name}[=mirrored=]"
-                selected_derivations[target_enum_name] = {
-                    "name": target_enum_name,
-                    "mirror_source": True,
-                    "populated_from": enum_name,
-                }
-            else:
-                for derivation_name in derivations:
-                    selected_derivations[derivation_name] = enum_derivations[
-                        derivation_name
+        # Get the source and target slot names for the current slot derivation
+        if expr := slot_derivation.get("expr", None):
+            # The slot derivation uses an expr. We look for all slot names that are preceded by "emap." in the
+            # expr code. These will give us the slot names that are used and that need to be transformed as
+            # an enumeration
+            source_slot_names = get_used_slots(expr, recognized_globals=["emap"])
+        else:
+            source_slot_names = [slot_derivation["populated_from"]]
+        target_slot_name = slot_derivation["name"]
+
+        for source_slot_name in source_slot_names:
+            # Get the enum name for the source slot
+            enum_names = get_enum_names_for_slot(class_name, source_slot_name, schema)
+            if enum_names is None:
+                continue
+
+            cur_enum_derivations = [
+                e[source_slot_name] for e in enum_derivations if source_slot_name in e
+            ] + [e[""] for e in enum_derivations if "" in e]
+            cur_enum_derivations = [
+                e[target_slot_name]
+                for e in cur_enum_derivations
+                if target_slot_name in e
+            ] + [e[""] for e in cur_enum_derivations if "" in e]
+
+            for enum_name in enum_names:
+                # Try to get the enum derivation for the enum name. If an enum derivation exists then we keep it.
+                derivations = []
+                for d in cur_enum_derivations:
+                    derivations += [
+                        k for k, v in d.items() if v["populated_from"] == enum_name
                     ]
+                if len(derivations) > 1:
+                    raise RuntimeError(
+                        f"Found multiple target enum derivations {derivations} populating from the same source enum {enum_name} (from source slot {source_slot_name}). This is not allowed by LinkML Mapper!"
+                    )
+                if mirror_missing_enum_derivations and len(derivations) == 0:
+                    # No enum derivation found, but caller is requesting to create a mirror enum derivation in this case.
+                    logger.warning(
+                        f"No enum derivation found for {enum_name} in select_required_enum_derivations, creating a mirrored enum derivation"
+                    )
+                    target_enum_name = f"{enum_name}[=mirrored=]"
+                    selected_derivations[target_enum_name] = {
+                        "name": target_enum_name,
+                        "mirror_source": True,
+                        "populated_from": enum_name,
+                    }
+                else:
+                    for derivation_name in derivations:
+                        # if enum_name == "AlkalinityMeasurementUnitMenu":
+                        #     print("!!!!!", cur_enum_derivations)
+                        # selected_derivations[derivation_name] = cur_enum_derivations[
+                        #     derivation_name
+                        # ]
+                        matching_derivations = [
+                            e for e in cur_enum_derivations if derivation_name in e
+                        ]
+                        selected_derivations[derivation_name] = matching_derivations[0][
+                            derivation_name
+                        ]
+
+    # # Select all the enum derivations for a populated_from that has not been used. This is
+    # # to account for any possibly enumeration mappings that result from expr values, instead of populated_from
+    # # values
+    # existing_populated_from_enums = [e["populated_from"] for e in selected_derivations.values()]
+    # # additional_enum_derivations = list(enum_derivations.values())
+    # # enum_derivations is an array of dictionaries, where the top key of each dictionary is the
+    # # source slot (possibly "" for wildcard) and the second level key is the target slot (possibly "" for wildcard)
+    # # We first get rid of these two upper-level slots, to get an array of dictionaries, where the
+    # # dictionaries have the top-level key as the derivation name.
+    # additional_enum_derivations = [sub_e for e in enum_derivations for sub_e in e.values()]
+    # additional_enum_derivations = [sub_e for e in additional_enum_derivations for sub_e in e.values()]
+    # # Get all the enum derivations where the "populated_from" field does not already exist in selected_derivations
+    # additional_enum_derivations = [{sub_k: sub_e} for e in additional_enum_derivations for sub_k, sub_e in e.items() if sub_e["populated_from"] not in existing_populated_from_enums]
+    # # Add each of the additional_enum_derivations to selected_derivations
+    # # print("****", additional_enum_derivations)
+    # for d in additional_enum_derivations:
+    #     for name, deriv in d.items():
+    #         if name not in selected_derivations:
+    #             selected_derivations[name] = deriv
 
     return selected_derivations
 
