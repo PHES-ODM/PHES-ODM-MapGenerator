@@ -14,6 +14,7 @@ classes:
     tree_root: True
     slot_usage:
       PHA4GE:
+        title: PHA4GE
         multivalued: True
         range: PHA4GE
         inlined_as_list: True
@@ -888,6 +889,7 @@ classes:
         rank: 209
         slot_group: Pathogen diagnostic testing
 slots:
+  PHA4GE:
   specimen_collector_sample_id:
     name: specimen_collector_sample_id
     title: specimen collector sample ID
