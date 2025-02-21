@@ -11,13 +11,13 @@ import pandas as pd
 
 from linkml_runtime import SchemaView
 
+from odm_map_maker.utils.logger import get_logger
 from odm_map_maker.utils.general_utils import (
     get_class_name_from_file_name,
     TREE_ROOT_CLASS_NAME,
 )
 from odm_map_maker.utils.mapper_utils import (
     MappingColumns,
-    get_logger,
     get_variable_reference,
 )
 
