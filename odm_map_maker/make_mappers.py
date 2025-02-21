@@ -19,10 +19,10 @@ from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model.meta import SchemaDefinition
 from linkml_runtime.utils.schema_as_dict import schema_as_dict
 
+from odm_map_maker.utils.logger import get_logger
 from odm_map_maker.utils.general_utils import (
     read_data_frame,
     strip_whitespace,
-    get_logger,
     order_columns,
     EMPTY_PERMISSIBLE_VALUE,
     TREE_ROOT_CLASS_NAME,
@@ -36,6 +36,8 @@ from odm_map_maker.utils.mapper_utils import (
     select_required_enum_derivations,
     expand_wide_derivations,
     get_variable_reference,
+    MATCH_COLUMN_PREFIX,
+    TARGET_MATCH_COLUMN_FORMAT,
     MappingColumns,
     is_wide_target_value_slot,
     is_wide_target_expr_slot,
@@ -43,6 +45,7 @@ from odm_map_maker.utils.mapper_utils import (
     get_blank_class_derivation,
     cleanup_slot_name,
     CONFIG_READ_KWARGS,
+    WIDE_SPEC_VALUE_SUFFIX,
 )
 from odm_map_maker.utils.auto_id import add_auto_ids_to_schema
 
@@ -188,14 +191,11 @@ class MakeMappers(object):
                     and r["source_class"] == source_class_name
                 ]
                 if len(wide_results) == 0:
-                    cur_enum_derivations = self.get_class_enum_derivations(
+                    enum_derivations = select_required_enum_derivations(
                         source_class_name,
                         target_class_name,
-                        [enums_enum_derivations, maps_enum_derivations],
-                    )
-                    enum_derivations = select_required_enum_derivations(
                         target_class_derivation,
-                        cur_enum_derivations,
+                        [enums_enum_derivations, maps_enum_derivations],
                         schema=self.source_schema,
                     )
                     results.append(
@@ -361,8 +361,9 @@ class MakeMappers(object):
 
     def extract_enum_derivations(
         self, maps_df: pd.DataFrame
-    ) -> Dict[str, Dict[str, Dict]]:
+    ) -> Dict[str, Dict[str, Dict[str, Dict[str, Dict]]]]:
         """Extract all enum derivations found within the mapping DataFrame.
+        @TODO: Update the docstring, the return type has changed.
 
         Args:
             maps_df (pd.DataFrame): The mapping DataFrame that contains the information for mapping from the
@@ -373,9 +374,9 @@ class MakeMappers(object):
             ValueError: _description_
 
         Returns:
-            Dict[str, Dict[str, Dict]]: A dictionary where in the form
-                return_value[source_class_name][target_class_name] = { all_derivations }. The items
-                at return_value[""][""] have no source class and target class name specified.
+            Dict[str, Dict[str, Dict]]: A dictionary in the form
+                return_value[source_class_name][target_class_name][source_slot_name][target_slot_name] = { all_derivations }. The items
+                at return_value[""][""] have no source class and target class name specified
                 Example:
                         {
                             "nwss" : {
@@ -447,7 +448,6 @@ class MakeMappers(object):
                 target_enum_value = ""
 
             # Get source enumeration name (if empty) based on the source class and slot
-            # orig_source_enum_value = source_enum_value
             if not source_enum_name:
                 # Get the source enum name based on the range of the slot (there might be multiple enums for the range)
                 source_enum_names = get_enum_names_for_slot(
@@ -488,7 +488,7 @@ class MakeMappers(object):
                     if not target_enum_name:
                         target_enum_name = target_enum_names[0]
                         logger.error(
-                            f"No target enumeration found for {target_class=}, {target_slot=} from slot range(s) {target_enum_names=} that has a permissible value {target_enum_value=} ({source_class=}, {source_slot=}). Using target enumeration name '{target_enum_name}'"
+                            f"No target enumeration found for {target_class=}, {target_slot=} from slot range(s) {target_enum_names=} that has a permissible value {target_enum_value=} ({source_class=}, {source_slot=}). Using target enumeration name '{target_enum_name}' (candidate enumerations: {target_enum_names})"
                         )
                         # raise ValueError(
                         #     f"No target enumeration found for {target_class=}, {target_slot=} from slot range(s) {target_enum_names=} that has a permissible value {target_enum_value=} ({source_class=}, {source_slot=})"
@@ -517,13 +517,19 @@ class MakeMappers(object):
                 self.target_schema, target_enum_name, target_enum_value
             )
 
-            # Get the enum derivations dictionary for the current source_class and target_class
+            # Get the enum derivations dictionary for the current source_class and target_class and source_enum_name
             if source_class not in all_enum_derivations:
                 all_enum_derivations[source_class] = {}
             source_enum_derivations = all_enum_derivations[source_class]
             if target_class not in source_enum_derivations:
                 source_enum_derivations[target_class] = {}
-            cur_enum_derivations = source_enum_derivations[target_class]
+            target_enum_derivations = source_enum_derivations[target_class]
+            if source_slot not in target_enum_derivations:
+                target_enum_derivations[source_slot] = {}
+            source_slot_enum_derivations = target_enum_derivations[source_slot]
+            if target_slot not in source_slot_enum_derivations:
+                source_slot_enum_derivations[target_slot] = {}
+            cur_enum_derivations = source_slot_enum_derivations[target_slot]
 
             # Add the current enum derivation if missing, we'll add the permissible value derivations later
             if target_enum_name not in cur_enum_derivations:
@@ -927,8 +933,19 @@ class MakeMappers(object):
         source_class_name = class_derivation["populated_from"]
         target_class_name = class_derivation["name"]
 
-        # filt = (custom_wide_df[MappingColumns.SOURCE_CLASS] == source_class_name) & (custom_wide_df[MappingColumns.TARGET_CLASS] == target_class_name)
-        # custom_wide_df = custom_wide_df[filt].copy()
+        # Get all the match: columns, and make sure we copy these columns from
+        # the source to target dataset (when mapping). They become tracking columns
+        match_columns = [
+            c for c in custom_wide_df.columns if c.startswith(MATCH_COLUMN_PREFIX)
+        ]
+        if len(match_columns) > 0:
+            columns = list(custom_wide_df.columns)
+            for col in match_columns:
+                idx = list(custom_wide_df.columns).index(col)
+                col = col[len(MATCH_COLUMN_PREFIX) :]
+                col = TARGET_MATCH_COLUMN_FORMAT.format(col)
+                columns[idx] = f"{col}{WIDE_SPEC_VALUE_SUFFIX}"
+            custom_wide_df.columns = columns
 
         results = []
         # for idx, (_, group_df) in enumerate(custom_wide_df.groupby([MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.TARGET_CLASS, MappingColumns.WIDE_GROUP])):
@@ -1020,11 +1037,10 @@ class MakeMappers(object):
         # Add the enum derivations for each of the expanded class derivations
         cur_enum_derivations = list(class_enum_derivations)
         cur_enum_derivations.append(group_enum_derivations)
-        cur_enum_derivations = self.get_class_enum_derivations(
-            source_class, target_class, cur_enum_derivations
-        )
         for results_dict in cur_results:
             results_enum_derivations = select_required_enum_derivations(
+                source_class,
+                target_class,
                 results_dict["class_derivation"],
                 cur_enum_derivations,
                 schema=self.source_schema,
