@@ -19,9 +19,9 @@ import typer
 
 from linkml_runtime import SchemaView
 
+from odm_map_maker.utils.logger import get_logger
 from odm_map_maker.utils.general_utils import (
     read_data_frame,
-    get_logger,
     TREE_ROOT_CLASS_NAME,
     get_class_name_from_file_name,
 )
@@ -166,7 +166,18 @@ def make_mappers(
             V2MappingColumns.SOURCE_ENUM_NAME,
         ].unique()
     )
-    enum_derivations = {}
+
+    # Format of enum_derivations is enum_derivations[source_class][target_class][source_slot][target_slot] = derivations
+    # We apply the enum derivations to the matching source class/slot and target class/slot. If any of the
+    # keys are empty ("") then it will match any class/slot. For v1 to v2, we use wildcard values for
+    # all classes/slots. The actual derivations are:
+    #     target_enum_name:
+    #         name: target_enum_name
+    #         mirror_source: false
+    #         populated_from: source_enum_name
+    #         permissible_value_derivations:
+    #           ...
+    enum_derivations = {"": {"": {"": {"": {}}}}}
     # Create the derivations for each source enumeration to map to a v2 enumeration
     for source_enum_name in all_source_enums:
         cur_derivations = make_enum_derivations(df, source_enum_name)
@@ -181,7 +192,7 @@ def make_mappers(
                 f"v2 enum names {names_intersection} already exists in the enum derivations when creating the derivation for {source_enum_name}"
             )
 
-        enum_derivations.update(cur_derivations)
+        enum_derivations[""][""][""][""].update(cur_derivations)
 
     logger.info("Making class derivations...")
     # Get all known source table names from the parts list
@@ -541,7 +552,11 @@ def save_all_mappers(
             # Get all the enumeration derivations required by the current class derivation (ie. any enum present in
             # a "populated_from" field of a slot derivation)
             cur_enum_derivations = select_required_enum_derivations(
-                cur_derivation, enum_derivations, schema=schema
+                source_class,
+                target_class,
+                cur_derivation,
+                [enum_derivations],
+                schema=schema,
             )
 
             # Create the mapper spec for the mapping from source_class to target_class (v2).
