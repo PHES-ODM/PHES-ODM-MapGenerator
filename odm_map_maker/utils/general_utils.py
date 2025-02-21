@@ -2,7 +2,6 @@
 Utility functions for ODM and LinkML.
 """
 
-import sys
 import os
 from pathlib import Path
 import pandas as pd
@@ -10,10 +9,13 @@ from pandas._libs.parsers import STR_NA_VALUES
 import yaml
 import inspect
 from typing import Union, List, Optional, Any, Dict, Callable
-import logging
 import re
 
 from linkml_runtime import SchemaView
+
+from odm_map_maker.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 EMPTY_PERMISSIBLE_VALUE = "<empty>"
 
@@ -21,37 +23,6 @@ EMPTY_PERMISSIBLE_VALUE = "<empty>"
 TREE_ROOT_CLASS_NAME = "Container"
 
 RECOGNIZED_EXTENSIONS = [".tsv", ".txt", ".csv", ".yaml", ".yml"]
-
-
-def get_logger(name: str, level: Optional[str] = logging.INFO) -> logging.Logger:
-    """Get the logger with the specified name, setting is configuration as well as output format.
-    The name can be any arbitrary string. For example:
-
-        logger = get_logger(__name__)
-
-    Args:
-        name (str): The name to give to the logger. This can be any arbitrary string and is
-            typically the name of the caller.
-        level (Optional[str], optional): The logging level of the logger. Defaults to logging.INFO.
-
-    Returns:
-        logging.Logger: The logging object.
-    """
-    handlers = [logging.StreamHandler(sys.stdout)]
-    logging.basicConfig(
-        handlers=handlers,
-        format="%(levelname)s %(asctime)s %(filename)s:%(lineno)d: %(message)s",
-        level=level,
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-    logger = logging.getLogger(name)
-    if level:
-        logger.setLevel(level)
-    return logger
-
-
-logger = get_logger(__name__)
 
 
 def order_columns(df: pd.DataFrame, column_order: List[str]) -> pd.DataFrame:

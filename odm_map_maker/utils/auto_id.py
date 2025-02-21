@@ -14,7 +14,8 @@ import re
 from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model.meta import SlotDefinition
 
-from odm_map_maker.utils.general_utils import get_logger, read_data_frame
+from odm_map_maker.utils.logger import get_logger
+from odm_map_maker.utils.general_utils import read_data_frame
 from odm_map_maker.utils.mapper_utils import (
     get_variable_reference,
     MappingColumns,
