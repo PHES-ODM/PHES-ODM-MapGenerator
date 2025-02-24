@@ -36,8 +36,6 @@ from odm_map_maker.utils.mapper_utils import (
     select_required_enum_derivations,
     expand_wide_derivations,
     get_variable_reference,
-    MATCH_COLUMN_PREFIX,
-    TARGET_MATCH_COLUMN_FORMAT,
     MappingColumns,
     is_wide_target_value_slot,
     is_wide_target_expr_slot,
@@ -45,7 +43,6 @@ from odm_map_maker.utils.mapper_utils import (
     get_blank_class_derivation,
     cleanup_slot_name,
     CONFIG_READ_KWARGS,
-    WIDE_SPEC_VALUE_SUFFIX,
 )
 from odm_map_maker.utils.auto_id import add_auto_ids_to_schema
 
@@ -932,20 +929,6 @@ class MakeMappers(object):
         """
         source_class_name = class_derivation["populated_from"]
         target_class_name = class_derivation["name"]
-
-        # Get all the match: columns, and make sure we copy these columns from
-        # the source to target dataset (when mapping). They become tracking columns
-        match_columns = [
-            c for c in custom_wide_df.columns if c.startswith(MATCH_COLUMN_PREFIX)
-        ]
-        if len(match_columns) > 0:
-            columns = list(custom_wide_df.columns)
-            for col in match_columns:
-                idx = list(custom_wide_df.columns).index(col)
-                col = col[len(MATCH_COLUMN_PREFIX) :]
-                col = TARGET_MATCH_COLUMN_FORMAT.format(col)
-                columns[idx] = f"{col}{WIDE_SPEC_VALUE_SUFFIX}"
-            custom_wide_df.columns = columns
 
         results = []
         # for idx, (_, group_df) in enumerate(custom_wide_df.groupby([MappingColumns.SOURCE_CLASS, MappingColumns.SOURCE_SLOT, MappingColumns.TARGET_CLASS, MappingColumns.WIDE_GROUP])):

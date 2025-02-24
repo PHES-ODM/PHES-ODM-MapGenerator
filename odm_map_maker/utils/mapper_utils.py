@@ -56,20 +56,9 @@ class MappingColumns:
     WIDE_ROW_NUMBER = "wideRowNumber"
     WIDE_OTHER_SLOTS = "wideOtherSlots"
 
-    # For wide tabs, we can include an optional wideID column which is a way to identify the wide config row
-    # that a mapped row was populated from. An example would be to use a wideID equal to unique integers.
-    # We would know that in the mapped output, if TargetColumns.WIDE_ID is equal to 0 then that row was
-    # populated from row 0 in the wide tab, and similarly if TargetColumns.WIDE_ID is equal to 1 then that
-    # row was populated from row 1 in the wide tab.
-    # WIDE_ID = "wideID"
 
-
-MATCH_COLUMN_PREFIX = "match:"
-TARGET_MATCH_COLUMN_FORMAT = "(__match:{}__)"
-
-# class TargetColumns:
-#     WIDE_ID = "(__wide_id__)"
-
+EXTRA_COLUMN_PREFIX = "_extra_"
+EXTRA_COLUMN_SUFFIX = ""
 
 # Additional arguments to pass to pd.read_csv, pd.read_excel, etc for reading in the mapping configuration files.
 CONFIG_READ_KWARGS = {
@@ -551,9 +540,8 @@ def format_slot_name(val: str, format_options: Union[str, List[str]]) -> str:
     if not isinstance(val, str):
         return val
 
-    if val.startswith(MATCH_COLUMN_PREFIX):
-        val = val[len(MATCH_COLUMN_PREFIX) :]
-        return TARGET_MATCH_COLUMN_FORMAT.format(val)
+    if val.startswith(EXTRA_COLUMN_PREFIX) and val.endswith(EXTRA_COLUMN_SUFFIX):
+        return val
 
     for options in format_options:
         if isinstance(options, str):
@@ -579,6 +567,7 @@ def format_slot_name(val: str, format_options: Union[str, List[str]]) -> str:
                     val = val.replace(ch, "")
             if option == "remove_special":
                 val = re.sub(r"[^A-Za-z0-9\s]", "", val)
+
     return val
 
 
