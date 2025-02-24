@@ -118,9 +118,11 @@ def wide_slot_name(name: str, suffix: str) -> Optional[str]:
 
 
 def any_wide_slot_name(name: str) -> Optional[str]:
-    """Get the slot that the special wide column name refers to. This removes any recognized special wide slot name suffix
+    """Get the slot that the wide column name refers to. This removes any recognized wide slot name suffix
     from the specified column name. This includes _value and _expr suffixes. If no recognized suffix is present then None
     is returned.
+
+    For example, "sampleID_value" will return "sampleID", and "measure_expr" will return "measure.
 
     Args:
         name (str): The column name to remove the suffix from.
@@ -149,20 +151,6 @@ def is_wide_target_value_slot(name: Any) -> bool:
         bool: True of the column name ends in the _value suffix, False otherwise.
     """
     return is_wide_slot(name, WIDE_SPEC_VALUE_SUFFIX)
-
-
-def wide_target_value_slot_name(name: str) -> Optional[str]:
-    """Remove the _value suffix from the specified special wide column name. Returns
-    None if it does not end with the _value suffix.
-
-    Args:
-        name (str): The column name to remove the suffix from.
-
-    Returns:
-        Optional[str]: The column name with the _value suffix removed, or None if it does
-            not end in the _value suffix.
-    """
-    return wide_slot_name(name, WIDE_SPEC_VALUE_SUFFIX)
 
 
 def is_wide_target_expr_slot(name: Any) -> bool:
@@ -562,6 +550,10 @@ def format_slot_name(val: str, format_options: Union[str, List[str]]) -> str:
     """
     if not isinstance(val, str):
         return val
+
+    if val.startswith(MATCH_COLUMN_PREFIX):
+        val = val[len(MATCH_COLUMN_PREFIX) :]
+        return TARGET_MATCH_COLUMN_FORMAT.format(val)
 
     for options in format_options:
         if isinstance(options, str):
