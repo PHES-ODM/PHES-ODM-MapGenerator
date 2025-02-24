@@ -17,7 +17,7 @@ from odm_map_maker.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-EMPTY_PERMISSIBLE_VALUE = "<empty>"
+EMPTY_CONFIG_VALUE = "<empty>"
 
 # Name of the tree root Container class that contains all the tables in a LinkML schema
 TREE_ROOT_CLASS_NAME = "Container"

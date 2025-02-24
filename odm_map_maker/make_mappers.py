@@ -24,7 +24,7 @@ from odm_map_maker.utils.general_utils import (
     read_data_frame,
     strip_whitespace,
     order_columns,
-    EMPTY_PERMISSIBLE_VALUE,
+    EMPTY_CONFIG_VALUE,
     TREE_ROOT_CLASS_NAME,
 )
 from odm_map_maker.utils.schema_utils import (
@@ -441,10 +441,10 @@ class MakeMappers(object):
             if source_enum_value == "" and target_enum_value == "":
                 continue
 
-            # Replace EMPTY_PERMISSIBLE_VALUE with ""
-            if source_enum_value == EMPTY_PERMISSIBLE_VALUE:
+            # Replace EMPTY_CONFIG_VALUE with ""
+            if source_enum_value == EMPTY_CONFIG_VALUE:
                 source_enum_value = ""
-            if target_enum_value == EMPTY_PERMISSIBLE_VALUE:
+            if target_enum_value == EMPTY_CONFIG_VALUE:
                 target_enum_value = ""
 
             # Get source enumeration name (if empty) based on the source class and slot
@@ -991,6 +991,16 @@ class MakeMappers(object):
             value_name=MappingColumns.TARGET_VALUE,
             ignore_index=False,
         )
+        # Drop the _value rows that have an empty value
+        wide_target_df = wide_target_df[
+            ~pd.isna(wide_target_df[MappingColumns.TARGET_VALUE])
+            | (wide_target_df[MappingColumns.TARGET_VALUE] == "")
+        ]
+        # Replace <empty> with blank string
+        wide_target_df[MappingColumns.TARGET_VALUE] = wide_target_df[
+            MappingColumns.TARGET_VALUE
+        ].map(lambda x: "" if x == EMPTY_CONFIG_VALUE else x)
+
         wide_expr_columns = [
             c for c in custom_wide_df.columns if is_wide_target_expr_slot(c)
         ]
@@ -1002,7 +1012,7 @@ class MakeMappers(object):
             ignore_index=False,
         )
 
-        # Drop expr rows that have an empty expression
+        # Drop _expr rows that have an empty expression
         wide_expr_df = wide_expr_df[
             ~pd.isna(wide_expr_df[MappingColumns.TARGET_EXPR])
             | (wide_expr_df[MappingColumns.TARGET_EXPR] == "")
