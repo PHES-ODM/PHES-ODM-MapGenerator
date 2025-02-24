@@ -232,11 +232,17 @@ Any column in the `wide` tab that ends with the string `_value` specifies a
 column in the target class that we want to set a value for. The actual column
 name we set is determined by removing the `_value` suffix. For example, a
 column named `measure_value` will result in a value in the output row being set
-for the column `measure`. These values can be constant values or optionally a
-string in the form `{{slotName}}` where `slotName` is the name of a slot in the
-source class to copy the value from. Note that if `slotName` is an enumeration
-then any enumeration mappings will also be performed when copying from
-`slotName`.
+for the column `measure`. These values can be constant values (eg. 'myvalue',
+5, etc) or optionally a string in the form `{{slotName}}` where `slotName` is
+the name of a slot in the source class to copy the value from. Note that if
+`slotName` is an enumeration then any enumeration mappings will also be
+performed when copying from `slotName`.
+
+If a `_value` column has a blank value then it is ignored for that row. Because
+it is ignored it will not overwrite values specified in a `maps` tab with a
+blank string. If you would like to explicitly set a blank value (in which case
+it would overwrite a value in the `maps` tab, if one exists), then use the
+string '\<empty\>'.
 
 For example, given the wide-column spec table below:
 
