@@ -276,6 +276,7 @@ The actual column name we set is determined by removing the `_expr` suffix.
 This works identically to `_value` columns, as described above. Any blank value
 will be ignored.
 
+
 ### wideOtherSlots
 
 This is a JSON string for a dictionary specifying additional columns and values
@@ -388,3 +389,24 @@ target enumeration name is created.
 ### targetValue
 
 The enumeration value that we map the `sourceValue` to.
+
+## Extra Columns
+
+When specifying target slots that we map to, it is possible to add extra slots
+that do not exist in the target schema of a mapping. These extra slots can
+contain additional information that do not fit nicely in any of the existing
+target schema slots that we may need in downstream processes (such as with the
+ID Generator of the
+[PHES-ODM-Mapper](http://github.com/Big-Life-Lab/PHES-ODM-Mapper) repo). They
+can also contain special tags recognized by downstream processes (such as a
+string to identify the specific type of sample for an output row, such as
+"primary sample" for the main sample, "technical replicate" for a replicate,
+and so on). While these extra columns can have any name, the ID Generator
+treats any slot name that is preceded by the string "_extra_" as a special
+extra column, that gets automatically added behind-the-scenes to the target
+schema, but removed from the final output of the Mapper. It is therefore
+recommended to use this prefix when identifying slots that do not exist in the
+target schema. For example, in the `maps` tab an extra slot can be identified
+in the `targetSlot` column by "_extra_sample_ID", "_extra_tag", etc., while in
+the `wide` tab they can be identified in column names such as
+"_extra_sample_ID_value" and "_extra_tag_expr".
