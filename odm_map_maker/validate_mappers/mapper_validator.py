@@ -69,7 +69,13 @@ class ValidateMappers(object):
                 # Go through all the source slots, and make sure an enum derivation exists for all of
                 # the slot's ranges that are enums.
                 for source_slot in source_slots:
-                    slot_definition = self.source_schema.induced_slot(source_slot)
+                    try:
+                        slot_definition = self.source_schema.induced_slot(source_slot)
+                    except Exception:
+                        logger.error(
+                            f"Source slot {source_slot} found in mapper does not exist"
+                        )
+                        continue
                     ranges = self.source_schema.slot_range_as_union(slot_definition)
 
                     # Make sure an enum derivation for all ranges exist
