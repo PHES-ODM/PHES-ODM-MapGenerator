@@ -119,6 +119,7 @@ class MakeMappers(object):
         wide_dfs = []
         if self.wide_files is not None and len(self.wide_files) > 0:
             wide_dfs = [self.prepare_wide_df(f) for f in self.wide_files if f]
+
         # Load and prepare the enums mapping files
         enums_df = None
         if self.enums_files is not None and len(self.enums_files) > 0:
@@ -129,6 +130,41 @@ class MakeMappers(object):
         add_auto_ids_to_schema(self.source_schema, maps_df)
         for wide_df in wide_dfs:
             add_auto_ids_to_schema(self.source_schema, wide_df)
+
+        groupby_columns = [
+            MappingColumns.SOURCE_CLASS,
+            MappingColumns.SOURCE_SLOT,
+            MappingColumns.TARGET_CLASS,
+            MappingColumns.WIDE_GROUP,
+        ]
+
+        # Any row where both sourceSlot and wideGroup are empty should be split into it's own wide group. To do this we create
+        # a new wideGroup name for each row that this occurs in. This makes it so that in the config file users can specify multiple
+        # wide rows with blank sourceSlots, which is a bit more intuitive. Normally, rows where the sourceSlot (and a few other columns)
+        # are equal are treated as an individual group that specifies the output of a *single* wide row, but here, by adding a unique group
+        # name, we get multiple output wide rows, one for each empty sourceSlot (rather than a single wide row, resulting from grouping
+        # the empty sourceSlots together). We check that wideGroup is empty, since if wideGroup is explicitly specified by the user then
+        # that means they want the rows to be grouped together.
+        def isna(x: Any) -> bool:
+            return pd.isna(x) or x == ""
+
+        for wide_df in wide_dfs:
+            if len(wide_df) == 0:
+                continue
+            # New group names are prefixed by new_group_name_prefix. It ensures that a unique/unused group name
+            # is created for the new group names
+            max_wide_group_length = (
+                wide_df[MappingColumns.WIDE_GROUP].map(lambda x: len(x)).max()
+            )
+            new_group_name_prefix = "_" * max_wide_group_length
+            new_group_rows = wide_df[MappingColumns.SOURCE_SLOT].map(isna) & wide_df[
+                MappingColumns.WIDE_GROUP
+            ].map(isna)
+            if new_group_rows.sum() == 0:
+                continue
+            wide_df.loc[new_group_rows, MappingColumns.WIDE_GROUP] = [
+                f"{new_group_name_prefix}_{i + 1}" for i in range(new_group_rows.sum())
+            ]
 
         # Extract all enum and class derivations from the maps file and enums files.
         # (maps|enums)_enum_derivations is in the format (maps|enums)_enum_derivations[source_class][target_class] = {enum_derivations}
@@ -141,15 +177,7 @@ class MakeMappers(object):
         results = []
         for wide_df in wide_dfs:
             for idx, (_, group_df) in enumerate(
-                wide_df.groupby(
-                    [
-                        MappingColumns.SOURCE_CLASS,
-                        MappingColumns.SOURCE_SLOT,
-                        MappingColumns.TARGET_CLASS,
-                        MappingColumns.WIDE_GROUP,
-                    ],
-                    sort=False,
-                )
+                wide_df.groupby(groupby_columns, sort=False)
             ):
                 source_class_name = group_df[MappingColumns.SOURCE_CLASS].iloc[0]
                 target_class_name = group_df[MappingColumns.TARGET_CLASS].iloc[0]
@@ -751,9 +779,6 @@ class MakeMappers(object):
             wide_df[MappingColumns.WIDE_GROUP] = wide_df[MappingColumns.WIDE_GROUP].map(
                 lambda x: "" if pd.isna(x) else str(x)
             )
-            wide_df.loc[
-                pd.isna(wide_df[MappingColumns.WIDE_GROUP]), MappingColumns.WIDE_GROUP
-            ] = ""
         else:
             wide_df[MappingColumns.WIDE_GROUP] = ""
 
@@ -1281,12 +1306,12 @@ if __name__ == "__main__":
                 '{ remove_chars: "-"}',
                 "alpha_numeric_underscore",
                 "single_underscores",
-                "trim_underscores",
+                "trim_trailing_underscores",
             ],
             "target_slot_format_operations": [
                 "alpha_numeric_underscore",
                 "single_underscores",
-                "trim_underscores",
+                "trim_trailing_underscores",
             ],
             "selectors": [],
         }
