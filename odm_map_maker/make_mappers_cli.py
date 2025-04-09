@@ -305,7 +305,6 @@ if __name__ == "__main__":
             # "target_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_trailing_underscores"],
 
             # PHA4GE to ODM v2
-            # "source_schema": "../../../PHES-ODM-Data/PHA4GE/schema-WastewaterSARC-CoV-2.yaml",
             "source_schema": "data/pha4ge/linkml/pha4ge.yaml",
             "target_schema": "data/odm_v2/linkml/odm_v2.yaml",
             "mapping_excel_file": "data/mapping_config_files/pha4ge_to_odm_v2_mapping.xlsx",
@@ -321,6 +320,7 @@ if __name__ == "__main__":
                 "addresses_maps",
                 "accessions_maps",
                 "qualityReports_maps",
+                "measureSets_maps",
 
                 # "protocolSteps_maps",
                 "protocols_maps",
@@ -333,6 +333,7 @@ if __name__ == "__main__":
                 "datasets_wide",
                 "contacts_wide",
                 "organizations_wide",
+                "measureSets_wide",
 
                 "protocolSteps_wide",
                 "protocols_wide",
