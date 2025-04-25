@@ -335,6 +335,7 @@ if __name__ == "__main__":
                 "organizations_wide",
                 "measureSets_wide",
 
+                "protocolRelationships_wide",
                 "protocolSteps_wide",
                 "protocols_wide",
             ],
