@@ -1,11 +1,11 @@
 # %%
 """
-Creates the LinkML mapper specification (YAML) files for mapping from ODM v1 to ODM v2.
+Creates the LinkML mapper specification (YAML) files for mapping from ODM v1 to ODM vx.
 
-See make_v1_to_v2.py for usage information.
+See make_v1_to_vx.py for usage information.
 
 @TODO:
-- There is no mapping from ODM v1 Reporter.contactName to v2. Should we try to populate contacts.firstName
+- There is no mapping from ODM v1 Reporter.contactName to vx. Should we try to populate contacts.firstName
 and contacts.lastName from it?
 - Reporter table is empty, is this alright?
 """
@@ -29,11 +29,11 @@ from odm_map_maker.utils.mapper_utils import (
     select_required_enum_derivations,
     expand_wide_derivations,
 )
-from odm_map_maker.odm_v2.v2_utils import v2_get_header_rows, v2_class_names
-from odm_map_maker.odm_v2.v2_mapping import V2MappingColumns, V2MappingVariableLocations
+from odm_map_maker.odm_vx.vx_utils import vx_get_header_rows, vx_class_names
+from odm_map_maker.odm_vx.vx_mapping import VxMappingColumns, VxMappingVariableLocations
 
-V2_PART_ID_COL = "partID"
-V2_ENUM_NAME_COL = "v2EnumName"
+VX_PART_ID_COL = "partID"
+VX_ENUM_NAME_COL = "vxEnumName"
 
 logger = get_logger(__name__)
 
@@ -43,18 +43,18 @@ app = typer.Typer(
 )
 
 MAIN_HELP = """Make the LinkML mapper specifications for mapping from ODM v1
-tables to ODM v2 tables"""
+tables to ODM vx (eg. v2, v3) tables"""
 
-CONFIG_HELP = """Location of the config file for mapping from ODM v1 to v2.
+CONFIG_HELP = """Location of the config file for mapping from ODM v1 to vx.
               Includes information on which source tables should map to which
               target tables and other config details."""
 
 MAPPER_DIR_HELP = """The directory to save the mapper specifications to (they
                   are all YAML files)."""
 
-PREPARED_PARTS_FILE_HELP = """The ODM v2 data dictionary parts list, after
+PREPARED_PARTS_FILE_HELP = """The ODM vx data dictionary parts list, after
                            being prepared by
-                           odm_v2.prepare_parts.prepare_parts."""
+                           odm_vx.prepare_parts.prepare_parts."""
 
 SOURCE_SCHEMA_HELP = """The LinkML schema for the source of the
                      mapping."""
@@ -63,16 +63,16 @@ TARGET_SCHEMA_HELP = """The LinkML schema for the target of the
                      mapping."""
 
 MAX_MAPPING_ONLY_HELP = """If True then for each source table we only make
-                        derivations to a single v2 table. That v2 table is
-                        chosen by selecting the v2 table that would result in
+                        derivations to a single vx table. That vx table is
+                        chosen by selecting the vx table that would result in
                         copying over the most columns from the source table. If
-                        False then we create derivations to all v2 tables.
+                        False then we create derivations to all vx tables.
                         (Some of these derivations might be useless, for
                         example if we only copy over a single column)."""
 
 CUSTOM_WIDE_DIR_HELP = """Directory or list of directories that contain CSV
                        files for custom mapping details for mapping wide-like
-                       source columns to long ODM v2."""
+                       source columns to long ODM vx."""
 
 
 @app.command(help=MAIN_HELP)
@@ -95,30 +95,30 @@ def make_mappers(
         List[Path], typer.Option(help=CUSTOM_WIDE_DIR_HELP)
     ] = None,
 ) -> List[Dict]:
-    """Make the LinkML mapper specifications for mapping from all source tables to all ODM v2 tables
+    """Make the LinkML mapper specifications for mapping from all source tables to all ODM vx tables
     where a mapping between the tables exists. A separate specification is created for each source table to
-    v2 table mapping.
+    vx table mapping.
 
     Args:
-        config (Union[str, Path]): Location of the config file for mapping from ODM v1 to v2. Includes
+        config (Union[str, Path]): Location of the config file for mapping from ODM v1 to vx. Includes
             information on which source tables should map to which target tables and other config details.
         mapper_dir (Union[str, Path]): The directory to save the mapper specifications to (they are
             all YAML files).
-        prepared_parts_file (Union[str, Path]): The ODM v2 data dictionary parts list, after being prepared
-            by odm_v2.prepare_parts.prepare_parts.
+        prepared_parts_file (Union[str, Path]): The ODM vx data dictionary parts list, after being prepared
+            by odm_vx.prepare_parts.prepare_parts.
         source_schema (Union[str, Path]): The LinkML schema for the source of the mapping.
         target_schema (Union[str, Path]): The LinkML schema for the target of the mapping.
         max_mapping_only (Optional[bool]): If True then for each source table we only make derivations to a
-            single v2 table. That v2 table is chosen by selecting the v2 table that would result in copying over
-            the most columns from the source table. If False then we create derivations to all v2 tables. (Some of
+            single vx table. That vx table is chosen by selecting the vx table that would result in copying over
+            the most columns from the source table. If False then we create derivations to all vx tables. (Some of
             these derivations might be useless, for example if we only copy over a single column). Defaults to True.
         custom_wide_dir (List[Path]): Directory or list of directories
             that contain CSV files for custom mapping details for mapping wide-like source columns to long
-            ODM v2. Defaults to None.
+            ODM vx. Defaults to None.
 
     Returns:
         List[Dict]: A list of dictionaries, where each dictionary contains the source type (source class),
-            target type (ODM v2 class), and the path to the mapper spec file for mapping from
+            target type (ODM vx class), and the path to the mapper spec file for mapping from
             the source type to target type.
     """
     logger.info("Running...")
@@ -162,14 +162,14 @@ def make_mappers(
     # Get all known source enumeration names from the parts list
     all_source_enums = sorted(
         df.loc[
-            ~pd.isna(df[V2MappingColumns.SOURCE_ENUM_NAME]),
-            V2MappingColumns.SOURCE_ENUM_NAME,
+            ~pd.isna(df[VxMappingColumns.SOURCE_ENUM_NAME]),
+            VxMappingColumns.SOURCE_ENUM_NAME,
         ].unique()
     )
 
     # Format of enum_derivations is enum_derivations[source_class][target_class][source_slot][target_slot] = derivations
     # We apply the enum derivations to the matching source class/slot and target class/slot. If any of the
-    # keys are empty ("") then it will match any class/slot. For v1 to v2, we use wildcard values for
+    # keys are empty ("") then it will match any class/slot. For v1 to vx, we use wildcard values for
     # all classes/slots. The actual derivations are:
     #     target_enum_name:
     #         name: target_enum_name
@@ -178,18 +178,18 @@ def make_mappers(
     #         permissible_value_derivations:
     #           ...
     enum_derivations = {"": {"": {"": {"": {}}}}}
-    # Create the derivations for each source enumeration to map to a v2 enumeration
+    # Create the derivations for each source enumeration to map to a vx enumeration
     for source_enum_name in all_source_enums:
         cur_derivations = make_enum_derivations(df, source_enum_name)
         existing_names = set(enum_derivations.keys())
         new_names = set(cur_derivations.keys())
 
-        # Check if any of the v2 enum names (ie the keys of the derivations) already exists
+        # Check if any of the vx enum names (ie the keys of the derivations) already exists
         # These are made-up names and so this test should always pass
         names_intersection = list(existing_names.intersection(new_names))
         if len(names_intersection) != 0:
             raise RuntimeError(
-                f"v2 enum names {names_intersection} already exists in the enum derivations when creating the derivation for {source_enum_name}"
+                f"vx enum names {names_intersection} already exists in the enum derivations when creating the derivation for {source_enum_name}"
             )
 
         enum_derivations[""][""][""][""].update(cur_derivations)
@@ -198,15 +198,15 @@ def make_mappers(
     # Get all known source table names from the parts list
     all_source_tables = sorted(
         df.loc[
-            ~pd.isna(df[V2MappingColumns.SOURCE_TABLE]), V2MappingColumns.SOURCE_TABLE
+            ~pd.isna(df[VxMappingColumns.SOURCE_TABLE]), VxMappingColumns.SOURCE_TABLE
         ].unique()
     )
 
     class_derivations: Dict[str, List[Dict]] = {}
 
-    # Create a class derivation for all source tables to a v2 table.
-    v1_to_v2_classes = config["v1_to_v2_classes"]
-    do_all_mappings = isinstance(v1_to_v2_classes, str) and v1_to_v2_classes == "all"
+    # Create a class derivation for all source tables to a vX table.
+    v1_to_vx_classes = config["v1_to_vx_classes"]
+    do_all_mappings = isinstance(v1_to_vx_classes, str) and v1_to_vx_classes == "all"
     for source_table_name in all_source_tables:
         for cur_results in make_class_derivations(
             df,
@@ -226,7 +226,7 @@ def make_mappers(
             if (
                 not do_all_mappings
                 and cur_target_class_name
-                not in v1_to_v2_classes.get(cur_source_class_name, [])
+                not in v1_to_vx_classes.get(cur_source_class_name, [])
             ):
                 continue
 
@@ -287,25 +287,25 @@ def make_mappers(
 
 def make_enum_derivations(df: pd.DataFrame, source_enum_name: str) -> Dict[str, Dict]:
     """Create the LinkML mapper enum_derivation dictionary for converting the source enumeration
-    source_enum_name to the proper ODM v2 enumeration(s).
+    source_enum_name to the proper ODM vx enumeration(s).
 
-    This function will raise an Exception if the source enumeration maps onto more than two v2 enumerations.
+    This function will raise an Exception if the source enumeration maps onto more than two vx enumerations.
     This is because the LinkML mapper does not allow this, since it has no way of knowing which
-    v2 enumeration to map to.
+    vx enumeration to map to.
 
     Args:
-        df (pd.DataFrame): The ODM v2 data dictionary parts list, after being prepared by prepare_parts.py.
+        df (pd.DataFrame): The ODM vx data dictionary parts list, after being prepared by prepare_parts.py.
         source_enum_name (str): The source enumeration name to create the enum_derivation for.
 
     Returns:
         Dict[str, Dict]: A dictionary where the keys are the target enumeration names and the values are
-            the enum derivations for that target. The target name is not a real v2 enumeration name, it
-            is a made-up name consisting of both the source enumeration name and the v2 enumeration name. This
+            the enum derivations for that target. The target name is not a real vx enumeration name, it
+            is a made-up name consisting of both the source enumeration name and the vx enumeration name. This
             dictionary can be used as the value for the enum_derivations key in a mapper spec file.
             The format is:
                 {
-                    v2_enum_name : {
-                        name : v2_enum_name,
+                    vx_enum_name : {
+                        name : vx_enum_name,
                         mirror_source : False
                         populated_from : source_enum_name,
                         permissible_value_derivations : {
@@ -319,58 +319,58 @@ def make_enum_derivations(df: pd.DataFrame, source_enum_name: str) -> Dict[str, 
 
     # Extract all the parts where the source enumeration name is source_enum_name
     df = df[
-        df[V2MappingColumns.SOURCE_ENUM_NAME].astype(str).str.lower()
+        df[VxMappingColumns.SOURCE_ENUM_NAME].astype(str).str.lower()
         == source_enum_name.lower()
     ]
 
-    # Get the enumeration name in ODM v2 that source_enum_name maps to. There should always
-    # only be one v2 enumeration for each source enumeration
-    v2_enum_names = df[V2_ENUM_NAME_COL].unique()
-    if len(v2_enum_names) != 1:
+    # Get the enumeration name in ODM vx that source_enum_name maps to. There should always
+    # only be one vx enumeration for each source enumeration
+    vx_enum_names = df[VX_ENUM_NAME_COL].unique()
+    if len(vx_enum_names) != 1:
         raise RuntimeError(
-            f"Source enumeration {source_enum_name} maps onto more than one v2 enumeration: {v2_enum_names}. This is not allowed by the LinkML mapper!"
+            f"Source enumeration {source_enum_name} maps onto more than one vx enumeration: {vx_enum_names}. This is not allowed by the LinkML mapper!"
         )
 
-    # For each of the rows, get the v2 enum name (in V2_ENUM_NAME_COL), source enum value (in Columns.SOURCE_CATEGORY)
-    # and the v2 enum value (in V2_PART_ID_COL) that the source enum value maps to. Add it to the permissible
+    # For each of the rows, get the vx enum name (in VX_ENUM_NAME_COL), source enum value (in Columns.SOURCE_CATEGORY)
+    # and the vx enum value (in VX_PART_ID_COL) that the source enum value maps to. Add it to the permissible
     # value derivations. The permissible value derivation name we add to has a made-up name equal to
-    # {source_enum_name}_{v2_enum_name}.
+    # {source_enum_name}_{vx_enum_name}.
     permissible_value_derivations = {}
     for _, row in df.iterrows():
-        v2_enum_name = row[V2_ENUM_NAME_COL]
-        v2_target_enum_name = f"{source_enum_name}_{v2_enum_name}"
+        vx_enum_name = row[VX_ENUM_NAME_COL]
+        vx_target_enum_name = f"{source_enum_name}_{vx_enum_name}"
 
-        source_part_id = row[V2MappingColumns.SOURCE_CATEGORY]
-        v2_part_id = row[V2_PART_ID_COL]
+        source_part_id = row[VxMappingColumns.SOURCE_CATEGORY]
+        vx_part_id = row[VX_PART_ID_COL]
 
-        if v2_target_enum_name not in permissible_value_derivations:
-            permissible_value_derivations[v2_target_enum_name] = {}
+        if vx_target_enum_name not in permissible_value_derivations:
+            permissible_value_derivations[vx_target_enum_name] = {}
 
-        if v2_part_id in permissible_value_derivations[v2_target_enum_name].keys():
-            # There is already an enum value mapping to v2_part_id. We can't specify more than
+        if vx_part_id in permissible_value_derivations[vx_target_enum_name].keys():
+            # There is already an enum value mapping to vx_part_id. We can't specify more than
             # one source enum value in the "populated_from" field, but we can in
             # the "sources" field. So we add the "sources" field and start adding extra populated_from
             # values there.
-            sub_dict = permissible_value_derivations[v2_target_enum_name][v2_part_id]
+            sub_dict = permissible_value_derivations[vx_target_enum_name][vx_part_id]
             if "sources" not in sub_dict:
                 sub_dict["sources"] = [sub_dict["populated_from"]]
             sub_dict["sources"].append(source_part_id)
         else:
-            # Add the mapping from source_part_id to v2_part_id
-            permissible_value_derivations[v2_target_enum_name][v2_part_id] = {
-                "name": v2_part_id,
+            # Add the mapping from source_part_id to vx_part_id
+            permissible_value_derivations[vx_target_enum_name][vx_part_id] = {
+                "name": vx_part_id,
                 "populated_from": source_part_id,
             }
 
     # Make the full enum derivation that the LinkML mapper recognizes.
     enum_derivations = {
-        v2_target_enum_name: {
-            "name": v2_target_enum_name,
+        vx_target_enum_name: {
+            "name": vx_target_enum_name,
             "mirror_source": False,
             "populated_from": source_enum_name,
             "permissible_value_derivations": permissible_values,
         }
-        for v2_target_enum_name, permissible_values in permissible_value_derivations.items()
+        for vx_target_enum_name, permissible_values in permissible_value_derivations.items()
     }
 
     return enum_derivations
@@ -387,15 +387,15 @@ def make_class_derivations(
     target_slot_format_operations: Optional[Union[str, List[str]]],
 ) -> List[Dict]:
     """Make a LinkML mapper class_derivation dictionary for converting the source class source_table_name
-    to the proper ODM v2 class.
+    to the proper ODM vx class.
 
     Args:
-        df (pd.DataFrame): The ODM v2 data dictionary parts list, after being prepared by prepare_parts.py.
+        df (pd.DataFrame): The ODM vx data dictionary parts list, after being prepared by prepare_parts.py.
         source_table_name (str): The source class name to create the class_derivation for.
-        max_mapping_only (bool): If True then we only make derivations to v2 tables that would result
+        max_mapping_only (bool): If True then we only make derivations to vx tables that would result
             in copying over the most columns from the source table. If multiple mappings have the
             same maximum number of copied columns, then we make derivations for all of them. If False then we
-            create derivations to all v2 tables. (Some of these derivations might be useless, for example if
+            create derivations to all vx tables. (Some of these derivations might be useless, for example if
             we only copy over a single column).
         source_schema (SchemaView): The source schema of the mapping.
         target_schema (SchemaView): The target schema of the mapping.
@@ -416,22 +416,22 @@ def make_class_derivations(
     """
     # Extract all rows for the table source_table_name
     df = df[
-        df[V2MappingColumns.SOURCE_TABLE].astype(str).str.lower()
+        df[VxMappingColumns.SOURCE_TABLE].astype(str).str.lower()
         == source_table_name.lower()
     ]
 
     # Extract all rows where a source variable is specified (for the table source_table_name)
     variables_df = df[
-        df[V2MappingColumns.SOURCE_LOCATION].astype(str).str.lower()
-        == V2MappingVariableLocations.VARIABLES.lower()
+        df[VxMappingColumns.SOURCE_LOCATION].astype(str).str.lower()
+        == VxMappingVariableLocations.VARIABLES.lower()
     ]
 
-    # Obtain all rows for each of the mappings from source_table_name to each of the v2 tables.
-    # The keys of mapping_rows are the target v2 table names, and the values are all rows in the DataFrame
-    # that contain information about the mappings from source_table_name to the v2 table.
+    # Obtain all rows for each of the mappings from source_table_name to each of the vx tables.
+    # The keys of mapping_rows are the target vx table names, and the values are all rows in the DataFrame
+    # that contain information about the mappings from source_table_name to the vx table.
     mapping_rows = {
-        class_name: v2_get_header_rows(variables_df, class_name)
-        for class_name in v2_class_names
+        class_name: vx_get_header_rows(variables_df, class_name)
+        for class_name in vx_class_names
     }
 
     if max_mapping_only:
@@ -445,8 +445,8 @@ def make_class_derivations(
             k: v for k, v in mapping_rows.items() if len(v.index) == max_rows
         }
 
-    # Using each of the v2 target tables and the DataFrame rows that define the mapping from
-    # source_table_name to the v2 table, create all of the slot derivations for each mapping.
+    # Using each of the vx target tables and the DataFrame rows that define the mapping from
+    # source_table_name to the vx table, create all of the slot derivations for each mapping.
     results = []
     for target_class_name, mappings_df in mapping_rows.items():
         # If the mapping only had 1 or fewer maps then return nothing
@@ -455,17 +455,17 @@ def make_class_derivations(
 
         slot_derivations = {}
         for _, row in mappings_df.iterrows():
-            v2_variable = row[V2_PART_ID_COL]
-            source_variable = row[V2MappingColumns.SOURCE_VARIABLE]
-            if v2_variable in slot_derivations.keys():
+            vx_variable = row[VX_PART_ID_COL]
+            source_variable = row[VxMappingColumns.SOURCE_VARIABLE]
+            if vx_variable in slot_derivations.keys():
                 logger.warning(
-                    f"{v2_variable} already found in slot derivations from source table {source_table_name} onto v2 table {target_class_name} (source var={source_variable}, v2 var={v2_variable})"
+                    f"{vx_variable} already found in slot derivations from source table {source_table_name} onto vx table {target_class_name} (source var={source_variable}, vx var={vx_variable})"
                 )
             cur_derivation = {
-                "name": v2_variable,
+                "name": vx_variable,
                 "populated_from": source_variable,
             }
-            slot_derivations[v2_variable] = cur_derivation
+            slot_derivations[vx_variable] = cur_derivation
 
         has_expanded_wide = False
         if custom_wide_dfs is not None:
@@ -509,7 +509,7 @@ def save_all_mappers(
     output_dir: Union[str, Path],
 ) -> List[Dict]:
     """For each class derivation, create a separate mapper specification file (yaml file).
-    These specs each map from a single source table to a single v2 table.
+    These specs each map from a single source table to a single vx table.
 
     A top-level Container class (named TREE_ROOT_CLASS_NAME) derivation will also be added to each YAML file. The slot
     derivations will have keys for the target class with populated_from fields from the source class.
@@ -559,7 +559,7 @@ def save_all_mappers(
                 schema=schema,
             )
 
-            # Create the mapper spec for the mapping from source_class to target_class (v2).
+            # Create the mapper spec for the mapping from source_class to target_class (vx).
             mapper_spec = {
                 "class_derivations": {
                     target_class: cur_derivation,

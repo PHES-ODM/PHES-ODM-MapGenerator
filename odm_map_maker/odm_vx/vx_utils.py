@@ -1,12 +1,12 @@
 """
-Utility functions for ODM LinkML Schema Generator, specific to ODM v2 dictionary.
+Utility functions for ODM LinkML Schema Generator, specific to ODM vx dictionary.
 """
 
 from typing import Union, Any, List, Optional
 import pandas as pd
 
-# All known table names in ODM v2 (in LinkML they are called classes).
-v2_class_names = [
+# All known table names in ODM vx (in LinkML they are called classes).
+vx_class_names = [
     "protocolSteps",
     "protocolRelationships",
     "measures",
@@ -31,10 +31,10 @@ v2_class_names = [
     "wideNames",
 ]
 
-# In the ODM v2 data dictionary, in the parts sheet, each table (eg. samples, sites, measures) has
-# a column with the same name as the table. If a row has any of the following _v2_header_tags in that
-# column, then the partID for that row is a column header in the ODM v2 table.
-_v2_header_tags = [
+# In the ODM vx data dictionary, in the parts sheet, each table (eg. samples, sites, measures) has
+# a column with the same name as the table. If a row has any of the following _vx_header_tags in that
+# column, then the partID for that row is a column header in the ODM vx table.
+_vx_header_tags = [
     "header",  # Regular header
     "fK",  # Foreign key
     "pK",  # Primary key
@@ -45,7 +45,7 @@ _v2_header_tags = [
 # the enumerations for these rows are created by adding an "s" to the end of the "partID". However, some
 # enumeration names do not follow this pattern. The exceptions are listed below, with the "partID" as the
 # key and the corresponding enumeration name as the value.
-_v2_enum_name_exceptions = {
+_vx_enum_name_exceptions = {
     "aggragationScale": "aggregationScales",  # TYPO! Should be aggregationScale / Only in parts table
     "class": "classes",  # Add "es" instead of "s"
     "dataTypes": "dataTypes",  # No change
@@ -57,13 +57,13 @@ _v2_enum_name_exceptions = {
 }
 
 
-def v2_get_header_rows(
+def vx_get_header_rows(
     df: pd.DataFrame,
     tables: Union[str, List[str]],
     header_tags: Optional[Union[str, List[str]]] = None,
 ) -> pd.DataFrame:
     """Retrieve all rows in the DataFrame that correspond to a column in any of the specified
-    ODM v2 tables.
+    ODM vx tables.
 
     This corresponds to rows that are either a primary key, a foreign key, or a header in any
     of the tables. Note that to determine if a row is a column, the DataFrame df must
@@ -83,7 +83,7 @@ def v2_get_header_rows(
             one of the tables. A copy of the DataFrame is made.
     """
     if header_tags is None:
-        header_tags = _v2_header_tags
+        header_tags = _vx_header_tags
     if isinstance(header_tags, str):
         header_tags = [header_tags]
     if isinstance(tables, str):
@@ -95,7 +95,7 @@ def v2_get_header_rows(
     return df[is_header > 0].copy()
 
 
-def v2_keep_active_rows(
+def vx_keep_active_rows(
     df: pd.DataFrame,
     status_column: str = "status",
     keep_status: Union[Any, List[Any]] = "active",
@@ -119,7 +119,7 @@ def v2_keep_active_rows(
     return df.copy()
 
 
-def v2_get_enum_name_from_part_id(part_id: str) -> str:
+def vx_get_enum_name_from_part_id(part_id: str) -> str:
     """Get the enumeration name for the specified part ID.
 
     Args:
@@ -129,8 +129,8 @@ def v2_get_enum_name_from_part_id(part_id: str) -> str:
     Returns:
         str: The enumeration name (for the partID)
     """
-    if part_id in _v2_enum_name_exceptions.keys():
-        name = _v2_enum_name_exceptions[part_id]
+    if part_id in _vx_enum_name_exceptions.keys():
+        name = _vx_enum_name_exceptions[part_id]
     else:
         name = f"{part_id}s"
     return name

@@ -16,18 +16,18 @@ from odm_map_maker.utils.general_utils import (
     save_data_frame,
     expand_multi_rows,
 )
-from odm_map_maker.odm_v2.v2_mapping import V2MappingColumns, V2MappingVariableLocations
+from odm_map_maker.odm_vx.vx_mapping import VxMappingColumns, VxMappingVariableLocations
 
-V2_ENUM_NAME_COL = "v2EnumName"
+VX_ENUM_NAME_COL = "vxEnumName"
 
 NA_TAG = "NA"
 AND_TAG = "&"
 
 MAP_COLUMNS = {
-    "version1Table": V2MappingColumns.SOURCE_TABLE,
-    "version1Location": V2MappingColumns.SOURCE_LOCATION,
-    "version1Variable": V2MappingColumns.SOURCE_VARIABLE,
-    "version1Category": V2MappingColumns.SOURCE_CATEGORY,
+    "version1Table": VxMappingColumns.SOURCE_TABLE,
+    "version1Location": VxMappingColumns.SOURCE_LOCATION,
+    "version1Variable": VxMappingColumns.SOURCE_VARIABLE,
+    "version1Category": VxMappingColumns.SOURCE_CATEGORY,
 }
 
 logger = get_logger(__name__)
@@ -37,12 +37,12 @@ app = typer.Typer(
     rich_markup_mode="rich",
 )
 
-MAIN_HELP = """Prepare the ODM v2 parts file by doing some basic cleaning and
-reorganizing. We will only keep rows corresponding to a mapping
-from a source class to ODM v2. We also expand rows that contain
+MAIN_HELP = """Prepare the ODM vx (eg. v2, v3) parts file by doing some basic
+cleaning and reorganizing. We will only keep rows corresponding to a mapping
+from a source class to ODM vx. We also expand rows that contain
 data for multiple rows."""
 
-PARTS_FILE_HELP = """Input CSV ODM v2 parts file to prepare for v1 to v2
+PARTS_FILE_HELP = """Input CSV ODM vx parts file to prepare for v1 to vx
                   mapping."""
 
 OUTPUT_FILE_HELP = """CSV file to save the prepared file to."""
@@ -65,22 +65,22 @@ def prepare_parts(
     output_file: str,
     map_columns: Optional[Dict[str, str]] = None,
 ):
-    """Prepare the ODM v2 parts file by doing some basic cleaning and reorganizing. We will only
-    keep rows corresponding to a mapping from a source class to ODM v2. We also expand rows that
+    """Prepare the ODM vx parts file by doing some basic cleaning and reorganizing. We will only
+    keep rows corresponding to a mapping from a source class to ODM vx. We also expand rows that
     contain data for multiple rows.
 
     Args:
-        parts_file (str): The original ODM v2 parts file.
+        parts_file (str): The original ODM vx parts file.
         output_file (str): File to save the prepared parts file to.
         map_columns (Optional[Dict[str, str]], optional): Rename columns in the parts list, changing
             columns with names matching a key in map_columns to the corresponding values in map_columns.
-            The target names should be the values in V2MappingColumns, which are the columns used to
+            The target names should be the values in VxMappingColumns, which are the columns used to
             specify the actual mappings to be performed. For example:
                 map_columns = {
-                    "version1Table" : V2MappingColumns.SOURCE_TABLE,
-                    "version1Location" : V2MappingColumns.SOURCE_LOCATION,
-                    "version1Variable" : V2MappingColumns.SOURCE_VARIABLE,
-                    "version1Category" : V2MappingColumns.SOURCE_CATEGORY,
+                    "version1Table" : VxMappingColumns.SOURCE_TABLE,
+                    "version1Location" : VxMappingColumns.SOURCE_LOCATION,
+                    "version1Variable" : VxMappingColumns.SOURCE_VARIABLE,
+                    "version1Category" : VxMappingColumns.SOURCE_CATEGORY,
                 }
             Defaults to None.
     """
@@ -94,12 +94,12 @@ def prepare_parts(
         df.columns = columns
 
     # Only keep rows where the status is "active"
-    # df = v2_keep_active_rows(df)
+    # df = vx_keep_active_rows(df)
 
     # Only keep rows that have a Columns.SOURCE_TABLE specified
     df = df[
-        ~pd.isna(df[V2MappingColumns.SOURCE_TABLE])
-        & ~(df[V2MappingColumns.SOURCE_TABLE].astype(str).str.lower() == NA_TAG.lower())
+        ~pd.isna(df[VxMappingColumns.SOURCE_TABLE])
+        & ~(df[VxMappingColumns.SOURCE_TABLE].astype(str).str.lower() == NA_TAG.lower())
     ]
 
     # Expand any row that contains data for multiple tables or variables. Multiple values are specified by
@@ -109,10 +109,10 @@ def prepare_parts(
     df = expand_multi_rows(
         df,
         columns=[
-            V2MappingColumns.SOURCE_TABLE,
-            V2MappingColumns.SOURCE_LOCATION,
-            V2MappingColumns.SOURCE_VARIABLE,
-            V2MappingColumns.SOURCE_CATEGORY,
+            VxMappingColumns.SOURCE_TABLE,
+            VxMappingColumns.SOURCE_LOCATION,
+            VxMappingColumns.SOURCE_VARIABLE,
+            VxMappingColumns.SOURCE_CATEGORY,
         ],
     )
 
@@ -120,18 +120,18 @@ def prepare_parts(
     df = select_and_values(
         df,
         columns=[
-            V2MappingColumns.SOURCE_TABLE,
-            V2MappingColumns.SOURCE_LOCATION,
-            V2MappingColumns.SOURCE_VARIABLE,
-            V2MappingColumns.SOURCE_CATEGORY,
+            VxMappingColumns.SOURCE_TABLE,
+            VxMappingColumns.SOURCE_LOCATION,
+            VxMappingColumns.SOURCE_VARIABLE,
+            VxMappingColumns.SOURCE_CATEGORY,
         ],
     )
 
     # Create the v1 enumeration names from Columns.SOURCE_TABLE and Columns.SOURCE_VARIABLE
     df = add_v1_enumeration_names(df)
 
-    # Add the v2 enumeration names
-    df[V2_ENUM_NAME_COL] = df["partType"]
+    # Add the vx enumeration names
+    df[VX_ENUM_NAME_COL] = df["partType"]
 
     save_data_frame(df, output_file, index=False)
 
@@ -170,7 +170,7 @@ def add_v1_enumeration_names(df: pd.DataFrame) -> pd.DataFrame:
     """Add the v1 enumeration names (if any) corresponding to each row of the parts list.
 
     Args:
-        df (pd.DataFrame): The parts list of ODM v2.
+        df (pd.DataFrame): The parts list of ODM vx.
 
     Returns:
         pd.DataFrame: The parts list (df) with the v1 enumeration names added. A copy of df is
@@ -182,20 +182,20 @@ def add_v1_enumeration_names(df: pd.DataFrame) -> pd.DataFrame:
         # name of the enumeration consists of the concatenation of Columns.SOURCE_TABLE and Columns.SOURCE_VARIABLE (with
         # the first letter of Columns.SOURCE_VARIABLE capitalized)
         if (
-            str(row[V2MappingColumns.SOURCE_LOCATION]).lower()
-            == V2MappingVariableLocations.VARIABLE_CATEGORIES.lower()
+            str(row[VxMappingColumns.SOURCE_LOCATION]).lower()
+            == VxMappingVariableLocations.VARIABLE_CATEGORIES.lower()
         ):
-            table = row[V2MappingColumns.SOURCE_TABLE]
-            variable = row[V2MappingColumns.SOURCE_VARIABLE]
+            table = row[VxMappingColumns.SOURCE_TABLE]
+            variable = row[VxMappingColumns.SOURCE_VARIABLE]
             return f"{table}{variable[0].upper()}{variable[1:]}"
         return None
 
     df = df.copy()
-    df[V2MappingColumns.SOURCE_ENUM_NAME] = df[
+    df[VxMappingColumns.SOURCE_ENUM_NAME] = df[
         [
-            V2MappingColumns.SOURCE_LOCATION,
-            V2MappingColumns.SOURCE_TABLE,
-            V2MappingColumns.SOURCE_VARIABLE,
+            VxMappingColumns.SOURCE_LOCATION,
+            VxMappingColumns.SOURCE_TABLE,
+            VxMappingColumns.SOURCE_VARIABLE,
         ]
     ].apply(_make_enumeration_name, axis=1)
     return df
