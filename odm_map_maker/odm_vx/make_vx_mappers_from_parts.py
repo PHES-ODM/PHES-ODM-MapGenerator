@@ -29,7 +29,10 @@ from odm_map_maker.utils.mapper_utils import (
     select_required_enum_derivations,
     expand_wide_derivations,
 )
-from odm_map_maker.odm_vx.vx_utils import vx_get_header_rows, vx_class_names
+from odm_map_maker.odm_vx.vx_utils import (
+    vx_get_header_rows,
+    odm_get_available_class_names,
+)
 from odm_map_maker.odm_vx.vx_mapping import VxMappingColumns, VxMappingVariableLocations
 
 VX_PART_ID_COL = "partID"
@@ -429,9 +432,10 @@ def make_class_derivations(
     # Obtain all rows for each of the mappings from source_table_name to each of the vx tables.
     # The keys of mapping_rows are the target vx table names, and the values are all rows in the DataFrame
     # that contain information about the mappings from source_table_name to the vx table.
+    class_names = odm_get_available_class_names(df)
     mapping_rows = {
         class_name: vx_get_header_rows(variables_df, class_name)
-        for class_name in vx_class_names
+        for class_name in class_names
     }
 
     if max_mapping_only:

@@ -5,32 +5,6 @@ Utility functions for ODM LinkML Schema Generator, specific to ODM vx dictionary
 from typing import Union, Any, List, Optional
 import pandas as pd
 
-# All known table names in ODM vx (in LinkML they are called classes).
-vx_class_names = [
-    "protocolSteps",
-    "protocolRelationships",
-    "measures",
-    "measureSets",
-    "datasets",
-    "sites",
-    "samples",
-    "addresses",
-    "contacts",
-    "organizations",
-    "instruments",
-    "polygons",
-    "languages",
-    "translations",
-    "parts",
-    "sets",
-    "qualityReports",
-    "sampleRelationships",
-    "protocols",
-    "countries",
-    "zones",
-    "wideNames",
-]
-
 # In the ODM vx data dictionary, in the parts sheet, each table (eg. samples, sites, measures) has
 # a column with the same name as the table. If a row has any of the following _vx_header_tags in that
 # column, then the partID for that row is a column header in the ODM vx table.
@@ -55,6 +29,33 @@ _vx_enum_name_exceptions = {
     "qualityFlag": "qualityIndicators",
     "specimenSets": "specimenSets",  # No change
 }
+
+# In the ODM data dictionary parts sheet, any column that ends with the string ODM_PARTS_COLUMN_CLASS_TAG begins
+# with the name of an ODM class (eg. measuresOrder, protocolStepsOrder, etc). This is used by
+# odm_get_available_class_names to extract all the known class names from the data dictionary.
+ODM_PARTS_COLUMN_CLASS_TAG = "Order"
+
+
+def odm_get_available_class_names(headers: Union[pd.DataFrame, List[str]]) -> List[str]:
+    """Get a list of all ODM class/table names that are defined in a ODM parts sheet that contains
+    the specified headers.
+
+    Args:
+        headers (Union[pd.DataFrame, List[str]]): Either a list of all headers in the ODM parts sheet, or the actual
+            DataFrame for the parts sheet.
+
+    Returns:
+        List[str]: List of all class/table names that the parts sheet defines.
+    """
+    if isinstance(headers, pd.DataFrame):
+        headers = headers.columns
+    headers = [
+        h[: -len(ODM_PARTS_COLUMN_CLASS_TAG)]
+        for h in headers
+        if h.endswith(ODM_PARTS_COLUMN_CLASS_TAG)
+        and len(h) > len(ODM_PARTS_COLUMN_CLASS_TAG)
+    ]
+    return headers
 
 
 def vx_get_header_rows(
