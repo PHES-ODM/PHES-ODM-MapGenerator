@@ -32,15 +32,15 @@ pip3 install -r requirements.txt
 
 ## Getting Familiar
 
-Currently both ODM v1 to ODM v2 and NWSS to ODM v2 are partially supported (ie. they are not yet complete). ODM v1 to ODM v2 involves parsing the ODM v2 data dictionary, whereas NWSS to ODM v2 uses a separate mapping configuration file (located at [map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx](map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)). Mapping from ODM v1 to ODM v2 will be switched over to use a mapping configuration file in the near future. Therefore, if you're trying to get familiar with this repo and its code it is best to ignore ODM v1 to ODM v2 (including [map_maker/make_v1_to_v2.py](map_maker/make_v1_to_v2.py) and all code in [map_maker/odm_v2](map_maker/odm_v2)) and look at NWSS to ODM v2 instead. The main entrypoint for NWSS to ODM v2 is [map_maker/make_mappers_cli.py](map_maker/make_mappers_cli.py).
+Currently both ODM v1 to ODM v2 and NWSS to ODM v2 are partially supported (ie. they are not yet complete). ODM v1 to ODM v2 involves parsing the ODM v2 data dictionary, whereas NWSS to ODM v2 uses a separate mapping configuration file (located at [map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx](map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)). Mapping from ODM v1 to ODM v2 will be switched over to use a mapping configuration file in the near future. Therefore, if you're trying to get familiar with this repo and its code it is best to ignore ODM v1 to ODM v2 (including [map_maker/make_v1_to_vx.py](map_maker/make_v1_to_vx.py) and all code in [map_maker/odm_v2](map_maker/odm_v2)) and look at NWSS to ODM v2 instead. The main entrypoint for NWSS to ODM v2 is [map_maker/make_mappers_cli.py](map_maker/make_mappers_cli.py).
 
 ## ODM v1 to ODM v2
 
-Generating the LinkML mapping specification files for mapping between ODM v1 and v2 involves parsing the ODM v2 Data Dictionary to extract all information pertaining to mapping between slots and enumerations. Generating the ODM v1 to ODM v2 LinkML mapping specification files is the only mapping between datasets that does not use [Mapping Files](#mapping-files) and the [General CLI](#general-cli). In the future, ODM v1 to ODM v2 will be switched over to use [Mapping Files](#mapping-files). The script [map_maker/make_v1_to_v2.py](map_maker/make_v1_to_v2.py) will generate all mapping spec (YAML) files to map from ODM v1 to ODM v2. To run the script, execute:
+Generating the LinkML mapping specification files for mapping between ODM v1 and v2 involves parsing the ODM v2 Data Dictionary to extract all information pertaining to mapping between slots and enumerations. Generating the ODM v1 to ODM v2 LinkML mapping specification files is the only mapping between datasets that does not use [Mapping Files](#mapping-files) and the [General CLI](#general-cli). In the future, ODM v1 to ODM v2 will be switched over to use [Mapping Files](#mapping-files). The script [map_maker/make_v1_to_vx.py](map_maker/make_v1_to_vx.py) will generate all mapping spec (YAML) files to map from ODM v1 to ODM v2. To run the script, execute:
 
 ```console
 cd map_maker
-python3 make_v1_to_v2.py \
+python3 make_v1_to_vx.py \
     --config data/odm_v1/odm_v1_to_v2_config.yaml \
     --source-schema data/odm_v1/linkml/odm_v1.yaml \
     --target-schema data/odm_v2/linkml/odm_v2.yaml \
@@ -51,7 +51,7 @@ python3 make_v1_to_v2.py \
 
 A separate mapper specification (YAML) file is created for each mapping from a single v1 table to a single v2 table. These are saved at the location specified by `output-dir` on the command-line (`../gen/odm_v1_to_v2`).
 
-For more details on the steps performed by this script, see [make_v1_to_v2.md](make_v1_to_v2.md).
+For more details on the steps performed by this script, see [make_v1_to_vx.md](make_v1_to_vx.md).
 
 ## Mapping Files
 
