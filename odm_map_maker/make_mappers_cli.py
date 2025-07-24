@@ -340,6 +340,7 @@ if __name__ == "__main__":
                 "protocols_wide",
             ],
             "excel_enums_sheets": [
+                "global_enums",
                 "samples_enums",
                 "measures_enums",
                 "addresses_enums",
