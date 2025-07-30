@@ -43,6 +43,10 @@ class MappingColumns:
     TARGET_VALUE = "targetValue"
     TARGET_EXPR = "targetExpr"
     CUSTOM_DATA = "customData"
+    
+    # Additional fields to set for an enum or slot derivation (eg. { mirror_source: True })
+    ENUM_DERIVATION_SETTINGS = "enumDerivationSettings"
+    SLOT_DERIVATION_SETTINGS = "slotDerivationSettings"
 
     # Can be present in any tab (enums, wide, or maps)
     SELECTORS = "selectors"
@@ -438,6 +442,11 @@ def expand_wide_derivations(
                 target_slot = row[MappingColumns.TARGET_SLOT]
                 target_value = row[MappingColumns.TARGET_VALUE]
                 target_expr = row[MappingColumns.TARGET_EXPR]
+                slot_derivation_settings = row[MappingColumns.SLOT_DERIVATION_SETTINGS]
+                if pd.isna(slot_derivation_settings):
+                    slot_derivation_settings = None
+                if slot_derivation_settings:
+                    slot_derivation_settings = yaml.safe_load(slot_derivation_settings)
 
                 # We always need a target slot specified
                 if not target_slot or pd.isna(target_slot):
@@ -474,6 +483,8 @@ def expand_wide_derivations(
                         "name": target_slot,
                         "expr": f"'{target_value}'",
                     }
+                if slot_derivation_settings:
+                    cur_slot_derivations[target_slot].update(slot_derivation_settings)
 
             # Create a new unique name for the target class. Target class names
             # can have the real target class followed by an optional modifier in
