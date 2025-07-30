@@ -43,7 +43,7 @@ class MappingColumns:
     TARGET_VALUE = "targetValue"
     TARGET_EXPR = "targetExpr"
     CUSTOM_DATA = "customData"
-    
+
     # Additional fields to set for an enum or slot derivation (eg. { mirror_source: True })
     ENUM_DERIVATION_SETTINGS = "enumDerivationSettings"
     SLOT_DERIVATION_SETTINGS = "slotDerivationSettings"
