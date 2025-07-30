@@ -386,11 +386,13 @@ class MakeMappers(object):
                         )
                 if target_slot not in slot_derivations:
                     slot_derivations[target_slot] = {}
-                slot_derivations[target_slot].update({
-                    "name": target_slot,
-                    "populated_from": source_slot,  # cleanup_slot_name(source_slot),
-                })
-                
+                slot_derivations[target_slot].update(
+                    {
+                        "name": target_slot,
+                        "populated_from": source_slot,  # cleanup_slot_name(source_slot),
+                    }
+                )
+
             if slot_derivation_settings:
                 slot_derivations[target_slot].update(slot_derivation_settings)
 
@@ -456,7 +458,9 @@ class MakeMappers(object):
             target_slot = row.get(MappingColumns.TARGET_SLOT, "")
             target_enum_name = row.get(MappingColumns.TARGET_ENUM, "")
             target_enum_value = row[MappingColumns.TARGET_VALUE]
-            enum_derivation_settings = row.get(MappingColumns.ENUM_DERIVATION_SETTINGS, {})
+            enum_derivation_settings = row.get(
+                MappingColumns.ENUM_DERIVATION_SETTINGS, {}
+            )
             if pd.isna(enum_derivation_settings):
                 enum_derivation_settings = None
             if enum_derivation_settings:
@@ -587,7 +591,7 @@ class MakeMappers(object):
                 raise ValueError(
                     f"Enum derivation for {source_class=}, {target_class=}, {target_slot=}, {target_enum_name=} already exists but does not have a matching populated_from field (expected '{source_enum_name}' but found '{enum_derivation['populated_from']}')"
                 )
-            
+
             # Add the derivation settings from the config file (eg. { mirror_source: True })
             if enum_derivation_settings:
                 enum_derivation.update(enum_derivation_settings)
@@ -1003,11 +1007,11 @@ class MakeMappers(object):
 
         # Keep source class, target class, and all columns that are wide target slots or wide expr slots
         keep_columns = [
-            MappingColumns.SOURCE_CLASS, 
-            MappingColumns.TARGET_CLASS, 
-            MappingColumns.ENUM_DERIVATION_SETTINGS, 
-            MappingColumns.SLOT_DERIVATION_SETTINGS
-            ]
+            MappingColumns.SOURCE_CLASS,
+            MappingColumns.TARGET_CLASS,
+            MappingColumns.ENUM_DERIVATION_SETTINGS,
+            MappingColumns.SLOT_DERIVATION_SETTINGS,
+        ]
         keep_columns = keep_columns + [
             c
             for c in custom_wide_df.columns
@@ -1020,7 +1024,12 @@ class MakeMappers(object):
         # The pivoted table has a TARGET_VALUE column specifying either the constant value to set or the source slot to copy from (eg. {{slotName}})
         # as well as an TARGET_EXPR column specifying LinkML expression code to execute for calculating the value of the target slot.
         # We create the pivoted tables form TARGET_VALUEs and TARGET_EXPRs separated, then concatenate them together
-        id_columns = [MappingColumns.SOURCE_CLASS, MappingColumns.TARGET_CLASS, MappingColumns.ENUM_DERIVATION_SETTINGS, MappingColumns.SLOT_DERIVATION_SETTINGS]
+        id_columns = [
+            MappingColumns.SOURCE_CLASS,
+            MappingColumns.TARGET_CLASS,
+            MappingColumns.ENUM_DERIVATION_SETTINGS,
+            MappingColumns.SLOT_DERIVATION_SETTINGS,
+        ]
         wide_target_columns = [
             c for c in custom_wide_df.columns if is_wide_target_value_slot(c)
         ]
