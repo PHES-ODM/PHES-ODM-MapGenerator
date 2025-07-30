@@ -235,28 +235,6 @@ enums:
         description: Used to specify a passive sampling method not otherwise specified
           was used to collect the sample.
         title: Passive Sample - General
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   conductivityUnitSet:
     description: Unit set related to conductivity measurements.
     title: Conductivity unit set
@@ -693,24 +671,6 @@ enums:
         description: The field for which the expected value is not a property of the
           described object.
         title: Not applicable
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
   fullDictionarySheetSet:
     description: Worksheets in the full Excel dictionary.
     title: Full dictionary sheets set
@@ -919,28 +879,6 @@ enums:
       swrSet:
         description: Sewer catchment area.
         title: Sewer catchment area
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   humanCompartmentSet:
     description: A compartment set for measures and methods in the human compartment.
     title: Human compartment set
@@ -980,28 +918,6 @@ enums:
       onse:
         description: Online sensor
         title: Online Sensor
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   licSet:
     description: The set to describe valid categorical values for the licensing fields
       for measures or datasets.
@@ -1551,28 +1467,6 @@ enums:
       countyLevel:
         description: Districts, counties, regions
         title: Districts, counties, regions
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   orgSectorSet:
     description: Cateogries of organization sectors.
     title: Organization sector set
@@ -1619,28 +1513,6 @@ enums:
         description: An organisation type that describes governmental organizations
           that manage or administer programs.
         title: Public Administration
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   orgTypeSet:
     description: The set for storing organization types.
     title: Organization type set
@@ -1658,28 +1530,6 @@ enums:
         description: The category of organization type used for private sector or
           non-profit groups that are not otherwise captured by the academic category.
         title: Private sector
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   originSet:
     description: The set for storing the valid categorical values of sample origin.
     title: Sample Origin set
@@ -1695,28 +1545,6 @@ enums:
       synthetic:
         description: A synthetic or artificially generated sample.
         title: Synthetic sample
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   otherAggrSet:
     description: Aggregation set used for unitless measures.
     title: Other aggregation set
@@ -2352,28 +2180,6 @@ enums:
       International travel surveillance: {}
       Viral passage experiment: {}
       Protocol testing experiment: {}
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   regularReportTableSet:
     description: Tables used for daily reporting of new measurements and information
       on sample collection.
@@ -2431,28 +2237,6 @@ enums:
       unique:
         description: A unique sample, not duplicated.
         title: Unique sample
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   resusSet:
     description: The set to describe valid categorical values for the resuspension
       method.
@@ -2550,28 +2334,6 @@ enums:
       swrSed:
         description: Sediments obtained in sewer
         title: Sewer sediment
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   sampleQualitySet:
     description: Quality set for a sample.
     title: Sample quality set
@@ -2774,28 +2536,6 @@ enums:
         description: Indicates a very sever quality issue, likely meaning the data
           should not be reported.
         title: High severity
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   shedSet:
     description: The set for all valid values of sampleshed.
     title: Sampleshed set
@@ -2872,28 +2612,6 @@ enums:
         description: Specifies a site type which is a commercial facility/worksite
           that is not otherwise captured or described in the geotype set.
         title: Commercial facility - not specified
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   shrtNameSet:
     description: The abbreviated short name used to reference the The table that contains
       information about addresses. Addresses can recorded for sites, organizations
@@ -3107,28 +2825,6 @@ enums:
         description: Indicates a wastewater treatment plant where multiple labs are
           or were sampling, and where secondary samples are being taken taken.
         title: Back-up wastewater treatment site
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   solidSeparationSet:
     description: set for the separation of solids.
     title: Solid separation set
@@ -3873,28 +3569,6 @@ enums:
       weather:
         description: Measures and methods relating to weather.
         title: Weather class
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   compartments:
     description: The substance from which a sample was taken.
     title: Compartments
@@ -3920,31 +3594,10 @@ enums:
         description: A measure or observation made from a substance in the water,
           including wastewater.
         title: Water compartment
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   dataTypes:
     description: The data type for a part.
     title: Data types
+    from_schema: https://onto.phes-odm.org/odm/v2
     permissible_values:
       blob:
         description: The data type for Binary Large Object (BLOB) data.
@@ -4279,28 +3932,6 @@ enums:
       yersiniaGrp:
         description: A group of measures/methods related to yersinia bacteria.
         title: Yersinia Group
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   measurements:
     description: The attribute to describe a part type of measures. All measures have
       `partType` = "measure".
@@ -5671,31 +5302,10 @@ enums:
         description: Specifies variant or genetic nomenclature as set out by the World
           Health Organization.
         title: WHO nomenclature
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   partType:
     description: Part types describe the purpose or use of the part.
     title: Part types
+    from_schema: https://onto.phes-odm.org/odm/v2
     permissible_values:
       aggregations:
         description: Statistical measures used to report a measure. Each measure reported
@@ -5909,28 +5519,6 @@ enums:
       wrongTemp:
         description: Sample was stored at an inappropriate temperature.
         title: Sample stored at wrong temperature
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   specimens:
     description: 'Measures or observations are taken from three types of substances:
       populations (humans or geographic areas), samples, sites.'
@@ -5954,28 +5542,6 @@ enums:
       sit:
         description: A measure made on a compartment or property at a site.
         title: Site
-      restrict:
-        description: Missing data is witheld because it is restricted access.
-        title: Restricted data
-      'null':
-        description: A logical representation of a statement that is neither TRUE
-          nor FALSE.
-        title: 'Null'
-      undisc:
-        description: A value has been recorded, however it was not included in the
-          dataset.
-        title: Undisclosed
-      nr:
-        description: A value could have been recorded, however, it was not.
-        title: Not reported
-      nan:
-        description: The outcome of a measurement is not a valid number (plus or minus
-          infinity, error, ...)
-        title: Not a number
-      NA:
-        description: The field for which the expected value is not a property of the
-          described object.
-        title: Not applicable
   units:
     description: The unit of the measurement.
     title: Units
@@ -6526,6 +6092,16 @@ slots:
     from_schema: https://onto.phes-odm.org/odm/v2
   stepIDSub:
     from_schema: https://onto.phes-odm.org/odm/v2
+  protocolID:
+    from_schema: https://onto.phes-odm.org/odm/v2
+  siteID:
+    from_schema: https://onto.phes-odm.org/odm/v2
+  purpose:
+    from_schema: https://onto.phes-odm.org/odm/v2
+  saMaterial:
+    from_schema: https://onto.phes-odm.org/odm/v2
+  origin:
+    from_schema: https://onto.phes-odm.org/odm/v2
   repType:
     from_schema: https://onto.phes-odm.org/odm/v2
   collType:
@@ -6546,17 +6122,7 @@ slots:
     from_schema: https://onto.phes-odm.org/odm/v2
   recDate:
     from_schema: https://onto.phes-odm.org/odm/v2
-  protocolID:
-    from_schema: https://onto.phes-odm.org/odm/v2
   reportable:
-    from_schema: https://onto.phes-odm.org/odm/v2
-  siteID:
-    from_schema: https://onto.phes-odm.org/odm/v2
-  purpose:
-    from_schema: https://onto.phes-odm.org/odm/v2
-  saMaterial:
-    from_schema: https://onto.phes-odm.org/odm/v2
-  origin:
     from_schema: https://onto.phes-odm.org/odm/v2
   polygonID:
     from_schema: https://onto.phes-odm.org/odm/v2
@@ -6834,6 +6400,7 @@ classes:
   wideNames:
     description: The table for wide names.
     title: Wide name table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - wideName
     - label
@@ -7036,6 +6603,7 @@ classes:
   organizations:
     description: The table that contains information about a laboratory.
     title: Organization table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - organizationID
     - name
@@ -7096,7 +6664,9 @@ classes:
       orgType:
         description: Specifies the type or purpose of a given organization.
         title: Organization Type
-        range: orgTypeSet
+        range:
+        - orgTypeSet
+        - genMissingnessSet
         pattern: ^.{0,30}$
       orgLevel:
         description: The geographic level of an organization.
@@ -7104,12 +6674,16 @@ classes:
         notes:
         - There are six levels based on International Standard Classification of Administrative
           Units (ISCU).
-        range: orgLevelSet
+        range:
+        - orgLevelSet
+        - genMissingnessSet
         pattern: ^.{0,30}$
       orgSector:
         description: The sector of an organization
         title: Organization sector
-        range: orgSectorSet
+        range:
+        - orgSectorSet
+        - genMissingnessSet
         pattern: ^.{0,30}$
       lastEdited:
         description: The date the entry was last updated.
@@ -7141,6 +6715,7 @@ classes:
     description: The table for recording the various quality metrics and indicators
       for samples and measures.
     title: Quality reports table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - qualityReportID
     - measureRepID
@@ -7184,13 +6759,17 @@ classes:
         notes:
         - Types of quality flag vary on context; please see the qulaityFlagSet to
           be confirm.
-        range: qualityIndicators
+        range:
+        - qualityIndicators
+        - genMissingnessSet
         required: true
         pattern: ^.{0,30}$
       severity:
         description: An indicator of the severity or seriousness of a quality flag.
         title: Severity indicator
-        range: sevSet
+        range:
+        - sevSet
+        - genMissingnessSet
         pattern: ^.{0,30}$
       lastEdited:
         description: The date the entry was last updated.
@@ -7222,6 +6801,7 @@ classes:
     description: Look up table for translations of the description, label, and instruction
       for all parts.
     title: Translation look-up table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - translationID
     - lang
@@ -7331,6 +6911,7 @@ classes:
     description: Look up table for all languages, used to give structure to the translation
       table.
     title: Language Look-up table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - lang
     - langFam
@@ -7587,6 +7168,7 @@ classes:
     description: The table for collecting metadata on individual steps in a protocol,
       methodological process, or assay.
     title: Protocol steps table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - stepID
     - method
@@ -7730,6 +7312,7 @@ classes:
       (such as order) about a given protocol, recorded as a series of protocol steps
       (protocolSteps).
     title: Protocol relationships table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - protocolRelationshipsID
     - protocolIDContainer
@@ -7845,8 +7428,17 @@ classes:
       as a representative volume of wastewater (or other forms of water or liquid),
       air, or surface area taken from a site.
     title: Sample report table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - sampleID
+    - protocolID
+    - organizationID
+    - contactID
+    - siteID
+    - purpose
+    - saMaterial
+    - datasetID
+    - origin
     - repType
     - collType
     - collPer
@@ -7857,17 +7449,9 @@ classes:
     - collDTEnd
     - sentDate
     - recDate
-    - protocolID
     - reportable
     - lastEdited
     - notes
-    - organizationID
-    - contactID
-    - siteID
-    - purpose
-    - saMaterial
-    - datasetID
-    - origin
     slot_usage:
       sampleID:
         description: Unique identifier for a sample.
@@ -7878,16 +7462,76 @@ classes:
         range: string
         required: true
         pattern: ^.{0,30}$
+      protocolID:
+        description: A unique identifier for a given protocol.
+        title: Protocol ID
+        range: protocols
+        pattern: ^.{0,30}$
+      organizationID:
+        description: A unique identifier for the organization to which the reporter
+          is affiliated.
+        title: Organization ID
+        range: string
+        pattern: ^.{0,100}$
+      contactID:
+        description: A unique identifier for a given contact person.
+        title: Contact ID
+        range: contacts
+        pattern: ^.{0,30}$
+      siteID:
+        description: Unique identifier for the location where a sample was taken.
+        title: Site ID
+        range: sites
+        required: true
+        pattern: ^.{0,30}$
+      purpose:
+        description: The reason the measure or sample was taken.
+        title: Purpose
+        notes:
+        - 'See allowed categories: report, quality control, validation study, test'
+        range:
+        - purposeSet
+        - genMissingnessSet
+        pattern: ^.{0,30}$
+      saMaterial:
+        description: Type of sample.
+        title: Sample material
+        range:
+        - sampleMatSet
+        - genMissingnessSet
+        required: true
+        pattern: ^.{0,30}$
+      datasetID:
+        description: The name of the dataset that stores information for MeasureReport,
+          SampleReport and other reporting tables.
+        title: Dataset ID
+        notes:
+        - Where possible, datasetID name should correspond the orignial data custodian
+          responsible for generating environmental data. (suggestion for a default
+          name convention.)
+        range: datasets
+        pattern: ^.{0,30}$
+      origin:
+        description: An attribute of a sample specifying the origin.
+        title: Sample origin
+        range:
+        - originSet
+        - genMissingnessSet
+        pattern: ^.{0,30}$
       repType:
         description: Attirbute of a sample, specifying whether the sample is unique,
           or a replicate. And if it is a replicate, what type of replicate is it?
         title: Replicate Type
-        range: replicateSet
+        range:
+        - replicateSet
+        - genMissingnessSet
         pattern: ^.{0,30}$
       collType:
         description: The type of collection.
         title: Sample collection type
-        range: collectSet
+        range:
+        - collectSet
+        - genMissingnessSet
         required: true
         pattern: ^.{0,12}$
       collPer:
@@ -7942,11 +7586,6 @@ classes:
         title: Date sample recieved
         range: datetime
         pattern: ^.{0,30}$
-      protocolID:
-        description: A unique identifier for a given protocol.
-        title: Protocol ID
-        range: protocols
-        pattern: ^.{0,30}$
       reportable:
         description: Flag for whether a measure is reportable or not, based on confidence
           in the measure and methods applied.
@@ -7979,54 +7618,10 @@ classes:
         - There is no recommended structure of a note. Use notes as needed.
         range: string
         pattern: ^.{0,200}$
-      organizationID:
-        description: A unique identifier for the organization to which the reporter
-          is affiliated.
-        title: Organization ID
-        range: string
-        pattern: ^.{0,100}$
-      contactID:
-        description: A unique identifier for a given contact person.
-        title: Contact ID
-        range: contacts
-        pattern: ^.{0,30}$
-      siteID:
-        description: Unique identifier for the location where a sample was taken.
-        title: Site ID
-        range: sites
-        required: true
-        pattern: ^.{0,30}$
-      purpose:
-        description: The reason the measure or sample was taken.
-        title: Purpose
-        notes:
-        - 'See allowed categories: report, quality control, validation study, test'
-        range: purposeSet
-        pattern: ^.{0,30}$
-      saMaterial:
-        description: Type of sample.
-        title: Sample material
-        range: sampleMatSet
-        required: true
-        pattern: ^.{0,30}$
-      datasetID:
-        description: The name of the dataset that stores information for MeasureReport,
-          SampleReport and other reporting tables.
-        title: Dataset ID
-        notes:
-        - Where possible, datasetID name should correspond the orignial data custodian
-          responsible for generating environmental data. (suggestion for a default
-          name convention.)
-        range: datasets
-        pattern: ^.{0,30}$
-      origin:
-        description: An attribute of a sample specifying the origin.
-        title: Sample origin
-        range: originSet
-        pattern: ^.{0,30}$
   measures:
     description: The table that contains information and details about a given measure
     title: Measure report table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - measureRepID
     - protocolID
@@ -8087,7 +7682,9 @@ classes:
         title: Purpose
         notes:
         - 'See allowed categories: report, quality control, validation study, test'
-        range: purposeSet
+        range:
+        - purposeSet
+        - genMissingnessSet
         pattern: ^.{0,30}$
       polygonID:
         description: Unique identifier for the polygon.
@@ -8154,20 +7751,26 @@ classes:
         description: The attribute identifying the substance from which where a sample
           was taken. For more information, see partID = compartment.
         title: Compartment
-        range: compartments
+        range:
+        - compartments
+        - genMissingnessSet
         pattern: ^.{0,30}$
       specimen:
         description: The substance or thing upon which the observation was made.
         title: Specimen
         notes:
         - 'Specimens include: site, sample, person and population.'
-        range: specimens
+        range:
+        - specimens
+        - genMissingnessSet
         required: true
         pattern: ^.{0,12}$
       fraction:
         description: Fraction of the sample that is analyzed.
         title: Fraction analyzed
-        range: fractionSet
+        range:
+        - fractionSet
+        - genMissingnessSet
         pattern: ^.{0,30}$
       group:
         description: Unique identifier for a group of measures. Mostly applicable
@@ -8178,7 +7781,9 @@ classes:
           the SARS-CoV-2 group, there are measure classes tht include RNA alleles
           (N1, N2, E, etc.), mutations, (E484K0), an entire sequence, viral proteins,
           etc. Currently groups are used for measures only.
-        range: groups
+        range:
+        - groups
+        - genMissingnessSet
         pattern: ^.{0,30}$
       class:
         description: A unique identifier for a class, which is akin to a sub-group;
@@ -8189,7 +7794,9 @@ classes:
         - Currently, class is only used for biologics. For example, SARS-CoV-2 is
           a group of measures with the following classes of allele, variant, mutation,
           sequence, and protein.
-        range: classes
+        range:
+        - classes
+        - genMissingnessSet
         pattern: ^.{0,30}$
       measure:
         description: A measurement or observation of any substance including a biological,
@@ -8235,7 +7842,9 @@ classes:
         notes:
         - Currently only used for class = variant, mutation, or disease. Valid options
           are currently restricted to 'NextClade', 'Pangolin', 'WHO', or 'ICD'.
-        range: nomenclatures
+        range:
+        - nomenclatures
+        - genMissingnessSet
         pattern: ^.{0,30}$
       index:
         description: Index number in case the measurement was taken multiple times.
@@ -8305,6 +7914,7 @@ classes:
   parts:
     description: Look up table containing all parts in of the data model.
     title: Parts Look-up table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - partID
     - label
@@ -8498,7 +8108,9 @@ classes:
           the SARS-CoV-2 group, there are measure classes tht include RNA alleles
           (N1, N2, E, etc.), mutations, (E484K0), an entire sequence, viral proteins,
           etc. Currently groups are used for measures only.
-        range: groups
+        range:
+        - groups
+        - genMissingnessSet
         required: true
         pattern: ^.{0,30}$
       class:
@@ -8510,7 +8122,9 @@ classes:
         - Currently, class is only used for biologics. For example, SARS-CoV-2 is
           a group of measures with the following classes of allele, variant, mutation,
           sequence, and protein.
-        range: classes
+        range:
+        - classes
+        - genMissingnessSet
         required: true
         pattern: ^.{0,30}$
       nomenclature:
@@ -8520,7 +8134,9 @@ classes:
         notes:
         - Currently only used for class = variant, mutation, or disease. Valid options
           are currently restricted to 'NextClade', 'Pangolin', 'WHO', or 'ICD'.
-        range: nomenclatures
+        range:
+        - nomenclatures
+        - genMissingnessSet
         pattern: ^.{0,30}$
       ontologyRef:
         description: Ontology reference for a part.
@@ -9043,6 +8659,7 @@ classes:
   protocols:
     description: The table for protocols.
     title: Protocols table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - sourceProtocol
     - protocolID
@@ -9156,6 +8773,7 @@ classes:
     description: Look up table for all sets, managing how categorical inputs for various
       methods and attributes are grouped together.
     title: Sets look-up table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - setCompID
     - setID
@@ -9277,6 +8895,7 @@ classes:
     description: The table that contains information about the geometry of a geographic
       area.
     title: Polygon table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - polygonID
     - datasetID
@@ -9336,7 +8955,9 @@ classes:
       geoType:
         description: Type of geography that is represented by the polygon.
         title: Type of geography
-        range: geoTypeSet
+        range:
+        - geoTypeSet
+        - genMissingnessSet
         required: true
         pattern: ^.{0,30}$
       geoEPSG:
@@ -9409,6 +9030,7 @@ classes:
     description: A report table for capturing details about data's parental data set
       and data custodians. Supplying attribution for data collectors.
     title: Dataset table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - parDatasetID
     - datasetID
@@ -9554,9 +9176,9 @@ classes:
     description: The table that contains information about addresses. Addresses can
       recorded for sites, organizations or contacts (indivduals).
     title: Address table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - addressID
-    - notes
     - datasetID
     - addL1
     - addL2
@@ -9565,6 +9187,7 @@ classes:
     - pCode
     - country
     - lastEdited
+    - notes
     slot_usage:
       addressID:
         description: A unique identifier for an address.
@@ -9573,14 +9196,6 @@ classes:
         range: string
         required: true
         pattern: ^.{0,30}$
-      notes:
-        description: A note used to describe details that are not captured in other
-          attrbitutes
-        title: Notes
-        notes:
-        - There is no recommended structure of a note. Use notes as needed.
-        range: string
-        pattern: ^.{0,200}$
       datasetID:
         description: The name of the dataset that stores information for MeasureReport,
           SampleReport and other reporting tables.
@@ -9648,9 +9263,18 @@ classes:
           and replace occurred.
         range: datetime
         pattern: ^.{0,30}$
+      notes:
+        description: A note used to describe details that are not captured in other
+          attrbitutes
+        title: Notes
+        notes:
+        - There is no recommended structure of a note. Use notes as needed.
+        range: string
+        pattern: ^.{0,200}$
   sampleRelationships:
     description: Table for recording the relationships between samples.
     title: Sample relationships table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - sampleRelationshipsID
     - sampleIDSubject
@@ -9730,6 +9354,7 @@ classes:
   instruments:
     description: The table that contains information about instruments.
     title: Instrument table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - instrumentID
     - datasetID
@@ -9820,7 +9445,9 @@ classes:
       insType:
         description: Type of instrument used to perform the measurement.
         title: Instrument Type
-        range: insTypeSet
+        range:
+        - insTypeSet
+        - genMissingnessSet
         required: true
         pattern: ^.{0,30}$
       insTypeOth:
@@ -9863,6 +9490,7 @@ classes:
     description: The table that contains information about a site; the location where
       an environmental sample was taken.
     title: Sites table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - parSiteID
     - siteID
@@ -9922,7 +9550,9 @@ classes:
       siteType:
         description: Type of site or institution where sample was taken.
         title: Site Type
-        range: siteTypeSet
+        range:
+        - siteTypeSet
+        - genMissingnessSet
         required: true
         pattern: ^.{0,30}$
       sampleShed:
@@ -9932,7 +9562,9 @@ classes:
         notes:
         - 'Examples: Airplane, Long-term care home, Neighbourhood, University campus,
           Municipality'
-        range: shedSet
+        range:
+        - shedSet
+        - genMissingnessSet
         required: true
         pattern: ^.{0,30}$
       addressID:
@@ -10057,6 +9689,7 @@ classes:
     description: The table that contains information about a contact; a person who
       is the contact of a site or laboratory.
     title: Contact table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - contactID
     - datasetID
@@ -10148,6 +9781,7 @@ classes:
   measureSets:
     description: The table that identifies sets of measures.
     title: Measure set report table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - measureSetRepID
     - protocolID
@@ -10219,6 +9853,7 @@ classes:
   countries:
     description: Look up table for the possible country inputs.
     title: Countries look-up tables
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - isoCode
     - isoCodeX
@@ -10372,6 +10007,7 @@ classes:
   zones:
     description: Look up table for the possible sub-national region or zone inputs.
     title: Zones look-up table
+    from_schema: https://onto.phes-odm.org/odm/v2
     slots:
     - isoCode
     - isoZone
