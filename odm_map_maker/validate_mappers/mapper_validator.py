@@ -19,12 +19,6 @@ app = typer.Typer(
 )
 
 
-class EnumsColumns:
-    ENUM_NAME = "enumName"
-    ENUM_VALUE = "enumValue"
-    MAPPER_FILE = "mapper"
-
-
 MAIN_HELP = """Validate mappers, testing to ensure all required enum derivations exist, that all permissible
 values for the enum derivations exist, and that no unrecognized permissible values in the derivations exist."""
 
@@ -35,6 +29,13 @@ SOURCE_SCHEMA_HELP = """Path to the source LinkML schema that the mappers are fo
 OUTPUT_DIR_HELP = """Directory to save all validation results to."""
 
 SIMPLIFY_HELP = """If set then simplify the output by dropping duplicate rows."""
+
+
+class EnumsColumns:
+    ENUM_NAME = "enumName"
+    ENUM_VALUE = "enumValue"
+    MAPPER_FILE_COUNT = "numMappers"
+    MAPPER_FILE = "mapper"
 
 
 class ValidateMappers(object):
@@ -124,7 +125,7 @@ class ValidateMappers(object):
 
     def test_enum_derivations_complete(
         self, mapper: dict, mapper_file: Union[str, Path]
-    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Make sure all enumeration derivations are complete, and make sure there are no unrecognized enumeration source values
         in the derivations.
 
@@ -134,11 +135,13 @@ class ValidateMappers(object):
                 we add the mapper_file to a column in the resulting DataFrames.
 
         Returns:
-            Tuple[pd.DataFrame, pd.DataFrame]: Tuple of two DataFrames. The first is of missing enumeration values and the
-                second is of unrecognized enumeration values. The DataFrames have the columns in the data class EnumColumns.
+            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: Tuple of three DataFrames. The first is of missing enumeration
+                values, the second is of unrecognized enumeration values, and the third is enumerations that have no
+                permissible value derivations. The DataFrames have the columns in the data class EnumColumns.
         """
         unrecognized_df = pd.DataFrame()
         missing_df = pd.DataFrame()
+        no_permissible_values_df = pd.DataFrame()
 
         # Go through all enum derivations
         for enum_derivation_name, enum_derivation in mapper["enum_derivations"].items():
@@ -194,12 +197,22 @@ class ValidateMappers(object):
                         }
                     )
                     missing_df = pd.concat([missing_df, df], ignore_index=True)
-            elif not enum_derivation.get("mirror_source", False):
-                logger.error(
-                    f"Enum derivation has no permissible value derivations and mirror_source is False: {source_enum_name}"
+            else:
+                df = pd.DataFrame(
+                    {
+                        EnumsColumns.ENUM_NAME: [source_enum_name],
+                        EnumsColumns.MAPPER_FILE: [str(mapper_file)],
+                    }
                 )
+                no_permissible_values_df = pd.concat(
+                    [no_permissible_values_df, df], ignore_index=True
+                )
+            # elif not enum_derivation.get("mirror_source", False):
+            #     logger.error(
+            #         f"Enum derivation has no permissible value derivations and mirror_source is False: {source_enum_name}"
+            #     )
 
-        return missing_df, unrecognized_df
+        return missing_df, unrecognized_df, no_permissible_values_df
 
     def concat_data_frames(
         self, dfs: List[pd.DataFrame], insert_blank_rows: bool = False
@@ -232,7 +245,7 @@ class ValidateMappers(object):
         return pd.concat(dfs, ignore_index=True)
 
     def simplify_enum_df(self, df: pd.DataFrame) -> pd.DataFrame:
-        """For a DataFrame reporting problems with enum derivations, that has the columns defined in EnumColumns,
+        """For a DataFrame that reports problems with enum derivations, that has the columns defined in EnumColumns,
         simplify the DataFrame by dropping duplicate rows (where ENUM_NAME and ENUM_VALUE columns are identical), and
         sort by ENUM_NAME and ENUM_VALUE. This makes it easier for the user to read the DataFrames.
 
@@ -242,26 +255,58 @@ class ValidateMappers(object):
         Returns:
             pd.DataFrame: The simplified DataFrame. The original is left unchanged.
         """
+        df = df.copy()
+
         if len(df) == 0:
             return df
-        for group_name, group_df in df.groupby(
-            [EnumsColumns.ENUM_NAME, EnumsColumns.ENUM_VALUE]
-        ):
+
+        main_columns = []
+        if EnumsColumns.ENUM_NAME in df.columns:
+            main_columns.append(EnumsColumns.ENUM_NAME)
+        if EnumsColumns.ENUM_VALUE in df.columns:
+            main_columns.append(EnumsColumns.ENUM_VALUE)
+
+        for group_name, group_df in df.groupby(main_columns):
             files = "; ".join(group_df[EnumsColumns.MAPPER_FILE])
+            df.loc[group_df.index, EnumsColumns.MAPPER_FILE_COUNT] = len(group_df.index)
             df.loc[group_df.index, EnumsColumns.MAPPER_FILE] = files
+
         df = df.dropna(
-            subset=[EnumsColumns.ENUM_NAME, EnumsColumns.ENUM_VALUE],
+            subset=main_columns,
             how="all",
             ignore_index=True,
         )
-        df = df.drop_duplicates([EnumsColumns.ENUM_NAME, EnumsColumns.ENUM_VALUE])
-        df = df.sort_values(
-            [EnumsColumns.ENUM_NAME, EnumsColumns.ENUM_VALUE]
-        ).reset_index(drop=True)
+        df = df.drop_duplicates(main_columns)
+        df = df.sort_values(main_columns).reset_index(drop=True)
 
-        dfs = [d for _, d in df.groupby([EnumsColumns.ENUM_NAME])]
-        df = self.concat_data_frames(dfs, insert_blank_rows=True)
+        if EnumsColumns.ENUM_NAME in df.columns:
+            dfs = [d for _, d in df.groupby([EnumsColumns.ENUM_NAME])]
+            df = self.concat_data_frames(dfs, insert_blank_rows=True)
         return df
+
+    def order_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Order the columns of a DataFrame so that they are the same as the ordering in EnumsColumns.
+        Additional columns not in EnumsColumns are placed at the end.
+
+        Args:
+            df (pd.DataFrame): The DataFrame to order the columns. A copy of this DataFrame is made
+                with the original left unchanged.
+
+        Returns:
+            pd.DataFrame: The DataFrame with the columns ordered. The original df is left unchanged.
+        """
+        enums_columns = [
+            getattr(EnumsColumns, c)
+            for c in EnumsColumns.__dict__
+            if not c.startswith("_")
+        ]
+        enums_columns = [c for c in enums_columns if c in df.columns]
+        enums_columns = enums_columns + [
+            c for c in df.columns if c not in enums_columns
+        ]
+        df = df[enums_columns]
+
+        return df.copy()
 
     def validate(
         self,
@@ -289,6 +334,7 @@ class ValidateMappers(object):
         ]
         unrecognized_dfs = []
         missing_dfs = []
+        no_permissible_values_dfs = []
         for file in files:
             logger.info(f"Validating file {file}")
             with open(mappers_dir / file, "r") as f:
@@ -297,20 +343,30 @@ class ValidateMappers(object):
             self.test_enum_derivations_exist(mapper)
 
             # Test if enum derivations are complete and for unrecognized enum values
-            cur_missing_df, cur_unrecognized_df = self.test_enum_derivations_complete(
-                mapper, file
+            cur_missing_df, cur_unrecognized_df, cur_no_permissible_values_df = (
+                self.test_enum_derivations_complete(mapper, file)
             )
             missing_dfs.append(cur_missing_df)
             unrecognized_dfs.append(cur_unrecognized_df)
+            no_permissible_values_dfs.append(cur_no_permissible_values_df)
 
         # Combine and simplify the missing_dfs and unrecognized_dfs DataFrames
         missing_df = self.concat_data_frames(missing_dfs, insert_blank_rows=True)
         unrecognized_df = self.concat_data_frames(
             unrecognized_dfs, insert_blank_rows=True
         )
+        no_permissible_values_df = self.concat_data_frames(
+            no_permissible_values_dfs, insert_blank_rows=True
+        )
         if simplify:
             missing_df = self.simplify_enum_df(missing_df)
             unrecognized_df = self.simplify_enum_df(unrecognized_df)
+            no_permissible_values_df = self.simplify_enum_df(no_permissible_values_df)
+
+        #  Order the columns
+        missing_df = self.order_columns(missing_df)
+        unrecognized_df = self.order_columns(unrecognized_df)
+        no_permissible_values_df = self.order_columns(no_permissible_values_df)
 
         if output_dir:
             if len(missing_df):
@@ -321,6 +377,12 @@ class ValidateMappers(object):
                 output_file = Path(output_dir) / "unrecognized_enums.csv"
                 logger.info(f"Saving unrecognized enum value mappings to {output_file}")
                 unrecognized_df.to_csv(output_file, index=False)
+            if len(no_permissible_values_df):
+                output_file = Path(output_dir) / "no_permissible_values_enums.csv"
+                logger.info(
+                    f"Saving enums with no permissible value derivations to {output_file}"
+                )
+                no_permissible_values_df.to_csv(output_file, index=False)
 
 
 @app.command(help=MAIN_HELP)
