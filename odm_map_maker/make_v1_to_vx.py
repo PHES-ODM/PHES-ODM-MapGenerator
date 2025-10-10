@@ -142,18 +142,4 @@ def main(
 
 
 if __name__ == "__main__":
-    if "get_ipython" in globals():
-        VERSION = "2"
-        opts = {
-            "config": "data/odm_v1/odm_v1_to_v2_config.yaml",
-            "source_schema": "data/odm_v1/linkml/odm_v1.yaml",
-            "target_schema": f"data/odm_v{VERSION}/linkml/odm_v{VERSION}.yaml",
-            "wide_dir": "data/odm_v1/custom_wide",
-            "output_dir": f"../gen/odm_v1_to_v{VERSION}",
-            "vx_data_dictionary": f"data/odm_v{VERSION}/v{VERSION} ODM dictionary.xlsx",
-            "max_mapping_only": False,
-        }
-
-        main(**opts)
-    else:
-        app()
+    app()
