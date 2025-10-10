@@ -1,4 +1,3 @@
-# %%
 from pathlib import Path
 from typing import Union, List, Optional, Annotated
 import os
@@ -23,46 +22,43 @@ mapper files. Various sub-directories will be created, with
 the mappers in the "mappers" subdirectory."""
 
 MAPPING_EXCEL_FILE_HELP = """The mapping configuration Excel file that
-                          specifies how to map from the source dataset (eg.
-                          NWSS) to the target dataset (eg. ODM v2)."""
+specifies how to map from the source dataset (eg. NWSS) to the target dataset
+(eg. ODM v2)."""
 
 
 EXCEL_MAPS_SHEETS_HELP = """Name of the map tab(s)/sheet(s) in the
-                         mapping_excel_file Excel file. (eg. "maps")"""
+mapping_excel_file Excel file. (eg. "maps")"""
 
 EXCEL_WIDE_SHEETS_HELP = """Name of the wide tab(s)/sheet(s) in the
-                         mapping_excel_file Excel file. (eg. "wide")"""
+mapping_excel_file Excel file. (eg. "wide")"""
 
 EXCEL_ENUMS_SHEETS_HELP = """Name of the enums tab(s)/sheet(s) in the
-                          mapping_excel_file Excel file. (eg. "enums")"""
+mapping_excel_file Excel file. (eg. "enums")"""
 
 MAPS_FILES_HELP = """Path to CSV or TSV files that contain the maps
-                  configurations."""
+configurations."""
 
 WIDE_FILES_HELP = """Path to CSV or TSV files that contain the wide
-                  configurations."""
+configurations."""
 
 ENUMS_FILES_HELP = """Path to CSV or TSV files that contain the enum
-                   configurations."""
+configurations."""
 
 SOURCE_SCHEMA_HELP = """The source dataset schema LinkML YAML file."""
 
 TARGET_SCHEMA_HELP = """The target dataset schema LinkML YAML file."""
 
 SELECTORS_HELP = """For rows in the mapping config file that have a value in
-                 the "selectors" column, only use the row if any of these
-                 selectors is found. The "selectors" column has a
-                 comma-separated list of selector values. A selector value in
-                 the data can also be preceded by an exclamation mark, meaning
-                 only select the row if the selector value is NOT specified."""
+the "selectors" column, only use the row if any of these selectors is found.
+The "selectors" column has a comma-separated list of selector values. A
+selector value in the data can also be preceded by an exclamation mark, meaning
+only select the row if the selector value is NOT specified."""
 
 SOURCE_SLOT_FORMAT_OPERATIONS_HELP = """Formatting options to apply to all slot
-                                     names, found in the configuration file,
-                                     for the source schema."""
+names, found in the configuration file, for the source schema."""
 
 TARGET_SLOT_FORMAT_OPERATIONS_HELP = """Formatting options to apply to all slot
-                                     names, found in the configuration file,
-                                     for the target schema."""
+names, found in the configuration file, for the target schema."""
 
 
 def get_available_file_path(
@@ -251,111 +247,4 @@ def main(
 
 
 if __name__ == "__main__":
-    if "get_ipython" in globals():
-        dictionary_type = "reporting"
-
-        # fmt: off
-        opts = {
-            # ODM v1 to ODM v2
-            # "source_schema": "data/odm_v1/linkml/odm_v1.yaml",
-            # "target_schema": "data/odm_v2/linkml/odm_v2.yaml",
-            # "mapping_excel_file": "data/mapping_config_files/odm_v1_to_v2_mapping.xlsx",
-            # # "mapping_excel_file": "../gen/odm_v1_to_v2/xlsx_mappers_from_yaml/mapping_config.xlsx",
-            # "excel_maps_sheets": [
-            #     "measures",
-            #     "qualityReports",
-            #     "polygons",
-            #     "samples",
-            #     "contacts",
-            #     "instruments",
-            #     "sites",
-            #     "organizations",
-            #     "protocols",
-            # ],
-            # "excel_wide_sheets": ["wide_protocolSteps"],
-            # "excel_enums_sheets": ["enums"],
-            # "maps_files": [],
-            # "wide_files": [],
-            # "enums_files": [],
-            # "output_dir": "../gen/odm_v1_to_v2",
-            # "selectors": [],
-            # "source_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_trailing_underscores"],
-            # "target_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_trailing_underscores"],
-
-            # NWSS to ODM v2
-            # "source_schema": f"data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml",
-            # "target_schema": "data/odm_v2/linkml/odm_v2.yaml",
-            # "mapping_excel_file": "data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx",
-            # # "mapping_excel_file": "../gen/nwss_reporting_to_v2/xlsx_mappers_from_yaml/mapping_config.xlsx",
-            # "excel_maps_sheets": ["maps"],
-            # # "excel_maps_sheets": ["measureSets", "contacts", "samples", "addresses", "polygons", "datasets", "sites", "organizations", "protocols", "instruments"],
-            # "excel_wide_sheets": [
-            #     "wide_measures",
-            #     "wide_protocolRelationships",
-            #     "wide_protocolSteps",
-            #     "wide_qualityReports",
-            # ],
-            # "excel_enums_sheets": ["enums"],
-            # "maps_files": [],
-            # "wide_files": [],
-            # "enums_files": [],
-            # "output_dir": Path(f"../gen/nwss_{dictionary_type}_to_v2"),
-            # "selectors": [],
-            # "source_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_trailing_underscores"],
-            # "target_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_trailing_underscores"],
-
-            # PHA4GE to ODM v2
-            "source_schema": "data/pha4ge/linkml/pha4ge.yaml",
-            "target_schema": "data/odm_v2/linkml/odm_v2.yaml",
-            "mapping_excel_file": "data/mapping_config_files/pha4ge_to_odm_v2_mapping.xlsx",
-            "excel_maps_sheets": [
-                # "OTHER_maps",
-                "sites_maps",
-                "samples_maps",
-                "repositories_maps",
-                "polygons_maps",
-                "measures_maps",
-                "instruments_maps",
-                "datasets_maps",
-                "addresses_maps",
-                "accessions_maps",
-                "qualityReports_maps",
-                "measureSets_maps",
-
-                # "protocolSteps_maps",
-                "protocols_maps",
-            ],
-            "excel_wide_sheets": [
-                "samples_wide",
-                "sampleRelationships_wide",
-                "repositories_wide",
-                "measures_wide",
-                "datasets_wide",
-                "contacts_wide",
-                "organizations_wide",
-                "measureSets_wide",
-
-                "protocolRelationships_wide",
-                "protocolSteps_wide",
-                "protocols_wide",
-            ],
-            "excel_enums_sheets": [
-                "global_enums",
-                "samples_enums",
-                "measures_enums",
-                "addresses_enums",
-            ],
-            # "excel_enums_sheets": [],
-            "maps_files": [],
-            "wide_files": [],
-            "enums_files": [],
-            "selectors": [],
-            "output_dir": "../gen/pha4ge_to_v2",
-            "source_slot_format_operations": [ "lowercase", '{ remove_chars: "-"}', "alpha_numeric_underscore", "single_underscores", "trim_trailing_underscores" ],
-            "target_slot_format_operations": ["alpha_numeric_underscore", "single_underscores", "trim_trailing_underscores"],
-        }
-        # fmt: on
-
-        main(**opts)
-    else:
-        app()
+    app()
