@@ -1,4 +1,3 @@
-# %%
 from typing import Union, List, Tuple, Annotated
 from pathlib import Path
 import os
@@ -401,22 +400,4 @@ def main(
 
 
 if __name__ == "__main__":
-    if "get_ipython" in globals():
-        opts = {
-            # ODM v1
-            # "mappers_dir": "../../gen/odm_v1_to_v2/mappers",
-            # "source_schema": "../data/odm_v1/linkml/odm_v1.yaml",
-            # "output_dir": "../../gen/validate/odm_v1",
-            # NWSS
-            # "mappers_dir": "../../gen/nwss_reporting_to_v2/mappers",
-            # "source_schema": "../data/nwss_reporting/linkml/nwss_reporting.yaml",
-            # "output_dir": "../../gen/validate/nwss_reporting",
-            # PHA4GE
-            "mappers_dir": "../../gen/pha4ge_to_v2/mappers",
-            "source_schema": "../data/pha4ge/linkml/pha4ge.yaml",
-            "output_dir": "../../gen/validate/pha4ge",
-            "simplify": True,
-        }
-        main(**opts)
-    else:
-        app()
+    app()

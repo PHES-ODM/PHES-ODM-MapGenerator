@@ -1,4 +1,3 @@
-# %%
 """
 Creates the LinkML mapper specification (YAML) files for mapping from ODM v1 to ODM vx.
 
@@ -78,25 +77,14 @@ CUSTOM_WIDE_DIR_HELP = """Directory or list of directories that contain CSV
                        source columns to long ODM vx."""
 
 
-@app.command(help=MAIN_HELP)
 def make_mappers(
-    config: Annotated[Path, typer.Option(show_default=False, help=CONFIG_HELP)],
-    mapper_dir: Annotated[Path, typer.Option(show_default=False, help=MAPPER_DIR_HELP)],
-    prepared_parts_file: Annotated[
-        Path, typer.Option(show_default=False, help=PREPARED_PARTS_FILE_HELP)
-    ],
-    source_schema: Annotated[
-        Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
-    ],
-    target_schema: Annotated[
-        Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
-    ],
-    max_mapping_only: Annotated[
-        Optional[bool], typer.Option(help=MAX_MAPPING_ONLY_HELP)
-    ] = False,
-    custom_wide_dir: Annotated[
-        List[Path], typer.Option(help=CUSTOM_WIDE_DIR_HELP)
-    ] = None,
+    config: Path,
+    mapper_dir: Path,
+    prepared_parts_file: Path,
+    source_schema: Path,
+    target_schema: Path,
+    max_mapping_only: Optional[bool] = False,
+    custom_wide_dir: List[Path] = None,
 ) -> List[Dict]:
     """Make the LinkML mapper specifications for mapping from all source tables to all ODM vx tables
     where a mapping between the tables exists. A separate specification is created for each source table to
@@ -600,17 +588,36 @@ def save_all_mappers(
     return results
 
 
+@app.command(help=MAIN_HELP)
+def main(
+    config: Annotated[Path, typer.Option(show_default=False, help=CONFIG_HELP)],
+    mapper_dir: Annotated[Path, typer.Option(show_default=False, help=MAPPER_DIR_HELP)],
+    prepared_parts_file: Annotated[
+        Path, typer.Option(show_default=False, help=PREPARED_PARTS_FILE_HELP)
+    ],
+    source_schema: Annotated[
+        Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
+    ],
+    target_schema: Annotated[
+        Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
+    ],
+    max_mapping_only: Annotated[
+        Optional[bool], typer.Option(help=MAX_MAPPING_ONLY_HELP)
+    ] = False,
+    custom_wide_dir: Annotated[
+        List[Path], typer.Option(help=CUSTOM_WIDE_DIR_HELP)
+    ] = None,
+):
+    make_mappers(
+        config=config,
+        mapper_dir=mapper_dir,
+        prepared_parts_file=prepared_parts_file,
+        source_schema=source_schema,
+        target_schema=target_schema,
+        max_mapping_only=max_mapping_only,
+        custom_wide_dir=custom_wide_dir,
+    )
+
+
 if __name__ == "__main__":
-    if "get_ipython" in globals():
-        opts = {
-            "config": "../data/odm_v1/odm_v1_to_v2_config.yaml",
-            "prepared_parts_file": "../../gen/odm_v1_to_v2/configs/parts_prepared.csv",
-            "mapper_dir": "../../gen/odm_v1_to_v2/mappers",
-            "source_schema": "../data/odm_v1/linkml/odm_v1.yaml",
-            "target_schema": "../data/odm_v2/linkml/odm_v2.yaml",
-            "max_mapping_only": False,
-            "custom_wide_dir": "../data/odm_v1/custom_wide",
-        }
-        make_mappers(**opts)
-    else:
-        app()
+    app()

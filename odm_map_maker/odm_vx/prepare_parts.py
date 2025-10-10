@@ -1,4 +1,3 @@
-# %%
 """
 IMPORTANT:
 The following enumerations in v1 (according to the v1 enums.csv) are not found in the parts list:
@@ -46,18 +45,6 @@ PARTS_FILE_HELP = """Input CSV ODM vx parts file to prepare for v1 to vx
                   mapping."""
 
 OUTPUT_FILE_HELP = """CSV file to save the prepared file to."""
-
-
-@app.command(help=MAIN_HELP)
-def main(
-    parts_file: Annotated[str, typer.Option(show_default=False, help=PARTS_FILE_HELP)],
-    output_file: Annotated[
-        str, typer.Option(show_default=False, help=OUTPUT_FILE_HELP)
-    ],
-):
-    logger.info("Making enumeration derivations...")
-    prepare_parts(parts_file, output_file, map_columns=MAP_COLUMNS)
-    logger.info("Finished!")
 
 
 def prepare_parts(
@@ -201,13 +188,17 @@ def add_v1_enumeration_names(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-if __name__ == "__main__":
-    if "get_ipython" in globals():
-        opts = {
-            "parts_file": "../../gen/odm_v1_to_v2/configs/parts.csv",
-            "output_file": "../../gen/odm_v1_to_v2/configs/parts_prepared.csv",
-        }
+@app.command(help=MAIN_HELP)
+def main(
+    parts_file: Annotated[str, typer.Option(show_default=False, help=PARTS_FILE_HELP)],
+    output_file: Annotated[
+        str, typer.Option(show_default=False, help=OUTPUT_FILE_HELP)
+    ],
+):
+    logger.info("Making enumeration derivations...")
+    prepare_parts(parts_file, output_file, map_columns=MAP_COLUMNS)
+    logger.info("Finished!")
 
-        main(**opts)
-    else:
-        app()
+
+if __name__ == "__main__":
+    app()

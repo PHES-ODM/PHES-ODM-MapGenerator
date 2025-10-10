@@ -1,6 +1,3 @@
-# %%
-""" """
-
 import typer
 import re
 import os
@@ -62,21 +59,6 @@ TARGET_SCHEMA_HELP = """The LinkML schema for the target dataset."""
 
 OUTPUT_DIR_HELP = """The directory to save the final mapping configuration file
                   to."""
-
-
-@app.command(help=MAIN_HELP)
-def main(
-    source_dir: Annotated[Path, typer.Option(show_default=False, help=SOURCE_DIR_HELP)],
-    source_schema: Annotated[
-        Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
-    ],
-    target_schema: Annotated[
-        Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
-    ],
-    output_dir: Annotated[Path, typer.Option(show_default=False, help=OUTPUT_DIR_HELP)],
-):
-    mapper = YAMLtoXLSXMapper(source_dir, source_schema, target_schema, output_dir)
-    mapper.convert()
 
 
 class YAMLtoXLSXMapper(object):
@@ -671,20 +653,20 @@ class YAMLtoXLSXMapper(object):
         return wide_df, map_df if len(map_df.index) > 0 else None
 
 
+@app.command(help=MAIN_HELP)
+def main(
+    source_dir: Annotated[Path, typer.Option(show_default=False, help=SOURCE_DIR_HELP)],
+    source_schema: Annotated[
+        Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
+    ],
+    target_schema: Annotated[
+        Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
+    ],
+    output_dir: Annotated[Path, typer.Option(show_default=False, help=OUTPUT_DIR_HELP)],
+):
+    mapper = YAMLtoXLSXMapper(source_dir, source_schema, target_schema, output_dir)
+    mapper.convert()
+
+
 if __name__ == "__main__":
-    if "get_ipython" in globals():
-        opts = {
-            # ODM v1 to v2
-            "source_dir": "../../gen/odm_v1_to_v2/mappers",
-            "source_schema": "../data/odm_v1/linkml/odm_v1.yaml",
-            "target_schema": "../data/odm_v2/linkml/odm_v2.yaml",
-            "output_dir": "../../gen/odm_v1_to_v2/xlsx_mappers_from_yaml",
-            # NWSS to ODM v2
-            # "source_dir": "../../gen/nwss_reporting_to_v2/mappers",
-            # "source_schema": "../../gen/nwss_reporting_to_v2/linkml_for_mapping/nwss_reporting.yaml",
-            # "target_schema": "../data/odm_v2/linkml/odm_v2.yaml",
-            # "output_dir": "../../gen/nwss_reporting_to_v2/xlsx_mappers_from_yaml",
-        }
-        main(**opts)
-    else:
-        app()
+    app()
