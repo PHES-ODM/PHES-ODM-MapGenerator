@@ -1,5 +1,3 @@
-# %%
-
 import typer
 from collections import Counter
 from typing import Any, Optional, Iterator, Union, Annotated
@@ -57,7 +55,7 @@ def _parse_value(value: Any, cls: str, slot: str, schema: SchemaView) -> Any:
             then the value is returned unchanged.
     """
     # Get the range and cast to string if range is "string" or an enum
-    ranges = get_ranges_of_slot(cls, slot, schema)
+    ranges = get_ranges_of_slot(cls, slot, schema, exception_on_error=False)
 
     if ranges:
         for rng in ranges:
@@ -109,7 +107,7 @@ class LoaderWithSchema(Loader, ABC):
         Yields:
             Iterator[dict]: A single row.
         """
-        with open(self.source) as file:
+        with open(self.source, encoding="utf-8-sig") as file:
             reader: csv.DictReader = csv.DictReader(
                 file, delimiter=self.delimiter, skipinitialspace=True
             )
@@ -223,26 +221,12 @@ def main(
     if sum(severity_counter.values()) == 0:
         logger.info("No issues found")
 
-    if "get_ipython" not in globals():
-        # Exit with or without error
-        exit_code = 1 if severity_counter[Severity.ERROR] > 0 else 0
-        sys.exit(exit_code)
+    # Exit with or without error
+    exit_code = 1 if severity_counter[Severity.ERROR] > 0 else 0
+    sys.exit(exit_code)
 
-    print(severity_counter)
+    # print(severity_counter)
 
 
 if __name__ == "__main__":
-    if "get_ipython" in globals():
-        opts = {
-            # "schema": "data/nwss_reporting/linkml/nwss_reporting.yaml",
-            # "source_class": "nwss",
-            # "data_source": "../../../PHES-ODM-Data/nwss/nwss_renamed/nwss[cdc-nwss-restricted-dataset-wastewater-20240730].csv",
-            "schema": "data/pha4ge/linkml/pha4ge.yaml",
-            "source_class": "PHA4GE",
-            "data_source": "../../../PHES-ODM-Data/PHA4GE/WW-SC2_examples_20250108.csv",
-            "max_errors": 500,
-        }
-
-        main(**opts)
-    else:
-        app()
+    app()
