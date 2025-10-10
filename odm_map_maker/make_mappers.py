@@ -6,10 +6,9 @@ specify both the mappings between source and target classes, wide-to-long column
 mappings.
 """
 
-import typer
 import pandas as pd
 from pathlib import Path
-from typing import Union, List, Dict, Optional, Any, Annotated
+from typing import Union, List, Dict, Optional, Any
 import os
 import yaml
 import json
@@ -47,11 +46,6 @@ from odm_map_maker.utils.mapper_utils import (
 from odm_map_maker.utils.auto_id import add_auto_ids_to_schema
 
 logger = get_logger(__name__)
-
-app = typer.Typer(
-    pretty_exceptions_show_locals=False,
-    rich_markup_mode="rich",
-)
 
 
 class MakeMappers(object):
@@ -1220,142 +1214,3 @@ class MakeMappers(object):
         with open(output_file, "w") as f:
             f.write(yaml.dump(schema_dict, sort_keys=False))
         logger.info(f"LinkML schema saved to '{output_file}'")
-
-
-MAIN_HELP = """Create LinkML-Map schemas."""
-
-MAPS_FILES_HELP = """The mapping config files."""
-
-WIDE_FILES_HELP = """The wide column config files."""
-
-ENUMS_FILES_HELP = """The enumerations config files."""
-
-MAPPER_DIR_HELP = """Directory to save all the mapping config files to."""
-
-SOURCE_SCHEMA_HELP = """Path to the source schema of the mapping."""
-
-TARGET_SCHEMA_HELP = """Path to the target schema of the mapping."""
-
-SELECTORS_HELP = """For rows in the mapping config file that have a value in
-                 the "selectors" column, only use the row if any of these
-                 selectors is found. The "selectors" column has a
-                 comma-separated list of selector values. A selector value in
-                 the data can also be preceded by an exclamation mark, meaning
-                 only select the row if the selector value is NOT specified."""
-
-SOURCE_SLOT_FORMAT_OPERATIONS_HELP = """Formatting options to apply to all slot
-                                     names, found in the configuration file,
-                                     for the source schema."""
-
-TARGET_SLOT_FORMAT_OPERATIONS_HELP = """Formatting options to apply to all slot
-                                     names, found in the configuration file,
-                                     for the target schema."""
-
-
-@app.command(help=MAIN_HELP)
-def main(
-    source_schema: Annotated[
-        Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
-    ],
-    target_schema: Annotated[
-        Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
-    ],
-    mapper_dir: Annotated[Path, typer.Option(show_default=False, help=MAPPER_DIR_HELP)],
-    maps_files: Annotated[
-        List[Path], typer.Option(show_default=False, help=MAPS_FILES_HELP)
-    ],
-    wide_files: Annotated[List[Path], typer.Option(help=WIDE_FILES_HELP)] = None,
-    enums_files: Annotated[List[Path], typer.Option(help=ENUMS_FILES_HELP)] = None,
-    selectors: Annotated[Optional[List[str]], typer.Option(help=SELECTORS_HELP)] = None,
-    source_slot_format_operations: Annotated[
-        Optional[List[str]], typer.Option(help=SOURCE_SLOT_FORMAT_OPERATIONS_HELP)
-    ] = None,
-    target_slot_format_operations: Annotated[
-        Optional[List[str]], typer.Option(help=TARGET_SLOT_FORMAT_OPERATIONS_HELP)
-    ] = None,
-):
-    maker = MakeMappers(
-        maps_files=maps_files,
-        wide_files=wide_files,
-        enums_files=enums_files,
-        mapper_dir=mapper_dir,
-        source_schema=source_schema,
-        target_schema=target_schema,
-        selectors=selectors,
-        source_slot_format_operations=source_slot_format_operations,
-        target_slot_format_operations=target_slot_format_operations,
-    )
-    maker.make_mappers()
-
-    logger.info("Finished!")
-
-
-if __name__ == "__main__":
-    if "get_ipython" in globals():
-        dictionary_type = "reporting"
-
-        opts = {
-            # "maps_files": ["../gen/odm_v1_to_v2/configs/maps0.csv"],
-            # "wide_files": [],
-            # "enums_files": [],
-            # "mapper_dir": "../gen/odm_v1_to_v2/mappers",
-            # "source_schema": "data/odm_v1/linkml/odm_v1.yaml",
-            # "target_schema": "data/odm_v2/linkml/odm_v2.yaml",
-            # "selectors": [],
-            # "maps_files": [f"../gen/nwss_{dictionary_type}_to_v2/configs/maps0.csv"],
-            # "wide_files": [
-            #     f"../gen/nwss_{dictionary_type}_to_v2/configs/wide0.csv",
-            #     f"../gen/nwss_{dictionary_type}_to_v2/configs/wide1.csv",
-            #     f"../gen/nwss_{dictionary_type}_to_v2/configs/wide2.csv",
-            # ],
-            # "enums_files": [f"../gen/nwss_{dictionary_type}_to_v2/configs/enums0.csv"],
-            # "mapper_dir": f"../gen/nwss_{dictionary_type}_to_v2/mappers",
-            # "source_schema": (,
-            #     f"data/nwss_{dictionary_type}/linkml/nwss_{dictionary_type}.yaml",
-            # ),
-            # "target_schema": "data/odm_v2/linkml/odm_v2.yaml",
-            "maps_files": [
-                "../gen/pha4ge_to_v2/configs/maps0.csv",
-                "../gen/pha4ge_to_v2/configs/maps1.csv",
-                "../gen/pha4ge_to_v2/configs/maps2.csv",
-                "../gen/pha4ge_to_v2/configs/maps3.csv",
-                "../gen/pha4ge_to_v2/configs/maps4.csv",
-                "../gen/pha4ge_to_v2/configs/maps5.csv",
-                "../gen/pha4ge_to_v2/configs/maps6.csv",
-                "../gen/pha4ge_to_v2/configs/maps7.csv",
-                "../gen/pha4ge_to_v2/configs/maps8.csv",
-                "../gen/pha4ge_to_v2/configs/maps9.csv",
-            ],
-            "wide_files": [
-                "../gen/pha4ge_to_v2/configs/wide0.csv",
-                "../gen/pha4ge_to_v2/configs/wide1.csv",
-                "../gen/pha4ge_to_v2/configs/wide2.csv",
-                "../gen/pha4ge_to_v2/configs/wide3.csv",
-                "../gen/pha4ge_to_v2/configs/wide4.csv",
-                "../gen/pha4ge_to_v2/configs/wide5.csv",
-            ],
-            "enums_files": [
-                "../gen/pha4ge_to_v2/configs/enums0.csv",
-                "../gen/pha4ge_to_v2/configs/enums1.csv",
-                "../gen/pha4ge_to_v2/configs/enums2.csv",
-            ],
-            "mapper_dir": "../gen/pha4ge_to_v2/mappers",
-            "source_schema": "data/pha4ge/linkml/pha4ge.yaml",
-            "target_schema": "data/odm_v2/linkml/odm_v2.yaml",
-            "source_slot_format_operations": [
-                "lowercase",
-                '{ remove_chars: "-"}',
-                "alpha_numeric_underscore",
-                "single_underscores",
-                "trim_trailing_underscores",
-            ],
-            "target_slot_format_operations": [
-                "alpha_numeric_underscore",
-                "single_underscores",
-                "trim_trailing_underscores",
-            ],
-            "selectors": [],
-        }
-        main(**opts)
-    else:
-        app()
