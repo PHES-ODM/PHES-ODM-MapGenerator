@@ -442,7 +442,9 @@ def expand_wide_derivations(
                 target_slot = row[MappingColumns.TARGET_SLOT]
                 target_value = row[MappingColumns.TARGET_VALUE]
                 target_expr = row[MappingColumns.TARGET_EXPR]
-                slot_derivation_settings = row[MappingColumns.SLOT_DERIVATION_SETTINGS]
+                slot_derivation_settings = row.get(
+                    MappingColumns.SLOT_DERIVATION_SETTINGS, None
+                )
                 if pd.isna(slot_derivation_settings):
                     slot_derivation_settings = None
                 if slot_derivation_settings:
