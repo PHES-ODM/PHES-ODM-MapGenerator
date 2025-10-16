@@ -253,7 +253,7 @@ def select_required_enum_derivations(
     class_derivation: Dict,
     enum_derivations: List[Dict],
     schema: SchemaView,
-    mirror_missing_enum_derivations: bool = True,
+    mirror_missing_enum_derivations: bool = False,
 ) -> Dict:
     """Select all the enumeration derivations required by the specified class derivation.
     @TODO: Update this: The parameters and parameter types have changed
@@ -329,15 +329,21 @@ def select_required_enum_derivations(
                     raise RuntimeError(
                         f"Found multiple target enum derivations {derivations} populating from the same source enum {enum_name} (from source slot {source_slot_name}). This is not allowed by LinkML Mapper!"
                     )
-                if mirror_missing_enum_derivations and len(derivations) == 0:
+                # if mirror_missing_enum_derivations and len(derivations) == 0:
+                if len(derivations) == 0:
                     # No enum derivation found, but caller is requesting to create a mirror enum derivation in this case.
                     logger.warning(
                         f"No enum derivation found for {enum_name} in select_required_enum_derivations, creating a mirrored enum derivation"
                     )
-                    target_enum_name = f"{enum_name}[=mirrored=]"
+                    mirrored_tag = (
+                        "mirrored"
+                        if mirror_missing_enum_derivations
+                        else "not_mirrored"
+                    )
+                    target_enum_name = f"{enum_name}[={mirrored_tag}=]"
                     selected_derivations[target_enum_name] = {
                         "name": target_enum_name,
-                        "mirror_source": True,
+                        "mirror_source": mirror_missing_enum_derivations,
                         "populated_from": enum_name,
                     }
                 else:
