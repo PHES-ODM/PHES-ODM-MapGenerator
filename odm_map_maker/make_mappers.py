@@ -43,7 +43,6 @@ from odm_map_maker.utils.mapper_utils import (
     cleanup_slot_name,
     CONFIG_READ_KWARGS,
 )
-from odm_map_maker.utils.auto_id import add_auto_ids_to_schema
 
 logger = get_logger(__name__)
 
@@ -119,11 +118,6 @@ class MakeMappers(object):
         if self.enums_files is not None and len(self.enums_files) > 0:
             enums_df = [self.prepare_enums_df(f) for f in self.enums_files]
             enums_df = pd.concat([df for df in enums_df if df is not None])
-
-        # Add all auto IDs (eg. id:sampleID) to the LinkML schema
-        add_auto_ids_to_schema(self.source_schema, maps_df)
-        for wide_df in wide_dfs:
-            add_auto_ids_to_schema(self.source_schema, wide_df)
 
         groupby_columns = [
             MappingColumns.SOURCE_CLASS,
