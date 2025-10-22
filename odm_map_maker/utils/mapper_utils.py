@@ -327,7 +327,7 @@ def select_required_enum_derivations(
                     ]
                 if len(derivations) > 1:
                     raise RuntimeError(
-                        f"Found multiple target enum derivations {derivations} populating from the same source enum {enum_name} (from source slot {source_slot_name}). This is not allowed by LinkML Mapper!"
+                        f"Found multiple target enum derivations {derivations} populating from the same source enum {enum_name} (from source slot {source_class}.{source_slot_name} to target slot {target_class}.{target_slot_name}). This is not allowed by LinkML Mapper!"
                     )
                 # if mirror_missing_enum_derivations and len(derivations) == 0:
                 if len(derivations) == 0:
