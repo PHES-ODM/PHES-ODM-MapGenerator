@@ -60,6 +60,18 @@ names, found in the configuration file, for the source schema."""
 TARGET_SLOT_FORMAT_OPERATIONS_HELP = """Formatting options to apply to all slot
 names, found in the configuration file, for the target schema."""
 
+SOURCE_MATCH_ONTOLOGY_ID_REGEX_HELP = """If set, then a regular expression
+string that matches ontology IDs in enum values in the source schema. This is
+used to allow automatically adding ontology IDs, as found in the source schema,
+onto enum values that do not have an ontology ID in the mapping
+configuration."""
+
+TARGET_MATCH_ONTOLOGY_ID_REGEX_HELP = """If set, then a regular expression
+string that matches ontology IDs in enum values in the target schema. This is
+used to allow automatically adding ontology IDs, as found in the target schema,
+onto enum values that do not have an ontology ID in the mapping
+configuration."""
+
 
 def get_available_file_path(
     source_file: Union[str, Path], target_dir: Union[str, Path]
@@ -127,6 +139,14 @@ def main(
     target_slot_format_operations: Annotated[
         Optional[List[str]],
         typer.Option(show_default=False, help=TARGET_SLOT_FORMAT_OPERATIONS_HELP),
+    ] = None,
+    source_match_ontology_id_regex: Annotated[
+        Optional[str],
+        typer.Option(show_default=False, help=SOURCE_MATCH_ONTOLOGY_ID_REGEX_HELP),
+    ] = None,
+    target_match_ontology_id_regex: Annotated[
+        Optional[str],
+        typer.Option(show_default=False, help=TARGET_MATCH_ONTOLOGY_ID_REGEX_HELP),
     ] = None,
 ):
     """Make the LinkML Mapper spec (YAML) files required for mapping from any source data set to
@@ -240,6 +260,8 @@ def main(
             selectors=selectors,
             source_slot_format_operations=source_slot_format_operations,
             target_slot_format_operations=target_slot_format_operations,
+            source_match_ontology_id_regex=source_match_ontology_id_regex,
+            target_match_ontology_id_regex=target_match_ontology_id_regex,
         )
         maker.make_mappers()
 

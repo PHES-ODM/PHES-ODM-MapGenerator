@@ -121,7 +121,7 @@ def get_enum_name_with_permissible_value(
     enum_names: List[str],
     permissible_value: Any,
     schema: SchemaView,
-    with_ontology_id: bool = False,
+    match_ontology_id: Optional[str],
 ) -> Optional[str]:
     """Get the first enumeration name that contains the specified permissible value.
 
@@ -129,10 +129,9 @@ def get_enum_name_with_permissible_value(
         enum_names (List[str]): List of enumeration names (in schema) to look for the permissible value in.
         permissible_value (Any): The permissible value to find.
         schema (SchemaView): The schema view that contains all the enumerations.
-        with_ontology_id (bool): If True then we also allow the permissible_value to match the schema
-            enum values that have an additional ontology ID appended to it (in square brackets). For example,
-            if permissible_value is "degree Celsius (C)" then it will also match a permissible value
-            in the schema of "degree Celsius (C) [UO:0000027]".
+        match_ontology_id (Optional[str], optional): If set, then a regular expression string that matches ontology
+            IDs for enum values in the schema. Any enum value in the schema will have its ontology ID removed when
+            comparing it to permissible_value, so that the caller does not need to explicitly include it.
 
     Returns:
         Optional[str]: The first enumeration name found in enum_names that has permissible_value as a permissible value.
@@ -144,15 +143,21 @@ def get_enum_name_with_permissible_value(
             permissible_values = list(enum.permissible_values.keys())
             if permissible_value in permissible_values:
                 return enum_name
-            if with_ontology_id:
-                permissible_values = [remove_ontology_id(p) for p in permissible_values]
+            if match_ontology_id:
+                permissible_values = [
+                    remove_ontology_id(p, match_ontology_id=match_ontology_id)
+                    for p in permissible_values
+                ]
                 if permissible_value in permissible_values:
                     return enum_name
     return None
 
 
 def add_ontoid_to_enum_value(
-    schema: SchemaView, enum_name: str, enum_value: str
+    schema: SchemaView,
+    enum_name: str,
+    enum_value: str,
+    match_ontology_id: Optional[str],
 ) -> str:
     """Add an ontology ID to an enum value, if an ontology ID is present for that enum value
     in the schema. For example, an enum value of "degree Celsius (C)" might be changed to
@@ -163,32 +168,48 @@ def add_ontoid_to_enum_value(
         enum_name (str): The enumeration name that the enum value belongs to.
         enum_value (str): The enum value to an ontology ID to, if the ontology ID is present
             in the schema.
+        match_ontology_id (Optional[str], optional): If set, then a regular expression string that matches ontology
+            IDs for enum values in the schema. If a permissible value with its ontology ID removed matches
+            enum_value, then that permissible value (with the ontology ID) will be returned. If
+            match_ontology_id is None or empty ("") then enum_value is returned unchanged.
 
     Returns:
         str: The enumeration value, possibly with an ontology ID added to it.
     """
+    if not match_ontology_id:
+        return enum_value
     if not enum_name:
         return enum_value
     enum_defn = schema.get_enum(enum_name)
     if not enum_defn:
         return enum_value
     for permissible_value in enum_defn.permissible_values.keys():
-        if remove_ontology_id(str(permissible_value)) == enum_value:
+        if (
+            remove_ontology_id(
+                str(permissible_value), match_ontology_id=match_ontology_id
+            )
+            == enum_value
+        ):
             return permissible_value
     return enum_value
 
 
-def remove_ontology_id(val: str) -> str:
+def remove_ontology_id(val: str, match_ontology_id: Optional[str]) -> str:
     """Remove an ontology ID from the end of a value. For example, "degree Celsius (C) [UO:0000027]" would
         become "degree Celsius (C)"
 
     Args:
         val (str): The value to remove the ontology ID from.
+        match_ontology_id (Optional[str], optional): If set, then a regular expression string that matches ontology
+            IDs for enum values in the schema. If a match is found in val, then it is removed. If
+            match_ontology_id is None or empty ("") then val is returned unchanged.
 
     Returns:
         str: The value with the ontology ID removed. If there was no ontology ID it is returned unchanged.
     """
-    val = re.sub(r"\[[A-Za-z0-9_]+:[A-Za-z0-9_]+\]$", "", val.strip()).strip()
+    if not match_ontology_id:
+        return val
+    val = re.sub(match_ontology_id, "", val.strip()).strip()
     return val
 
 

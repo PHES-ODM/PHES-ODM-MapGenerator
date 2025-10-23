@@ -59,6 +59,8 @@ class MakeMappers(object):
         selectors: Optional[List[str]],
         source_slot_format_operations: Optional[Union[str, List[str]]],
         target_slot_format_operations: Optional[Union[str, List[str]]],
+        source_match_ontology_id_regex: Optional[str],
+        target_match_ontology_id_regex: Optional[str],
     ):
         """Construct map maker for generating LinkML mapping files.
 
@@ -79,11 +81,19 @@ class MakeMappers(object):
                 all slot names, found in the configuration file, for the source schema.
             target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
                 all slot names, found in the configuration file, for the target schema.
+            source_match_ontology_id_regex (Optional[str], optional): If set, then a regular expression string that matches ontology
+                IDs in enum values in the source schema. This is used to allow automatically adding ontology IDs, as found in the source
+                schema, onto enum values that do not have an ontology ID in the mapping configuration.
+            target_match_ontology_id_regex (Optional[str], optional): If set, then a regular expression string that matches ontology
+                IDs in enum values in the target schema. This is used to allow automatically adding ontology IDs, as found in the target
+                schema, onto enum values that do not have an ontology ID in the mapping configuration.
         """
         self.mapper_dir = mapper_dir
         self.selectors = selectors
         self.source_slot_format_operations = source_slot_format_operations
         self.target_slot_format_operations = target_slot_format_operations
+        self.source_match_ontology_id_regex = source_match_ontology_id_regex
+        self.target_match_ontology_id_regex = target_match_ontology_id_regex
 
         self.maps_files = maps_files
         self.wide_files = wide_files
@@ -496,7 +506,7 @@ class MakeMappers(object):
                     source_enum_names,
                     source_enum_value,
                     self.source_schema,
-                    with_ontology_id=True,
+                    match_ontology_id=self.source_match_ontology_id_regex,
                 )
                 if not source_enum_name:
                     source_enum_name = source_enum_names[0]
@@ -517,7 +527,7 @@ class MakeMappers(object):
                         target_enum_names,
                         target_enum_value,
                         self.target_schema,
-                        with_ontology_id=True,
+                        match_ontology_id=self.target_match_ontology_id_regex,
                     )
                     if not target_enum_name:
                         target_enum_name = target_enum_names[0]
@@ -545,10 +555,16 @@ class MakeMappers(object):
             # Add an ontology ID to the enum values if the schema has ontology IDs appended to the
             # enum values
             source_enum_value = add_ontoid_to_enum_value(
-                self.source_schema, source_enum_name, source_enum_value
+                self.source_schema,
+                source_enum_name,
+                source_enum_value,
+                match_ontology_id=self.source_match_ontology_id_regex,
             )
             target_enum_value = add_ontoid_to_enum_value(
-                self.target_schema, target_enum_name, target_enum_value
+                self.target_schema,
+                target_enum_name,
+                target_enum_value,
+                match_ontology_id=self.target_match_ontology_id_regex,
             )
 
             # Get the enum derivations dictionary for the current source_class and target_class and source_enum_name
