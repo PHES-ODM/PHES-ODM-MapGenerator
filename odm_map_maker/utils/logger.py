@@ -14,7 +14,7 @@ import sys
 import logging
 
 # Set to True for detailed logging output. Typically used for debugging.
-DETAILED_LOGGER = True
+DETAILED_LOGGER = False
 
 if DETAILED_LOGGER:
     # Default logging format
