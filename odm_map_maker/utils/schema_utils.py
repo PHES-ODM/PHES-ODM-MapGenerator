@@ -6,8 +6,25 @@ from typing import Dict, List, Optional, Any, Union
 from dataclasses import asdict
 from linkml_runtime.linkml_model.meta import SlotDefinition
 import re
+import numpy as np
 
 from linkml_runtime import SchemaView
+
+from odm_map_maker.utils.general_utils import choose_ignore_case_value
+
+
+def all_classes_without_tree_root(schema: SchemaView) -> List[str]:
+    """Get a list of all classes in the schema, excluding the tree root class that contains
+    all the classes.
+
+    Args:
+        schema (SchemaView): The Schema to get the classes of.
+
+    Returns:
+        List[str]: List of all classes belonging to the schema, excluding the tree root class.
+    """
+    classes = [str(c) for c, defn in schema.all_classes().items() if not defn.tree_root]
+    return classes
 
 
 def get_slot_definition(
@@ -227,7 +244,7 @@ def get_enum_names_for_slot(
         List[str]: The names of the enumerations that is the range of slot. If slot does
             not have an enumeration for a range then None is returned.
     """
-    ranges = get_ranges_of_slot(cls, slot, schema)
+    ranges = get_ranges_of_slot(cls, slot, schema, exception_on_error=False)
     if not ranges:
         return None
 
@@ -239,3 +256,122 @@ def get_enum_names_for_slot(
             enum_names.append(rng)
 
     return enum_names if enum_names else None
+
+
+def remove_ignored_text_from_class_name(class_name: str) -> str:
+    """Remove any text to ignore when trying to identify a class name within a string.
+
+    This will remove all text after the first opening square or round bracket.
+
+    Args:
+        class_name (str): The class name string candidate to clean up.
+
+    Returns:
+        str: The string class_name with text we should ignore removed. After
+            cleaning up the string we can search for a class name in the cleaned
+            string.
+    """
+    return class_name.split("[")[0].split("(")[0]
+
+
+def find_class(
+    class_name: str, schema: Optional[SchemaView], ignore_case: bool
+) -> Optional[str]:
+    """Figure out which class the class_name string should belong to, making the search
+    fairly flexible. We will typically search for a recognized class name in the string,
+    so for example "1 - WWMeasure (2024-11-30)" would map to the class "WWMeasure".
+    For a stricter search, where the whole string (after cleaning) must match a recognized class,
+    see get_class().
+
+    For cleaning, any text after the first opening square or round bracket in class_name is
+    ignored.
+
+    The matching class is the longest class name in the schema that can be found
+    in the string class_name (eg. If "WWMeasure" and "Measure" are both classes in
+    the schema, then the string "1 - WWMeasure" will match to "WWMeasure", even
+    though "Measure" is found in the string, because "WWMeasure" is longer).
+
+    If schema is None, then the class_name is cleaned but we return the cleaned class_name
+    without searching for class name strings within the class_name (since we need schema
+    to know which classes are valid classes)
+
+    Args:
+        class_name (str): The string to search for the class name. Any text after the
+            first opening square or round bracket in class_name is ignored.
+        schema (Optional[SchemaView], optional): The schema containing all the recognized
+            classes. Can be None.
+        ignore_case (bool): If True then make the search case-insensitive, otherwise
+            make it case-sensitive.
+
+    Returns:
+        Optional[str]: The class that the string should represent, or None if no
+            class was found.
+    """
+    class_name = remove_ignored_text_from_class_name(class_name)
+
+    if schema is None:
+        return class_name
+
+    all_classes = all_classes_without_tree_root(schema)
+
+    all_classes_lower = [c.lower() for c in all_classes] if ignore_case else all_classes
+    match_lower = class_name.lower() if ignore_case else class_name
+
+    # Find all matches
+    matches = [c for c in all_classes_lower if c in match_lower]
+    if len(matches) == 0:
+        return None
+    # Match found, so get the longeset matching class name
+    matched = matches[np.argmax([len(c) for c in matches])]
+
+    # Correct capitalization of class
+    return choose_ignore_case_value(matched, all_classes)
+
+
+def get_class(
+    class_name: str, schema: Optional[SchemaView], ignore_case: bool
+) -> Optional[str]:
+    """Get the recognized class name based on the string class_name (optionally case-
+    sensitive or case-insensitive), or None if the class name does not exist.
+
+    Any text after the first opening square or round bracket in class_name is
+    ignored.
+
+    If schema is None, then we simply return the cleaned text as a class name,
+    since we need schema to know which class names are valid.
+
+    Args:
+        class_name (str): The string to get the class name for. Any text after the
+            first opening square or round bracket in class_name is ignored.
+        schema (Optional[SchemaView], optional): The schema that contains all the
+            recognized classes. If None then we simply return the cleaned class_name
+            (since we need schema to know which class names are valid)
+        ignore_case (bool): If True then make class_name case-insensitive, but return
+            the class name with the correct capitaliztion. If False then only
+            return the recognized class if class_name already has the correct
+            capitalization.
+
+    Returns:
+        Optional[str]: The recognized class name, or None if class_name is not
+            a recognized class name in the schema. If schema is None, then we
+            clean class_name (remove text after the first opening round or
+            square bracket) and return the value without checking if it is
+            a valid class name.
+    """
+    class_name = remove_ignored_text_from_class_name(class_name)
+
+    if schema is None:
+        return class_name
+
+    all_classes = all_classes_without_tree_root(schema)
+
+    if ignore_case:
+        # Case-insensitive
+        return choose_ignore_case_value(
+            class_name, all_classes, return_same_if_missing=False
+        )
+    else:
+        # Case-sensitive, so only return exact match
+        if class_name in all_classes:
+            return class_name
+        return None
