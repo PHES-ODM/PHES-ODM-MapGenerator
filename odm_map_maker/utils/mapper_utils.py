@@ -247,6 +247,43 @@ def parse_used_slots(node: ast.Attribute, path: List[str] = []) -> List[str]:
     return path
 
 
+def get_source_slots_from_slot_derivation(
+    slot_derivation: Dict, recognized_globals: List[str] = ["emap"]
+) -> List[str]:
+    """Get a list of all source slot names that are used to populate a target slot from the
+    specified slot derivation. recognized_globals can be used to restrict which slots are
+    returned in "expr" blocks of the derivation to those slots that are accessed through
+    any of the global namespaces listed in recognized_globals.
+
+    Args:
+        slot_derivation (Dict): The slot derivation to get the source slots from. This derivation
+            is a sub-dictionary of the "slot_derivations" block of a LinkML-Map mapping schema.
+            If "populated_from" is set, then the source slot is the single "populated_from"
+            slot. If "expr" is set, then the source slot is the list of all slots used in the
+            expression
+        recognized_globals (List[str]): Restrict the returned slots that are found in
+            "expr" blocks of the derivation to those slots that are accessed through
+            any of the global namespaces listed in recognized_globals. For example,
+            if recognized_globals=["emap"], then an "expr" block of the form
+            "target = emap.source_slot" will return ["source_slot"], but an "expr"
+            block of the form "target = src.source_slot" will return the empty value [].
+            (Defaults to ["emap"])
+
+    Returns:
+        List[str]: A list of all source slots that are used in the slot derivation. This includes
+            the source slot in the "populated_from" field, as well as all slots referenced in
+            the "expr" field that are accessed using a namespace specified in recognized_globals.
+    """
+    if expr := slot_derivation.get("expr", None):
+        # The slot derivation uses an expr. We look for all slot names that are preceded by "emap"
+        # (eg. emap.source_slot) in the expr code. These will give us the slot names that are used
+        # and that need to be transformed as an enumeration
+        source_slot_names = get_used_slots(expr, recognized_globals=recognized_globals)
+    else:
+        source_slot_names = [slot_derivation["populated_from"]]
+    return source_slot_names
+
+
 def select_required_enum_derivations(
     source_class: str,
     target_class: str,
@@ -306,13 +343,9 @@ def select_required_enum_derivations(
             continue
 
         # Get the source and target slot names for the current slot derivation
-        if expr := slot_derivation.get("expr", None):
-            # The slot derivation uses an expr. We look for all slot names that are preceded by "emap"
-            # (eg. emap.source_slot) in the expr code. These will give us the slot names that are used
-            # and that need to be transformed as an enumeration
-            source_slot_names = get_used_slots(expr, recognized_globals=["emap"])
-        else:
-            source_slot_names = [slot_derivation["populated_from"]]
+        source_slot_names = get_source_slots_from_slot_derivation(
+            slot_derivation, recognized_globals=["emap"]
+        )
         target_slot_name = slot_derivation["name"]
 
         # Go through all source slots used by the current slot derivation
