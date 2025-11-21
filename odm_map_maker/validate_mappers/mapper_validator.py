@@ -1,4 +1,4 @@
-from typing import Union, List, Tuple, Annotated
+from typing import Union, List, Tuple, Annotated, Dict
 from pathlib import Path
 import os
 import yaml
@@ -8,7 +8,8 @@ import typer
 from linkml_runtime import SchemaView
 
 from odm_map_maker.utils.logger import get_logger
-from odm_map_maker.utils.mapper_utils import get_used_slots
+from odm_map_maker.utils.mapper_utils import get_source_slots_from_slot_derivation
+from odm_map_maker.utils.schema_utils import get_class, get_enum_names_for_slot
 
 logger = get_logger(__name__)
 
@@ -25,23 +26,48 @@ MAPPERS_DIR_HELP = """Directory containing all the LinkML-Map schemas to validat
 
 SOURCE_SCHEMA_HELP = """Path to the source LinkML schema that the mappers are for."""
 
+TARGET_SCHEMA_HELP = """Path to the target LinkML schema that the mappers are for."""
+
 OUTPUT_DIR_HELP = """Directory to save all validation results to."""
 
 SIMPLIFY_HELP = """If set then simplify the output by dropping duplicate rows."""
 
 
+# Column names for the output DataFrames that contain the errors in the mappers
 class EnumsColumns:
-    ENUM_NAME = "enumName"
-    ENUM_VALUE = "enumValue"
+    SOURCE_CLASS = "sourceClass"
+    SOURCE_SLOT = "sourceSlot"
+    SOURCE_ENUM_NAME = "sourceEnumName"
+    SOURCE_ENUM_VALUE = "sourceEnumValue"
+    TARGET_CLASS = "targetClass"
+    TARGET_SLOT = "targetSlot"
+    TARGET_ENUM_NAME = "targetEnumName"
+    TARGET_ENUM_VALUE = "targetEnumValue"
     MAPPER_FILE_COUNT = "numMappers"
     MAPPER_FILE = "mapper"
 
 
+# Keys for the dictionaries containing information about enum mappings for function get_source_enum_to_target_enum_info
+class SourceToTargetEnumInfoKeys:
+    PERMISSIBLE_VALUES = "permissible_values"
+    SOURCE_SLOTS = "source_slots"
+    SOURCE_CLASSES = "source_classes"
+    TARGET_ENUM_NAMES = "target_enum_names"
+
+
 class ValidateMappers(object):
-    def __init__(self, source_schema: Union[str, Path, SchemaView]):
+    def __init__(
+        self,
+        source_schema: Union[str, Path, SchemaView],
+        target_schema: Union[str, Path, SchemaView],
+    ):
+        if not isinstance(source_schema, SchemaView):
+            source_schema = SchemaView(source_schema)
         self.source_schema = source_schema
-        if not isinstance(self.source_schema, SchemaView):
-            self.source_schema = SchemaView(self.source_schema)
+
+        if not isinstance(target_schema, SchemaView):
+            target_schema = SchemaView(target_schema)
+        self.target_schema = target_schema
 
     def test_enum_derivations_exist(self, mapper: dict):
         """Make sure that an enum derivation exists for all of the source slots used in the mapper (for the source
@@ -57,15 +83,10 @@ class ValidateMappers(object):
             for target_slot, slot_derivation in class_derivation[
                 "slot_derivations"
             ].items():
-                if "populated_from" in slot_derivation:
-                    # For "populated_from" derivations, use the "populated_from" value as the slot name
-                    source_slots = [slot_derivation["populated_from"]]
-                elif "expr" in slot_derivation:
-                    # For "expr" derivations, use all the slot names that are accessed through the
-                    # "emap" global variable (eg. "emap.collection_device")
-                    source_slots = get_used_slots(
-                        slot_derivation["expr"], recognized_globals=["emap"]
-                    )
+                source_slots = get_source_slots_from_slot_derivation(
+                    slot_derivation, recognized_globals=["emap"]
+                )
+
                 # Go through all the source slots, and make sure an enum derivation exists for all of
                 # the slot's ranges that are enums.
                 for source_slot in source_slots:
@@ -122,38 +143,145 @@ class ValidateMappers(object):
         enum_defn = self.source_schema.get_enum(enum_name)
         return list(enum_defn["permissible_values"].keys())
 
-    def test_enum_derivations_complete(
-        self, mapper: dict, mapper_file: Union[str, Path]
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """Make sure all enumeration derivations are complete, and make sure there are no unrecognized enumeration source values
-        in the derivations.
+    def get_source_enum_to_target_enum_info(
+        self, mapper: Dict, source_enum: str
+    ) -> Dict[str, Dict[str, Dict[str, List[str]]]]:
+        """From the specified LinkML-Map schema, get all slot mappings that map from the source enumeration to any slot
+        in the target class, and collect the information about those mappings. The information includes a list of all
+        enum values that the target slot can take on, all the source slots/classes that we map from, and all the
+        enumeration names that the target slot has in its range.
 
         Args:
-            mapper (dict): The LinkML-Map schema to test. All enum derivations are tested.
-            mapper_file (Union[str, Path]): The LinkML-Map schema file that the mapper is for. This is for informational purposes,
-                we add the mapper_file to a column in the resulting DataFrames.
+            mapper (Dict): The mapper to get the info from.
+            source_enum (str): The source enumeration name to get the info for.
 
         Returns:
-            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: Tuple of three DataFrames. The first is of missing enumeration
-                values, the second is of unrecognized enumeration values, and the third is enumerations that have no
-                permissible value derivations. The DataFrames have the columns in the data class EnumColumns.
+            Dict[str, Dict[str, Dict[str, List[str]]]]: A dictionary of the form:
+                    info[target_class][target_slot][SourceToTargetEnumInfoKeys.*] = [values...]
+                They values include the target permissible values, the target enumeration names of the
+                target slot, and the source slots/classes.
         """
-        unrecognized_df = pd.DataFrame()
-        missing_df = pd.DataFrame()
-        no_permissible_values_df = pd.DataFrame()
+        info = {}
 
-        # Go through all enum derivations
+        # Go through the class derivations for all target classes
+        for target_class, class_derivation in mapper["class_derivations"].items():
+            if "populated_from" not in class_derivation:
+                continue
+
+            # Get the target class and source class names
+            target_class = get_class(
+                target_class, self.target_schema, ignore_case=False
+            )
+            source_class = class_derivation["populated_from"]
+
+            # For the current derivation, go through all the slot derivations, determine which of those derivations
+            # map from source_enum and get the info for them.
+            for slot_derivation in class_derivation["slot_derivations"].values():
+                # Get the target slot and the enums that are part of the target slot's range
+                target_slot = slot_derivation["name"]
+                target_enums = get_enum_names_for_slot(
+                    target_class, target_slot, self.target_schema
+                )
+                if not target_enums:
+                    continue
+
+                # Get all the source slots that are part of the slot derivation
+                source_slot_names = get_source_slots_from_slot_derivation(
+                    slot_derivation, recognized_globals=["emap"]
+                )
+
+                # For all the source slots, if the slot has source_enum as part of its range then get the
+                # info for the slot derivation
+                for source_slot_name in source_slot_names:
+                    # Get the enum name ranges for the source slot, if one of them is equal to source_enum then
+                    # we get the info for the current slot derivation.
+                    enum_names = get_enum_names_for_slot(
+                        source_class, source_slot_name, self.source_schema
+                    )
+                    if enum_names is None or source_enum not in enum_names:
+                        continue
+
+                    # For all the enumerations that are in the target slot's range, get all the permissible
+                    # values of these enumerations and combine them into one list.
+                    cur_permissible_values = []
+                    for target_enum in target_enums:
+                        enum_defn = self.target_schema.get_enum(target_enum)
+                        cur_permissible_values.extend(
+                            list(enum_defn.permissible_values.keys())
+                        )
+                    cur_permissible_values = sorted(
+                        list(dict.fromkeys(cur_permissible_values))
+                    )
+
+                    # Add the info
+                    if target_class not in info:
+                        info[target_class] = {}
+                    if target_slot not in info[target_class]:
+                        info[target_class][target_slot] = {
+                            SourceToTargetEnumInfoKeys.PERMISSIBLE_VALUES: [],
+                            SourceToTargetEnumInfoKeys.SOURCE_SLOTS: [],
+                            SourceToTargetEnumInfoKeys.SOURCE_CLASSES: [],
+                            SourceToTargetEnumInfoKeys.TARGET_ENUM_NAMES: [],
+                        }
+                    info[target_class][target_slot][
+                        SourceToTargetEnumInfoKeys.PERMISSIBLE_VALUES
+                    ].extend(cur_permissible_values)
+                    info[target_class][target_slot][
+                        SourceToTargetEnumInfoKeys.SOURCE_SLOTS
+                    ].append(source_slot_name)
+                    info[target_class][target_slot][
+                        SourceToTargetEnumInfoKeys.SOURCE_CLASSES
+                    ].append(source_class)
+                    info[target_class][target_slot][
+                        SourceToTargetEnumInfoKeys.TARGET_ENUM_NAMES
+                    ].extend(target_enums)
+        return info
+
+    def validate_mapper(
+        self, mapper: dict, mapper_file: Union[str, Path]
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """Run the validator on the specified LinkML-Map schema.
+
+        We will check for unrecognized source or target enum values, incomplete permissible value derivations (ie.
+        some source enum values are missing a mapping), and for empty permissible value derivations.
+
+        Args:
+            mapper (dict): The LinkML-Map schema to validate.
+            mapper_file (Union[str, Path]): The LinkML-Map schema file that the mapper is for. This is for informational
+                purposes, we add the mapper_file to a column in the resulting DataFrames so the user knows which files are
+                affected by the errors.
+
+        Returns:
+            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]: Tuple of four DataFrames containing reports of
+                the results of the validation:
+                    missing_source_enums_df: The source enum values that do not have a mapping (ie. they are missing from
+                        a permissible_value_derivations block in the mapper)
+                    unrecognized_source_enums_df: The source enum values found in a permissible_value_derivations that
+                        are not valid enum values in the source schema.
+                    unrecognized_target_enums_df: The target enum values found in a permissible_value_derivations that
+                        are not valid enum values in the target schema.
+                    empty_permissible_value_derivations_df: The permissible_value_derivations that are empty.
+        """
+        unrecognized_source_enum_values_df = pd.DataFrame()
+        missing_source_enum_values_df = pd.DataFrame()
+        empty_permissible_value_derivations_df = pd.DataFrame()
+        unrecognized_target_enum_values_df = pd.DataFrame()
+
+        # Go through all enum derivations and validate them
         for enum_derivation_name, enum_derivation in mapper["enum_derivations"].items():
             source_enum_name = enum_derivation["populated_from"]
-            enum_values = self.get_all_enum_values(source_enum_name)
+            source_enum_values = self.get_all_enum_values(source_enum_name)
 
             if "permissible_value_derivations" in enum_derivation:
                 # Go through all permissible value derivations of the current enum derivation and collect
-                # all the source enum values that are being mapped
+                # all the source enum values (sources) that are being mapped as well as all target enum
+                # values (targets)
                 sources = []
+                targets = []
                 for target_enum_value, permissible_value_derivation in enum_derivation[
                     "permissible_value_derivations"
                 ].items():
+                    targets.append(target_enum_value)
                     if "populated_from" in permissible_value_derivation:
                         sources = sources + [
                             permissible_value_derivation["populated_from"]
@@ -163,55 +291,121 @@ class ValidateMappers(object):
                             permissible_value_derivation["sources"]
                         )
 
-                unrecognized_sources = [s for s in sources if s not in enum_values]
-                missing_sources = [v for v in enum_values if v not in sources]
+                # Get the unrecognized source enum values, and the source enum values that have no mapping
+                unrecognized_source_enum_values = [
+                    s for s in sources if s not in source_enum_values
+                ]
+                missing_source_enum_values = [
+                    v for v in source_enum_values if v not in sources
+                ]
 
-                if len(unrecognized_sources) > 0:
-                    logger.error(
-                        f"Unrecognized source enum mappings for enum {source_enum_name}: {unrecognized_sources}"
-                    )
+                # Add the unrecognized source enum values to the report DataFrame
+                if len(unrecognized_source_enum_values) > 0:
                     df = pd.DataFrame(
                         {
-                            EnumsColumns.ENUM_NAME: [source_enum_name]
-                            * len(unrecognized_sources),
-                            EnumsColumns.ENUM_VALUE: unrecognized_sources,
+                            EnumsColumns.SOURCE_ENUM_NAME: [source_enum_name]
+                            * len(unrecognized_source_enum_values),
+                            EnumsColumns.SOURCE_ENUM_VALUE: unrecognized_source_enum_values,
                             EnumsColumns.MAPPER_FILE: [str(mapper_file)]
-                            * len(unrecognized_sources),
+                            * len(unrecognized_source_enum_values),
                         }
                     )
-                    unrecognized_df = pd.concat(
-                        [unrecognized_df, df], ignore_index=True
+                    unrecognized_source_enum_values_df = pd.concat(
+                        [unrecognized_source_enum_values_df, df], ignore_index=True
                     )
-                if len(missing_sources) > 0:
-                    logger.error(
-                        f"Missing source enum mappings for enum {source_enum_name}: {missing_sources}"
-                    )
+                # Add the missing source enum values that do not have a derivation to the report DataFrame
+                if len(missing_source_enum_values) > 0:
                     df = pd.DataFrame(
                         {
-                            EnumsColumns.ENUM_NAME: [source_enum_name]
-                            * len(missing_sources),
-                            EnumsColumns.ENUM_VALUE: missing_sources,
+                            EnumsColumns.SOURCE_ENUM_NAME: [source_enum_name]
+                            * len(missing_source_enum_values),
+                            EnumsColumns.SOURCE_ENUM_VALUE: missing_source_enum_values,
                             EnumsColumns.MAPPER_FILE: [str(mapper_file)]
-                            * len(missing_sources),
+                            * len(missing_source_enum_values),
                         }
                     )
-                    missing_df = pd.concat([missing_df, df], ignore_index=True)
+                    missing_source_enum_values_df = pd.concat(
+                        [missing_source_enum_values_df, df], ignore_index=True
+                    )
+
+                # Get the unrecognized target enum values and add them to the report DataFrame
+                # info is in the format
+                # info[target_class][target_slot][SourceToTargetEnumInfoKeys.*]
+                info = self.get_source_enum_to_target_enum_info(
+                    mapper, source_enum_name
+                )
+                for target_class, target_slots_permissible_values in info.items():
+                    for (
+                        target_slot,
+                        target_permissible_values_info,
+                    ) in target_slots_permissible_values.items():
+                        source_slots = target_permissible_values_info[
+                            SourceToTargetEnumInfoKeys.SOURCE_SLOTS
+                        ]
+                        source_classes = target_permissible_values_info[
+                            SourceToTargetEnumInfoKeys.SOURCE_CLASSES
+                        ]
+                        target_enum_names = target_permissible_values_info[
+                            SourceToTargetEnumInfoKeys.TARGET_ENUM_NAMES
+                        ]
+                        permissible_values = target_permissible_values_info[
+                            SourceToTargetEnumInfoKeys.PERMISSIBLE_VALUES
+                        ]
+
+                        # Get the unrecognized target enum values
+                        unrecognized_target_enum_values = [
+                            v for v in targets if v not in permissible_values
+                        ]
+                        unrecognized_target_enum_values = [
+                            v if v else "<blank>"
+                            for v in unrecognized_target_enum_values
+                        ]
+
+                        # Add the unrecognized target enum values to the report DataFrame
+                        if unrecognized_target_enum_values:
+                            df = pd.DataFrame(
+                                {
+                                    EnumsColumns.SOURCE_CLASS: [
+                                        ", ".join(source_classes)
+                                    ],
+                                    EnumsColumns.SOURCE_SLOT: [", ".join(source_slots)],
+                                    EnumsColumns.TARGET_CLASS: [target_class],
+                                    EnumsColumns.TARGET_SLOT: [target_slot],
+                                    EnumsColumns.SOURCE_ENUM_NAME: [source_enum_name],
+                                    EnumsColumns.TARGET_ENUM_NAME: [
+                                        ", ".join(target_enum_names)
+                                    ],
+                                    EnumsColumns.TARGET_ENUM_VALUE: [
+                                        ", ".join(unrecognized_target_enum_values)
+                                    ],
+                                    EnumsColumns.MAPPER_FILE: [str(mapper_file)],
+                                }
+                            )
+                            unrecognized_target_enum_values_df = pd.concat(
+                                [unrecognized_target_enum_values_df, df],
+                                ignore_index=True,
+                            )
             else:
                 df = pd.DataFrame(
                     {
-                        EnumsColumns.ENUM_NAME: [source_enum_name],
+                        EnumsColumns.SOURCE_ENUM_NAME: [source_enum_name],
                         EnumsColumns.MAPPER_FILE: [str(mapper_file)],
                     }
                 )
-                no_permissible_values_df = pd.concat(
-                    [no_permissible_values_df, df], ignore_index=True
+                empty_permissible_value_derivations_df = pd.concat(
+                    [empty_permissible_value_derivations_df, df], ignore_index=True
                 )
             # elif not enum_derivation.get("mirror_source", False):
             #     logger.error(
             #         f"Enum derivation has no permissible value derivations and mirror_source is False: {source_enum_name}"
             #     )
 
-        return missing_df, unrecognized_df, no_permissible_values_df
+        return (
+            missing_source_enum_values_df,
+            unrecognized_source_enum_values_df,
+            unrecognized_target_enum_values_df,
+            empty_permissible_value_derivations_df,
+        )
 
     def concat_data_frames(
         self, dfs: List[pd.DataFrame], insert_blank_rows: bool = False
@@ -243,13 +437,17 @@ class ValidateMappers(object):
 
         return pd.concat(dfs, ignore_index=True)
 
-    def simplify_enum_df(self, df: pd.DataFrame) -> pd.DataFrame:
+    def simplify_enum_df(
+        self, df: pd.DataFrame, sort_by: List[str] = [EnumsColumns.SOURCE_ENUM_NAME]
+    ) -> pd.DataFrame:
         """For a DataFrame that reports problems with enum derivations, that has the columns defined in EnumColumns,
-        simplify the DataFrame by dropping duplicate rows (where ENUM_NAME and ENUM_VALUE columns are identical), and
-        sort by ENUM_NAME and ENUM_VALUE. This makes it easier for the user to read the DataFrames.
+        simplify the DataFrame by merging rows that are duplicates other than the EnumsColumns.MAPPER_FILE column. Within
+        the grouped rows the values under EnumsColumns.MAPPER_FILE are combined (separated by a semi-colon). This makes
+        it easier for the user to read the DataFrames.
 
         Args:
             df (pd.DataFrame): The DataFrame to simplify.
+            sort_by (List[str]): The columns to sort the final data by. (Defaults to [EnumsColumns.SOURCE_ENUM_NAME])
 
         Returns:
             pd.DataFrame: The simplified DataFrame. The original is left unchanged.
@@ -259,27 +457,35 @@ class ValidateMappers(object):
         if len(df) == 0:
             return df
 
-        main_columns = []
-        if EnumsColumns.ENUM_NAME in df.columns:
-            main_columns.append(EnumsColumns.ENUM_NAME)
-        if EnumsColumns.ENUM_VALUE in df.columns:
-            main_columns.append(EnumsColumns.ENUM_VALUE)
+        group_by = [
+            getattr(EnumsColumns, c) for c in dir(EnumsColumns) if not c.startswith("_")
+        ]
+        group_by = [
+            c for c in group_by if c in df.columns and c != EnumsColumns.MAPPER_FILE
+        ]
 
-        for group_name, group_df in df.groupby(main_columns):
+        # Go through all the groups and merge the rows within each group. We also add a column that contains
+        # the size of each group, and add a column that lists all mapper files that the rows in the group
+        # apply to.
+        for group_name, group_df in df.groupby(group_by):
             files = "; ".join(group_df[EnumsColumns.MAPPER_FILE])
             df.loc[group_df.index, EnumsColumns.MAPPER_FILE_COUNT] = len(group_df.index)
             df.loc[group_df.index, EnumsColumns.MAPPER_FILE] = files
 
+        # Drop all duplicate rows and sort by group_by
         df = df.dropna(
-            subset=main_columns,
+            subset=group_by,
             how="all",
             ignore_index=True,
         )
-        df = df.drop_duplicates(main_columns)
-        df = df.sort_values(main_columns).reset_index(drop=True)
+        df = df.drop_duplicates(group_by)
+        df = df.sort_values(group_by).reset_index(drop=True)
 
-        if EnumsColumns.ENUM_NAME in df.columns:
-            dfs = [d for _, d in df.groupby([EnumsColumns.ENUM_NAME])]
+        # Sort by sort_by
+        sort_by = [c for c in sort_by if c in df.columns]
+        if sort_by:
+            # Organize/sort the final DataFrame by the enum name
+            dfs = [d for _, d in df.groupby(sort_by)]
             df = self.concat_data_frames(dfs, insert_blank_rows=True)
         return df
 
@@ -331,9 +537,12 @@ class ValidateMappers(object):
             for f in os.listdir(mappers_dir)
             if os.path.splitext(f)[1].lower() == ".yaml"
         ]
-        unrecognized_dfs = []
-        missing_dfs = []
-        no_permissible_values_dfs = []
+        files = sorted(files)
+
+        unrecognized_source_enums_dfs = []
+        unrecognized_target_enums_dfs = []
+        missing_source_enums_dfs = []
+        empty_permissible_value_derivations_dfs = []
         for file in files:
             logger.info(f"Validating file {file}")
             with open(mappers_dir / file, "r") as f:
@@ -342,46 +551,80 @@ class ValidateMappers(object):
             self.test_enum_derivations_exist(mapper)
 
             # Test if enum derivations are complete and for unrecognized enum values
-            cur_missing_df, cur_unrecognized_df, cur_no_permissible_values_df = (
-                self.test_enum_derivations_complete(mapper, file)
+            (
+                cur_missing_source_enums_df,
+                cur_unrecognized_source_enums_df,
+                cur_unrecognized_target_enums_df,
+                cur_empty_permissible_value_derivations_df,
+            ) = self.validate_mapper(mapper, file)
+            missing_source_enums_dfs.append(cur_missing_source_enums_df)
+            unrecognized_source_enums_dfs.append(cur_unrecognized_source_enums_df)
+            unrecognized_target_enums_dfs.append(cur_unrecognized_target_enums_df)
+            empty_permissible_value_derivations_dfs.append(
+                cur_empty_permissible_value_derivations_df
             )
-            missing_dfs.append(cur_missing_df)
-            unrecognized_dfs.append(cur_unrecognized_df)
-            no_permissible_values_dfs.append(cur_no_permissible_values_df)
 
-        # Combine and simplify the missing_dfs and unrecognized_dfs DataFrames
-        missing_df = self.concat_data_frames(missing_dfs, insert_blank_rows=True)
-        unrecognized_df = self.concat_data_frames(
-            unrecognized_dfs, insert_blank_rows=True
+        # Combine and simplify the missing_source_enums_dfs, unrecognized_source_enums_dfs, and unrecognized_target_enums_dfs DataFrames
+        missing_source_enums_df = self.concat_data_frames(
+            missing_source_enums_dfs, insert_blank_rows=True
         )
-        no_permissible_values_df = self.concat_data_frames(
-            no_permissible_values_dfs, insert_blank_rows=True
+        unrecognized_source_enums_df = self.concat_data_frames(
+            unrecognized_source_enums_dfs, insert_blank_rows=True
         )
+        unrecognized_target_enums_df = self.concat_data_frames(
+            unrecognized_target_enums_dfs, insert_blank_rows=True
+        )
+        empty_permissible_value_derivations_df = self.concat_data_frames(
+            empty_permissible_value_derivations_dfs, insert_blank_rows=True
+        )
+
         if simplify:
-            missing_df = self.simplify_enum_df(missing_df)
-            unrecognized_df = self.simplify_enum_df(unrecognized_df)
-            no_permissible_values_df = self.simplify_enum_df(no_permissible_values_df)
+            missing_source_enums_df = self.simplify_enum_df(missing_source_enums_df)
+            unrecognized_source_enums_df = self.simplify_enum_df(
+                unrecognized_source_enums_df
+            )
+            unrecognized_target_enums_df = self.simplify_enum_df(
+                unrecognized_target_enums_df, sort_by=[EnumsColumns.TARGET_ENUM_VALUE]
+            )
+            empty_permissible_value_derivations_df = self.simplify_enum_df(
+                empty_permissible_value_derivations_df
+            )
 
         #  Order the columns
-        missing_df = self.order_columns(missing_df)
-        unrecognized_df = self.order_columns(unrecognized_df)
-        no_permissible_values_df = self.order_columns(no_permissible_values_df)
+        missing_source_enums_df = self.order_columns(missing_source_enums_df)
+        unrecognized_source_enums_df = self.order_columns(unrecognized_source_enums_df)
+        unrecognized_target_enums_df = self.order_columns(unrecognized_target_enums_df)
+        empty_permissible_value_derivations_df = self.order_columns(
+            empty_permissible_value_derivations_df
+        )
 
         if output_dir:
-            if len(missing_df):
-                output_file = Path(output_dir) / "missing_enums.csv"
-                logger.info(f"Saving missing enum value mappings to {output_file}")
-                missing_df.to_csv(output_file, index=False)
-            if len(unrecognized_df):
-                output_file = Path(output_dir) / "unrecognized_enums.csv"
-                logger.info(f"Saving unrecognized enum value mappings to {output_file}")
-                unrecognized_df.to_csv(output_file, index=False)
-            if len(no_permissible_values_df):
-                output_file = Path(output_dir) / "no_permissible_values_enums.csv"
+            if len(missing_source_enums_df):
+                output_file = Path(output_dir) / "missing_source_enum_values.csv"
+                logger.info(
+                    f"Saving missing source enum value mappings to {output_file}"
+                )
+                missing_source_enums_df.to_csv(output_file, index=False)
+            if len(unrecognized_source_enums_df):
+                output_file = Path(output_dir) / "unrecognized_source_enum_values.csv"
+                logger.info(
+                    f"Saving unrecognized source enum value mappings to {output_file}"
+                )
+                unrecognized_source_enums_df.to_csv(output_file, index=False)
+            if len(unrecognized_target_enums_df):
+                output_file = Path(output_dir) / "unrecognized_target_enum_values.csv"
+                logger.info(
+                    f"Saving unrecognized target enum value mappings to {output_file}"
+                )
+                unrecognized_target_enums_df.to_csv(output_file, index=False)
+            if len(empty_permissible_value_derivations_df):
+                output_file = (
+                    Path(output_dir) / "empty_permissible_value_derivations.csv"
+                )
                 logger.info(
                     f"Saving enums with no permissible value derivations to {output_file}"
                 )
-                no_permissible_values_df.to_csv(output_file, index=False)
+                empty_permissible_value_derivations_df.to_csv(output_file, index=False)
 
 
 @app.command(help=MAIN_HELP)
@@ -392,10 +635,13 @@ def main(
     source_schema: Annotated[
         Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
     ],
+    target_schema: Annotated[
+        Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
+    ],
     output_dir: Annotated[Path, typer.Option(show_default=False, help=OUTPUT_DIR_HELP)],
     simplify: Annotated[bool, typer.Option(help=SIMPLIFY_HELP)] = True,
 ):
-    val = ValidateMappers(source_schema)
+    val = ValidateMappers(source_schema, target_schema)
     val.validate(mappers_dir, output_dir, simplify=simplify)
 
 
