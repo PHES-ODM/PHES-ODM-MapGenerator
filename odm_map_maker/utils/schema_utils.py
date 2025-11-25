@@ -47,11 +47,11 @@ def get_slot_definition(
     """
     if exception_on_error:
         return asdict(schema.induced_slot(slot, cls))
-
-    class_definition = schema.induced_class(cls)
-    if slot in class_definition.attributes:
-        return asdict(class_definition.attributes[slot])
-    return None
+    else:
+        try:
+            return asdict(schema.induced_slot(slot, cls))
+        except Exception:
+            return None
 
 
 def get_ranges_of_slot(
@@ -230,9 +230,7 @@ def remove_ontology_id(val: str, match_ontology_id: Optional[str]) -> str:
     return val
 
 
-def get_enum_names_for_slot(
-    cls: str, slot: str, schema: SchemaView
-) -> Optional[List[str]]:
+def get_enum_names_for_slot(cls: str, slot: str, schema: SchemaView) -> List[str]:
     """Get the enumeration names (if any) for the range of the specified slot in the specified class.
 
     Args:
@@ -242,11 +240,9 @@ def get_enum_names_for_slot(
 
     Returns:
         List[str]: The names of the enumerations that is the range of slot. If slot does
-            not have an enumeration for a range then None is returned.
+            not have an enumeration for a range then the empty list [] is returned.
     """
     ranges = get_ranges_of_slot(cls, slot, schema, exception_on_error=False)
-    if not ranges:
-        return None
 
     enum_names = []
     for rng in ranges:
@@ -255,7 +251,7 @@ def get_enum_names_for_slot(
         if enum_definition is not None:
             enum_names.append(rng)
 
-    return enum_names if enum_names else None
+    return enum_names
 
 
 def remove_ignored_text_from_class_name(class_name: str) -> str:
