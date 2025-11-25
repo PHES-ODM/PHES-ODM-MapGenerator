@@ -246,24 +246,21 @@ def main(
             shutil.copyfile(source_file, new_file)
             output_files.append(new_file)
 
-    if len(output_maps_files) == 0:
-        logger.error("No maps configurations found")
-    else:
-        # Create the mapper specs
-        maker = MakeMappers(
-            maps_files=output_maps_files,
-            wide_files=output_wide_files,
-            enums_files=output_enums_files,
-            mapper_dir=mapper_dir,
-            source_schema=source_schema,
-            target_schema=target_schema,
-            selectors=selectors,
-            source_slot_format_operations=source_slot_format_operations,
-            target_slot_format_operations=target_slot_format_operations,
-            source_match_ontology_id_regex=source_match_ontology_id_regex,
-            target_match_ontology_id_regex=target_match_ontology_id_regex,
-        )
-        maker.make_mappers()
+    # Create the mapper specs
+    maker = MakeMappers(
+        maps_files=output_maps_files,
+        wide_files=output_wide_files,
+        enums_files=output_enums_files,
+        mapper_dir=mapper_dir,
+        source_schema=source_schema,
+        target_schema=target_schema,
+        selectors=selectors,
+        source_slot_format_operations=source_slot_format_operations,
+        target_slot_format_operations=target_slot_format_operations,
+        source_match_ontology_id_regex=source_match_ontology_id_regex,
+        target_match_ontology_id_regex=target_match_ontology_id_regex,
+    )
+    maker.make_mappers()
 
     logger.info("Finished!")
 
