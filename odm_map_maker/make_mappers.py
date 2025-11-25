@@ -114,10 +114,12 @@ class MakeMappers(object):
             os.makedirs(self.mapper_dir, exist_ok=True)
 
         # Load and prepare the maps files
-        maps_df = [self.prepare_maps_df(f) for f in self.maps_files]
-        maps_df = pd.concat([df for df in maps_df if df is not None]).reset_index(
-            drop=True
+        maps_dfs = [self.prepare_maps_df(f) for f in self.maps_files]
+        maps_dfs = [df for df in maps_dfs if df is not None]
+        maps_df = (
+            pd.concat(maps_dfs).reset_index(drop=True) if maps_dfs else pd.DataFrame()
         )
+
         # Load and prepare the wide-columns files
         wide_dfs = []
         if self.wide_files is not None and len(self.wide_files) > 0:
