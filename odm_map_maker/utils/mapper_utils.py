@@ -352,7 +352,7 @@ def select_required_enum_derivations(
         for source_slot_name in source_slot_names:
             # Get the enum name for the source slot
             enum_names = get_enum_names_for_slot(class_name, source_slot_name, schema)
-            if enum_names is None:
+            if not enum_names:
                 continue
 
             # Each derivation in the list enum_derivations is a dictionary. The key is the source
