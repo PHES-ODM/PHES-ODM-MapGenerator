@@ -262,7 +262,7 @@ class ValidateMappers(object):
         unrecognized_target_enum_values_df = pd.DataFrame()
         unrecognized_constant_values_df = pd.DataFrame()
 
-        # Go through all slot derivations and validate them
+        # Go through all slot derivations and validate them (check for invalid constant values in "expr" slots)
         for target_class, class_derivation in mapper["class_derivations"].items():
             target_class = get_class(
                 target_class, self.target_schema, ignore_case=False
@@ -273,7 +273,7 @@ class ValidateMappers(object):
             for target_slot, slot_derivation in class_derivation[
                 "slot_derivations"
             ].items():
-                # Get the constant string value that the expr is for
+                # Get the constant string value from the "expr"
                 expr: Optional[str] = slot_derivation.get("expr", None)
                 if not expr:
                     continue
@@ -354,6 +354,8 @@ class ValidateMappers(object):
                     permissible_values = target_permissible_values_info[
                         SourceToTargetEnumInfoKeys.PERMISSIBLE_VALUES
                     ]
+                    
+                    # Single row DataFrame that gets applied to all rows in all the reports
                     global_df = pd.DataFrame(
                         {
                             EnumsColumns.SOURCE_CLASS: [", ".join(source_classes)],
@@ -366,6 +368,15 @@ class ValidateMappers(object):
                     )
 
                     def add_global_df(df: pd.DataFrame) -> pd.DataFrame:
+                        """Add global_df to all rows in the DataFrame.
+
+                        Args:
+                            df (pd.DataFrame): The DataFrame to add global_df to. The passed in df is left unchanged, instead
+                                a copy is returned.
+
+                        Returns:
+                            pd.DataFrame: The DataFrame with global_df added to all rows.
+                        """
                         new_global_df = pd.concat(
                             [global_df] * max(1, len(df)), ignore_index=True
                         )
