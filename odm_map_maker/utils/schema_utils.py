@@ -254,6 +254,36 @@ def get_enum_names_for_slot(cls: str, slot: str, schema: SchemaView) -> List[str
     return enum_names
 
 
+def get_permissible_values_from_enum_names(
+    enum_names: List[str], schema: SchemaView, sort_values: bool = False
+) -> List[str]:
+    """Get all the permissible values for all the specified enumerations in the schema.
+
+    Args:
+        enum_names (List[str]): The enumeration to get the permissible values for.
+        schema (SchemaView): The LinkML schema that the enumerations belong to.
+        sort_values (bool): If True then sort all the values alphabetically (case insensitive) before returning
+            them. If False then keep them in the order according to enum_names and the order they appear in the
+            schema.
+
+    Returns:
+        List[str]: A list of all enumeration values of all the specified enumerations.
+    """
+    permissible_values = []
+
+    # Get all the permissible values
+    for cur_enum_name in enum_names:
+        enum_defn = schema.get_enum(cur_enum_name)
+        permissible_values.extend(list(enum_defn.permissible_values.keys()))
+
+    # Remove duplicates and sort
+    permissible_values = list(dict.fromkeys(permissible_values))
+    if sort_values:
+        permissible_values = sorted(permissible_values, lambda x: x.lower())
+
+    return permissible_values
+
+
 def remove_ignored_text_from_class_name(class_name: str) -> str:
     """Remove any text to ignore when trying to identify a class name within a string.
 
