@@ -9,7 +9,11 @@ from linkml_runtime import SchemaView
 
 from odm_map_maker.utils.logger import get_logger
 from odm_map_maker.utils.mapper_utils import get_source_slots_from_slot_derivation
-from odm_map_maker.utils.schema_utils import get_class, get_enum_names_for_slot
+from odm_map_maker.utils.schema_utils import (
+    get_class,
+    get_enum_names_for_slot,
+    get_permissible_values_from_enum_names,
+)
 
 logger = get_logger(__name__)
 
@@ -134,18 +138,6 @@ class ValidateMappers(object):
         ]
         return len(matching_enums) > 0
 
-    def get_all_enum_values(self, enum_name: str) -> List[str]:
-        """Get all values that an enumeration can take on in the source schema.
-
-        Args:
-            enum_name (str): The enumeration name to get all permissible values for.
-
-        Returns:
-            List[str]: A list of all values that the enumeration can take on.
-        """
-        enum_defn = self.source_schema.get_enum(enum_name)
-        return list(enum_defn["permissible_values"].keys())
-
     def get_source_enum_to_target_enum_info(
         self, mapper: Dict, source_enum: str
     ) -> Dict[str, Dict[str, Dict[str, List[str]]]]:
@@ -206,14 +198,8 @@ class ValidateMappers(object):
 
                     # For all the enumerations that are in the target slot's range, get all the permissible
                     # values of these enumerations and combine them into one list.
-                    cur_permissible_values = []
-                    for target_enum in target_enums:
-                        enum_defn = self.target_schema.get_enum(target_enum)
-                        cur_permissible_values.extend(
-                            list(enum_defn.permissible_values.keys())
-                        )
-                    cur_permissible_values = sorted(
-                        list(dict.fromkeys(cur_permissible_values))
+                    cur_permissible_values = get_permissible_values_from_enum_names(
+                        target_enums, self.target_schema
                     )
 
                     # Add the info
@@ -245,7 +231,7 @@ class ValidateMappers(object):
 
     def validate_mapper(
         self, mapper: dict, mapper_file: Union[str, Path]
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Run the validator on the specified LinkML-Map schema.
 
         We will check for unrecognized source or target enum values, incomplete permissible value derivations (ie.
@@ -258,8 +244,8 @@ class ValidateMappers(object):
                 affected by the errors.
 
         Returns:
-            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]: Tuple of four DataFrames containing reports of
-                the results of the validation:
+            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]: Tuple of five DataFrames containing
+                reports of the results of the validation:
                     missing_source_enums_df: The source enum values that do not have a mapping (ie. they are missing from
                         a permissible_value_derivations block in the mapper)
                     unrecognized_source_enums_df: The source enum values found in a permissible_value_derivations that
@@ -267,16 +253,75 @@ class ValidateMappers(object):
                     unrecognized_target_enums_df: The target enum values found in a permissible_value_derivations that
                         are not valid enum values in the target schema.
                     empty_permissible_value_derivations_df: The permissible_value_derivations that are empty.
+                    unrecognized_constant_values_df: The constant values, found within "expr" slots for a slot derivation,
+                        that are invalid enumeration values for the target slot.
         """
         unrecognized_source_enum_values_df = pd.DataFrame()
         missing_source_enum_values_df = pd.DataFrame()
         empty_permissible_value_derivations_df = pd.DataFrame()
         unrecognized_target_enum_values_df = pd.DataFrame()
+        unrecognized_constant_values_df = pd.DataFrame()
+
+        # Go through all slot derivations and validate them
+        for target_class, class_derivation in mapper["class_derivations"].items():
+            target_class = get_class(
+                target_class, self.target_schema, ignore_case=False
+            )
+            source_class = class_derivation.get("populated_from", None)
+            if not source_class:
+                continue
+            for target_slot, slot_derivation in class_derivation[
+                "slot_derivations"
+            ].items():
+                # Get the constant string value that the expr is for
+                expr: Optional[str] = slot_derivation.get("expr", None)
+                if not expr:
+                    continue
+                expr = expr.strip()
+                if not (expr.startswith("'") and expr.endswith("'")) and not (
+                    expr.startswith('"') and expr.endswith('"')
+                ):
+                    continue
+                try:
+                    target_value = yaml.safe_load(expr)
+                except Exception:
+                    continue
+
+                # See if the target_value is a permissible value for the target slot
+                target_enum_names = get_enum_names_for_slot(
+                    target_class, target_slot, self.target_schema
+                )
+                if not target_enum_names:
+                    continue
+                permissible_values = get_permissible_values_from_enum_names(
+                    target_enum_names, self.target_schema
+                )
+                if target_value in permissible_values:
+                    continue
+
+                # target_value is an invalid value for the target slot
+                df = pd.DataFrame(
+                    {
+                        EnumsColumns.SOURCE_CLASS: [source_class],
+                        EnumsColumns.TARGET_CLASS: [target_class],
+                        EnumsColumns.TARGET_SLOT: [target_slot],
+                        EnumsColumns.TARGET_ENUM_NAME: [", ".join(target_enum_names)],
+                        EnumsColumns.TARGET_ENUM_VALUE: self.replace_blanks(
+                            [target_value]
+                        ),
+                        EnumsColumns.MAPPER_FILE: [str(mapper_file)],
+                    }
+                )
+                unrecognized_constant_values_df = pd.concat(
+                    [unrecognized_constant_values_df, df], ignore_index=True
+                )
 
         # Go through all enum derivations and validate them
         for enum_derivation_name, enum_derivation in mapper["enum_derivations"].items():
             source_enum_name = enum_derivation["populated_from"]
-            allowable_source_enum_values = self.get_all_enum_values(source_enum_name)
+            allowable_source_enum_values = get_permissible_values_from_enum_names(
+                [source_enum_name], self.source_schema
+            )
 
             info = self.get_source_enum_to_target_enum_info(mapper, source_enum_name)
             if not info:
@@ -454,6 +499,7 @@ class ValidateMappers(object):
             unrecognized_source_enum_values_df,
             unrecognized_target_enum_values_df,
             empty_permissible_value_derivations_df,
+            unrecognized_constant_values_df,
         )
 
     def concat_data_frames(
@@ -595,6 +641,7 @@ class ValidateMappers(object):
         unrecognized_target_enums_dfs = []
         missing_source_enums_dfs = []
         empty_permissible_value_derivations_dfs = []
+        unrecognized_constant_values_dfs = []
         for file in files:
             logger.info(f"Validating file {file}")
             with open(mappers_dir / file, "r") as f:
@@ -608,6 +655,7 @@ class ValidateMappers(object):
                 cur_unrecognized_source_enums_df,
                 cur_unrecognized_target_enums_df,
                 cur_empty_permissible_value_derivations_df,
+                cur_unrecognized_constant_values_df,
             ) = self.validate_mapper(mapper, file)
             missing_source_enums_dfs.append(cur_missing_source_enums_df)
             unrecognized_source_enums_dfs.append(cur_unrecognized_source_enums_df)
@@ -615,6 +663,7 @@ class ValidateMappers(object):
             empty_permissible_value_derivations_dfs.append(
                 cur_empty_permissible_value_derivations_df
             )
+            unrecognized_constant_values_dfs.append(cur_unrecognized_constant_values_df)
 
         # Combine and simplify the missing_source_enums_dfs, unrecognized_source_enums_dfs, and unrecognized_target_enums_dfs DataFrames
         missing_source_enums_df = self.concat_data_frames(
@@ -629,6 +678,9 @@ class ValidateMappers(object):
         empty_permissible_value_derivations_df = self.concat_data_frames(
             empty_permissible_value_derivations_dfs, insert_blank_rows=True
         )
+        unrecognized_constant_values_df = self.concat_data_frames(
+            unrecognized_constant_values_dfs, insert_blank_rows=True
+        )
 
         if simplify:
             missing_source_enums_df = self.simplify_enum_df(missing_source_enums_df)
@@ -641,6 +693,9 @@ class ValidateMappers(object):
             empty_permissible_value_derivations_df = self.simplify_enum_df(
                 empty_permissible_value_derivations_df
             )
+            unrecognized_constant_values_df = self.simplify_enum_df(
+                unrecognized_constant_values_df
+            )
 
         #  Order the columns
         missing_source_enums_df = self.order_columns(missing_source_enums_df)
@@ -648,6 +703,9 @@ class ValidateMappers(object):
         unrecognized_target_enums_df = self.order_columns(unrecognized_target_enums_df)
         empty_permissible_value_derivations_df = self.order_columns(
             empty_permissible_value_derivations_df
+        )
+        unrecognized_constant_values_df = self.order_columns(
+            unrecognized_constant_values_df
         )
 
         if output_dir:
@@ -687,6 +745,12 @@ class ValidateMappers(object):
                     f"Saving enums with no permissible value derivations to {output_file}"
                 )
                 empty_permissible_value_derivations_df.to_csv(output_file, index=False)
+            if len(unrecognized_constant_values_df):
+                output_file = (
+                    Path(output_dir) / f"{output_tag}unrecognized_constant_values.csv"
+                )
+                logger.info(f"Saving unrecognized constant values to {output_file}")
+                unrecognized_constant_values_df.to_csv(output_file, index=False)
 
 
 @app.command(help=MAIN_HELP)
