@@ -12,6 +12,7 @@ from odm_map_maker.utils.mapper_utils import get_source_slots_from_slot_derivati
 from odm_map_maker.utils.schema_utils import (
     get_class,
     get_enum_names_for_slot,
+    get_slot_definition,
     get_permissible_values_from_enum_names,
 )
 
@@ -262,7 +263,7 @@ class ValidateMappers(object):
         unrecognized_target_enum_values_df = pd.DataFrame()
         unrecognized_constant_values_df = pd.DataFrame()
 
-        # Go through all slot derivations and validate them (check for invalid constant values in "expr" slots)
+        # Go through all expr slot derivations and validate them (check for invalid constant values in "expr" slots)
         for target_class, class_derivation in mapper["class_derivations"].items():
             target_class = get_class(
                 target_class, self.target_schema, ignore_case=False
@@ -297,6 +298,11 @@ class ValidateMappers(object):
                     target_enum_names, self.target_schema
                 )
                 if target_value in permissible_values:
+                    continue
+                
+                # Blank values are allowed if it is not a required slot
+                slot_defn = get_slot_definition(target_class, target_slot, self.target_schema)
+                if not target_value and not slot_defn.get("required", False):
                     continue
 
                 # target_value is an invalid value for the target slot
