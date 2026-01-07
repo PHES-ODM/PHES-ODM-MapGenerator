@@ -43,11 +43,11 @@ to the following rules (using the example table below):
 |    6    | odm<3.0            |
 |    7    | odm>=3.0, odm<=3.1 |
 
-1. If a row has include flags then at least one of them must be in the constructor
-   include flags. For example, if the constructor includes the flags "b,c", then
-   row_num=0 and row_num=2 are dropped, while all other rows are retained. If the
-   constructor has no include flags, then row_num=0, row_num=2, and row_num=3 are
-   all dropped, while all other rows are retained.
+1. If a row has include flags then at least one of them must be in the
+   constructor include flags. For example, if the constructor includes the
+   flags "b,c", then row_num=0 and row_num=2 are dropped, while all other rows
+   are retained. If the constructor has no include flags, then row_num=0,
+   row_num=2, and row_num=3 are all dropped, while all other rows are retained.
 2. If an exclude flag is specified to the constructor (eg. "!amr") and the row
    has that flag (eg. "amr"), then the row is dropped. For example, if "!amr"
    is provided to the constructor then row_num=0 is dropped.
@@ -56,17 +56,19 @@ to the following rules (using the example table below):
    if the flag "deprecated" is provided to the constructor then row_num=1 is
    removed (also, row_num=0, 2, and 3 are also dropped, according to rule 1
    above).
-4. A module version number can be specified to the constructor, in the
-   format "module=version" (eg. odm=3). For these selectors, if a row has that
-   module specified, along with a version specifier, then the row is retained
-   only if the constructor version agrees with the row version. For example,
-   if "odm=3" is specified to the constructor, then row_num=5 and row_num=7
-   are retained but row_num=6 is removed (all other rows are retained). As
-   another example, if "odm=3.2" is specified to the constructor, then
-   row_num=5 is retained but row_num=6 and row_num=7 are removed (all other
-   rows are retained). The allowable version specifiers in the `selectors`
-   column are: ==, !=, >=, <=, >, <, ~= (see [Version Specifiers in the Python
-   Packaging
+4. A module version number can be specified to the constructor, in the format
+   "module=version" (eg. odm=3). If a row has one or more module version
+   selectors (eg. "odm>=3.0"), then the row is retained only if the constructor
+   version agrees with all the row versions. If the row has a module version
+   but no version is specified to the constructor for that module, then the row
+   is dropped. For example, if "odm=3" is specified to the constructor, then
+   row_num=5 and row_num=7 are retained but row_num=6 is removed (all other
+   rows are retained). As another example, if "odm=3.2" is specified to the
+   constructor, then row_num=5 is retained but row_num=6 and row_num=7 are
+   removed (all other rows are retained). If now version for "odm" is specified
+   in the constructor, then all of row_num=5, 6, and 7 are dropped. The
+   allowable version specifiers in the `selectors` column are: ==, !=, >=, <=,
+   >, <, ~= (see [Version Specifiers in the Python Packaging
    guide](https://packaging.python.org/en/latest/specifications/version-specifiers/#id5)).
 
 ## Usage
@@ -259,10 +261,19 @@ class SelectorFilter:
             SelectorTypes.MODULE_VERSION, []
         )
         for row_mod, row_ver in row_module_version_selectors:
-            for sel_mod, sel_ver in module_version_selectors:
-                if row_mod == sel_mod:
+            # Check to see if the module is in the constructor selectors, if it is
+            # not then fail
+            matching_mudule_selectors = [
+                m for m in module_version_selectors if m[0] == row_mod
+            ]
+            if not matching_mudule_selectors:
+                return False
+            else:
+                # Make sure the row module version passes all the versions
+                # specified in matching_module_selectors
+                for _, ver in matching_mudule_selectors:
                     spec_set = SpecifierSet(row_ver)
-                    if parse_version(sel_ver) not in spec_set:
+                    if parse_version(ver) not in spec_set:
                         return False
         return True
 
@@ -288,11 +299,11 @@ class SelectorFilter:
         |    6    | odm<3.0            |
         |    7    | odm>=3.0, odm<=3.1 |
 
-        1. If a row has include flags then at least one of them must be in the constructor
-        include flags. For example, if the constructor includes the flags "b,c", then
-        row_num=0 and row_num=2 are dropped, while all other rows are retained. If the
-        constructor has no include flags, then row_num=0, row_num=2, and row_num=3 are
-        all dropped, while all other rows are retained.
+        1. If a row has include flags then at least one of them must be in the
+        constructor include flags. For example, if the constructor includes the
+        flags "b,c", then row_num=0 and row_num=2 are dropped, while all other rows
+        are retained. If the constructor has no include flags, then row_num=0,
+        row_num=2, and row_num=3 are all dropped, while all other rows are retained.
         2. If an exclude flag is specified to the constructor (eg. "!amr") and the row
         has that flag (eg. "amr"), then the row is dropped. For example, if "!amr"
         is provided to the constructor then row_num=0 is dropped.
@@ -301,17 +312,19 @@ class SelectorFilter:
         if the flag "deprecated" is provided to the constructor then row_num=1 is
         removed (also, row_num=0, 2, and 3 are also dropped, according to rule 1
         above).
-        4. A module version number can be specified to the constructor, in the
-        format "module=version" (eg. odm=3). For these selectors, if a row has that
-        module specified, along with a version specifier, then the row is retained
-        only if the constructor version agrees with the row version. For example,
-        if "odm=3" is specified to the constructor, then row_num=5 and row_num=7
-        are retained but row_num=6 is removed (all other rows are retained). As
-        another example, if "odm=3.2" is specified to the constructor, then
-        row_num=5 is retained but row_num=6 and row_num=7 are removed (all other
-        rows are retained). The allowable version specifiers in the `selectors`
-        column are: ==, !=, >=, <=, >, <, ~= (see [Version Specifiers in the Python
-        Packaging
+        4. A module version number can be specified to the constructor, in the format
+        "module=version" (eg. odm=3). If a row has one or more module version
+        selectors (eg. "odm>=3.0"), then the row is retained only if the constructor
+        version agrees with all the row versions. If the row has a module version
+        but no version is specified to the constructor for that module, then the row
+        is dropped. For example, if "odm=3" is specified to the constructor, then
+        row_num=5 and row_num=7 are retained but row_num=6 is removed (all other
+        rows are retained). As another example, if "odm=3.2" is specified to the
+        constructor, then row_num=5 is retained but row_num=6 and row_num=7 are
+        removed (all other rows are retained). If now version for "odm" is specified
+        in the constructor, then all of row_num=5, 6, and 7 are dropped. The
+        allowable version specifiers in the `selectors` column are: ==, !=, >=, <=,
+        >, <, ~= (see [Version Specifiers in the Python Packaging
         guide](https://packaging.python.org/en/latest/specifications/version-specifiers/#id5)).
 
         Args:
@@ -335,12 +348,11 @@ class SelectorFilter:
                 lambda x: self._gather_selectors(x, equals_version_only=False)
             )
             # Only keep the rows where the selectors pass the test
-            if self.selectors_dict:
-                df = df[
-                    df[self.selector_column].map(
-                        lambda x: self._seletors_pass(self.selectors_dict, x)
-                    )
-                ]
+            df = df[
+                df[self.selector_column].map(
+                    lambda x: self._seletors_pass(self.selectors_dict, x)
+                )
+            ]
 
         # Remove the selector column if required
         if remove_selectors_column:

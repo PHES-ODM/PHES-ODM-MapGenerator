@@ -89,17 +89,19 @@ to the following rules (using the example table below):
    if the flag "deprecated" is provided on the command-line then row_num=1 is
    removed (also, row_num=0, 2, and 3 are also dropped, according to rule 1
    above).
-4. A module version number can be specified form the command-line, in the
-   format "module=version" (eg. odm=3). For these selectors, if a row has that
-   module specified, along with a version specifier, then the row is retained
-   only if the command-line version agrees with the row version. For example,
-   if "odm=3" is specified on the command-line, then row_num=5 and row_num=7
-   are retained but row_num=6 is removed (all other rows are retained). As
-   another example, if "odm=3.2" is specified on the command-line, then
-   row_num=5 is retained but row_num=6 and row_num=7 are removed (all other
-   rows are retained). The allowable version specifiers in the `selectors`
-   column are: ==, !=, >=, <=, >, <, ~= (see [Version Specifiers in the Python
-   Packaging
+4. A module version number can be specified on the command-line, in the format
+   "module=version" (eg. odm=3). If a row has one or more module version
+   selectors (eg. "odm>=3.0"), then the row is retained only if the command-line
+   version agrees with all the row versions. If the row has a module version
+   but no version is specified on the command-line for that module, then the row
+   is dropped. For example, if "odm=3" is specified on the command-line, then
+   row_num=5 and row_num=7 are retained but row_num=6 is removed (all other
+   rows are retained). As another example, if "odm=3.2" is specified on the
+   command-line, then row_num=5 is retained but row_num=6 and row_num=7 are
+   removed (all other rows are retained). If now version for "odm" is specified
+   on the command-line, then all of row_num=5, 6, and 7 are dropped. The
+   allowable version specifiers in the `selectors` column are: ==, !=, >=, <=,
+   >, <, ~= (see [Version Specifiers in the Python Packaging
    guide](https://packaging.python.org/en/latest/specifications/version-specifiers/#id5)).
 
 ### sourceClass
