@@ -299,9 +299,11 @@ class ValidateMappers(object):
                 )
                 if target_value in permissible_values:
                     continue
-                
+
                 # Blank values are allowed if it is not a required slot
-                slot_defn = get_slot_definition(target_class, target_slot, self.target_schema)
+                slot_defn = get_slot_definition(
+                    target_class, target_slot, self.target_schema
+                )
                 if not target_value and not slot_defn.get("required", False):
                     continue
 
@@ -360,7 +362,7 @@ class ValidateMappers(object):
                     permissible_values = target_permissible_values_info[
                         SourceToTargetEnumInfoKeys.PERMISSIBLE_VALUES
                     ]
-                    
+
                     # Single row DataFrame that gets applied to all rows in all the reports
                     global_df = pd.DataFrame(
                         {
