@@ -19,6 +19,7 @@ from linkml_runtime.linkml_model.meta import SchemaDefinition
 from linkml_runtime.utils.schema_as_dict import schema_as_dict
 
 from odm_map_maker.utils.logger import get_logger
+from odm_map_maker.utils.selector_filter import SelectorFilter
 from odm_map_maker.utils.general_utils import (
     read_data_frame,
     strip_whitespace,
@@ -73,10 +74,9 @@ class MakeMappers(object):
             mapper_dir (Union[str, Path]): Directory to save all the mapping config files to.
             source_schema (Union[str, Path]): Path to the source schema of the mapping.
             target_schema (Union[str, Path]): Path to the target schema of the mapping.
-            selectors (Optional[List[str]], optional): For rows in the mapping config file that have a value in the "selectors" column, only use the
-                row if any of these selectors is found. The "selectors" column has a comma-separated list of selector values. A selector
-                value in the data can also be preceded by an exclamation mark, meaning only select the row if the
-                selector value is NOT specified.
+            selectors (Optional[List[str]], optional): Selectors to specify which rows to include or exclude
+                in the mapping configuration files (if the "selectors" column is not blank for that row).
+                Defaults to None.
             source_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
                 all slot names, found in the configuration file, for the source schema.
             target_slot_format_operations (Optional[Union[str, List[str]]], optional): Formatting options to apply to
@@ -89,7 +89,9 @@ class MakeMappers(object):
                 schema, onto enum values that do not have an ontology ID in the mapping configuration.
         """
         self.mapper_dir = mapper_dir
-        self.selectors = selectors
+        self.selector_filter = SelectorFilter(
+            selectors=selectors, selector_column=MappingColumns.SELECTORS
+        )
         self.source_slot_format_operations = source_slot_format_operations
         self.target_slot_format_operations = target_slot_format_operations
         self.source_match_ontology_id_regex = source_match_ontology_id_regex
@@ -634,76 +636,6 @@ class MakeMappers(object):
 
         return all_enum_derivations
 
-    def apply_selectors_to_df(
-        self, df: pd.DataFrame, selectors: Optional[List[str]]
-    ) -> pd.DataFrame:
-        """Apply selectors to the DataFrame, dropping rows where the selectors do not match properly.
-
-        For a given value of selectors in the data, we separate the negated selectors from the
-        non-negated selectors. The following two conditions must pass:
-
-        1. For negated selectors: None of these selectors must have been specified from
-        in the `selectors` parameter (ie. we perform an AND operation for all negated
-        selectors). If there are no negated selectors then this rule always passes.
-        2. For non-negated selectors: Any of these selectors must have been specified
-        in the `selectors` parameter (ie. we perform an OR operation for all non-negated
-        selectors). If there are no non-negated selectors then this rule always
-        passes.
-
-        Following the above rules, if the data has a row that is blank in the `selectors` column,
-        then that row is always retained.
-
-        Args:
-            df (pd.DataFrame): The DataFrame to drop rows from based on the selectors parameter. A copy of this
-                DataFrame is made and the original is left unchanged.
-            selectors (Optional[List[str]]): The selectors specifying which rows to retain or drop.
-
-        Returns:
-            pd.DataFrame: The DataFrame with rows dropped according to the rules described above.
-        """
-        if len(df) == 0:
-            return df.copy()
-        df = df.copy()
-        if MappingColumns.SELECTORS not in df.columns:
-            df[MappingColumns.SELECTORS] = None
-        if selectors is None:
-            selectors = []
-        exclude_selectors = [
-            s.lstrip("!").strip() for s in selectors if s.startswith("!")
-        ]
-        selectors = [s.strip() for s in selectors if not s.startswith("!")]
-
-        # Expand the selectors (in the DataFrame) from a comma-separated string to a list of strings
-        def _expand_selectors(v: Any) -> List[str]:
-            if pd.isna(v):
-                return []
-            v = str(v)
-            v = v.split(",")
-            v = [x.strip() for x in v]
-            return v
-
-        df[MappingColumns.SELECTORS] = df[MappingColumns.SELECTORS].map(
-            _expand_selectors
-        )
-
-        # Do the matching of selectors
-        def _should_keep_row(df_selectors: List[str]) -> bool:
-            # If the data has no selectors, then always include the row
-            if len(df_selectors) == 0:
-                return True
-            # If any exclude_selector is found, then do not include the row
-            if len([v for v in df_selectors if v in exclude_selectors]) > 0:
-                return False
-            # If any selector is not found, then do not include the row
-            if len([v for v in df_selectors if v not in selectors]) > 0:
-                return False
-            # No exclude_selector was found, and all selectors were found
-            return True
-
-        df = df[df[MappingColumns.SELECTORS].map(_should_keep_row)]
-        df = df[[c for c in df.columns if c != MappingColumns.SELECTORS]]
-        return df.reset_index(drop=True).copy()
-
     def prepare_maps_df(self, maps_file: Union[str, Path]) -> pd.DataFrame:
         """Load and prepare the mapping specification file from disk. This DataFrame specifies all
         the mappings other than the wide column mappings (wide columns data is prepared by
@@ -729,7 +661,7 @@ class MakeMappers(object):
         maps_df = self.drop_incomplete_rows(maps_df)
 
         # Only use the rows based on the values in the selectors column
-        maps_df = self.apply_selectors_to_df(maps_df, selectors=self.selectors)
+        maps_df = self.selector_filter.apply(maps_df, remove_selectors_column=True)
 
         keep_columns = [
             MappingColumns.SOURCE_CLASS,
@@ -796,7 +728,7 @@ class MakeMappers(object):
         wide_df = self.drop_incomplete_rows(wide_df)
 
         # Only use the rows based on the values in the selectors column
-        wide_df = self.apply_selectors_to_df(wide_df, selectors=self.selectors)
+        wide_df = self.selector_filter.apply(wide_df, remove_selectors_column=True)
 
         # Convert SOURCE_SLOT to strings
         wide_df[MappingColumns.SOURCE_SLOT] = wide_df[MappingColumns.SOURCE_SLOT].map(
@@ -895,7 +827,7 @@ class MakeMappers(object):
         enums_df = self.drop_incomplete_rows(enums_df)
 
         # Only use the rows based on the values in the selectors column
-        enums_df = self.apply_selectors_to_df(enums_df, selectors=self.selectors)
+        enums_df = self.selector_filter.apply(enums_df, remove_selectors_column=True)
 
         # Keep only relevant columns, and make sure the columns exist
         keep_columns = [

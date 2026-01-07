@@ -48,11 +48,14 @@ SOURCE_SCHEMA_HELP = """The source dataset schema LinkML YAML file."""
 
 TARGET_SCHEMA_HELP = """The target dataset schema LinkML YAML file."""
 
-SELECTORS_HELP = """For rows in the mapping config file that have a value in
-the "selectors" column, only use the row if any of these selectors is found.
-The "selectors" column has a comma-separated list of selector values. A
-selector value in the data can also be preceded by an exclamation mark, meaning
-only select the row if the selector value is NOT specified."""
+SELECTORS_HELP = """A list of strings consisting of flags or module versions
+used to include or exclude rows from the mapping configuration files. A flag is
+a single string (consisting of letters, numbers, or underscores), which can be
+preceded by an exclamation mark to negate the flag, whereas a module version is
+of the form "module=version" where "module" is a string consisting of letters,
+numbers, and underscores, and "version" is a version number (eg. 1.0.0, 3, 3.1,
+etc). An example command-line argument could be: "amr,!deprecated,odm=2.0.0".
+See the documentation for mapping config files more details."""
 
 SOURCE_SLOT_FORMAT_OPERATIONS_HELP = """Formatting options to apply to all slot
 names, found in the configuration file, for the source schema."""
@@ -168,10 +171,9 @@ def main(
         enum_files (List[Path]): Path to CSV or TSV files that contain the enum configurations.
         source_schema (Path): The source dataset schema LinkML YAML file.
         target_schema (Path): The target dataset schema LinkML YAML file.
-        selectors (Optional[List[str]], optional): For rows in the mapping config file that have a value in the "selectors" column, only use the
-            row if any of these selectors is found. The "selectors" column has a comma-separated list of selector values. A selector
-            value in the data can also be preceded by an exclamation mark, meaning only select the row if the
-            selector value is NOT specified. Defaults to None
+        selectors (Optional[List[str]], optional): Selectors to specify which rows to include or exclude
+            in the mapping configuration files (if the "selectors" column is not blank for that row).
+            Defaults to None.
         source_slot_format_operations (Optional[List[str]], optional): Formatting options to apply to
             all slot names, found in the configuration file, for the source schema. Defaults to None.
         target_slot_format_operations (Optional[List[str]], optional): Formatting options to apply to
