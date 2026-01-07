@@ -1,4 +1,3 @@
-# %%
 """
 # SelectorFilter Class
 
@@ -44,11 +43,11 @@ to the following rules (using the example table below):
 |    6    | odm<3.0            |
 |    7    | odm>=3.0, odm<=3.1 |
 
-1. If include flag(s) are specified to the constructor and the row also has at
-   least one include flag: The row must have at least one of the constructor
-   include flags, otherwise it is dropped. For example, if the constructor
-   includes the flags "b,c", then row_num=0 and row_num=2 are dropped, while
-   all other rows are retained.
+1. If a row has include flags then at least one of them must be in the constructor
+   include flags. For example, if the constructor includes the flags "b,c", then
+   row_num=0 and row_num=2 are dropped, while all other rows are retained. If the
+   constructor has no include flags, then row_num=0, row_num=2, and row_num=3 are
+   all dropped, while all other rows are retained.
 2. If an exclude flag is specified to the constructor (eg. "!amr") and the row
    has that flag (eg. "amr"), then the row is dropped. For example, if "!amr"
    is provided to the constructor then row_num=0 is dropped.
@@ -72,11 +71,13 @@ to the following rules (using the example table below):
 
 ## Usage
 
-```python from odm_map_maker.utils.selector_filter import SelectorFilter
+```python
+from odm_map_maker.utils.selector_filter import SelectorFilter
 
 sf = SelectorFilter(selectors=["!deprecated", "odm=3.0.0"],
 selector_column="selectors") filtered_df = sf.apply(df,
-remove_selectors_column=False) ```
+remove_selectors_column=False)
+```
 """
 
 from typing import List, Any, Tuple, Dict, Union
@@ -245,11 +246,9 @@ class SelectorFilter:
         if len([s for s in row_exclude_selectors if s in include_selectors]) > 0:
             return False
 
-        # If include_selectors are specified and the row has row_include_selectors, but none of the
-        # include_selectors are found, then fail
+        # If the row has row_include_selectors, then at least one of them must be in include_selectors
         if (
-            include_selectors
-            and row_include_selectors
+            row_include_selectors
             and len([s for s in include_selectors if s in row_include_selectors]) == 0
         ):
             return False
@@ -272,33 +271,48 @@ class SelectorFilter:
     ) -> pd.DataFrame:
         """Apply selectors to the DataFrame, dropping rows where the selectors do not match properly.
 
-        A row is retained if the selector column is blank. Otherwise, a row is removed according to
-        the following rules (using the example table below):
+        A row in a mapping configuration file is always retained if the `selector`
+        column for that row is blank.
 
-        | row_num | selectors   |
-        |---------|-------------|
-        |    0    | amr         |
-        |    1    | !deprecated |
-        |    2    | a           |
-        |    3    | a, b        |
-        |    4    | !d          |
-        |    5    | odm>=3.0    |
-        |    6    | odm<3.0     |
+        If the `selector` column is not blank, then a row is removed/retained according
+        to the following rules (using the example table below):
 
-        1) If an exclude selector is specified (eg. "!amr") and the selector value for the row has that
-           specifier (eg. "amr"), then the row is removed. For example, row_num=0 is removed if the
-           exclude selector "!amr" is specified.
-        2) If a row has an exclude selector (eg. "!deprecated") and the specified selectors include that
-           specifier (eg. "deprecated"), then the row is removed. For example, row_num=1 is removed if
-           the specifier "deprecated" is specified.
-        3) If include selectors are specified and the row has at least one include selector, but none of the
-           specified include selectors match any of the row's include selectors, then the row is removed.
-           For example, row_num=2 is removed and row_num=3 and row_num=4 are retained if the include selectors
-           "b,c" are specified.
-        4) For module version selectors (eg. odm=3), if the row has a module version selector (eg. "odm>=3.0") then
-           if the versions for the module do not match then remove the row. For example, row_num=5
-           is retained but row_num=6 is removed if the module version selector "odm=3.0" is specified.
-           If no version for "odm" is specified then both rows are retained.
+        | row_num | selectors          |
+        |---------|--------------------|
+        |    0    | amr                |
+        |    1    | !deprecated        |
+        |    2    | a                  |
+        |    3    | a, b               |
+        |    4    | !d                 |
+        |    5    | odm>=3.0           |
+        |    6    | odm<3.0            |
+        |    7    | odm>=3.0, odm<=3.1 |
+
+        1. If a row has include flags then at least one of them must be in the constructor
+        include flags. For example, if the constructor includes the flags "b,c", then
+        row_num=0 and row_num=2 are dropped, while all other rows are retained. If the
+        constructor has no include flags, then row_num=0, row_num=2, and row_num=3 are
+        all dropped, while all other rows are retained.
+        2. If an exclude flag is specified to the constructor (eg. "!amr") and the row
+        has that flag (eg. "amr"), then the row is dropped. For example, if "!amr"
+        is provided to the constructor then row_num=0 is dropped.
+        3. If a row has an exclude flag (eg. "!deprecated") and the constructor
+        includes that flag (eg. "deprecated"), then the row is dropped. For example,
+        if the flag "deprecated" is provided to the constructor then row_num=1 is
+        removed (also, row_num=0, 2, and 3 are also dropped, according to rule 1
+        above).
+        4. A module version number can be specified to the constructor, in the
+        format "module=version" (eg. odm=3). For these selectors, if a row has that
+        module specified, along with a version specifier, then the row is retained
+        only if the constructor version agrees with the row version. For example,
+        if "odm=3" is specified to the constructor, then row_num=5 and row_num=7
+        are retained but row_num=6 is removed (all other rows are retained). As
+        another example, if "odm=3.2" is specified to the constructor, then
+        row_num=5 is retained but row_num=6 and row_num=7 are removed (all other
+        rows are retained). The allowable version specifiers in the `selectors`
+        column are: ==, !=, >=, <=, >, <, ~= (see [Version Specifiers in the Python
+        Packaging
+        guide](https://packaging.python.org/en/latest/specifications/version-specifiers/#id5)).
 
         Args:
             df (pd.DataFrame): The DataFrame to drop rows from based on the selectors parameter. A copy of this

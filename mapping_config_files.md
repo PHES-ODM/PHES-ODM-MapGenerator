@@ -71,6 +71,11 @@ to the following rules (using the example table below):
 |    6    | odm<3.0            |
 |    7    | odm>=3.0, odm<=3.1 |
 
+1. If a row has include flags then at least one of them must be in the command-line
+   include flags. For example, if the command-line includes the flags "b,c", then
+   row_num=0 and row_num=2 are dropped, while all other rows are retained. If the
+   command-line has no include flags, then row_num=0, row_num=2, and row_num=3 are
+   all dropped, while all other rows are retained.
 1. If include flag(s) are specified on the command-line and the row also has at
    least one include flag: The row must have at least one of the command-line
    include flags, otherwise it is dropped. For example, if the command-line
