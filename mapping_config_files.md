@@ -29,59 +29,73 @@ Any row that is completely empty is ignored.
 
 ### selectors
 
-A comma-separated string of selector values. A selector is specified from the
-command-line and tells us which rows to keep or drop from the input data.
-Individual selectors in the data can be negated by preceding it with an
-exclamation mark.
+The optional `selectors` column is used for filtering rows based on selectors.
+Selectors can either be a flag (eg. "amr"), or a versioned module (eg.
+"odm>=3.0"). For multiple selectors, separate them by a comma (eg.
+"amr,odm>=3.0").
 
-Below is an example table with a `selectors` column:
+A versioned module can be included in a row to make sure we drop any rows that
+are for an incompatible version (eg. if we want to use a different row for ODM
+v2 vs ODM v3), whereas a flag selector is used to only include or exclude rows
+based on the presence or absence of that flag. Exclude selectors are preceded
+by an exclamation mark (eg. "!deprecated").
 
-| Color   | selectors                   |
-|:--------|:----------------------------|
-| Red     | amr                         |
-| Orange  | !agnostic,!amr,other,other2 |
-| Yellow  | amr                         |
-| Green   | amr                         |
-| Blue    | !agnostic,amr               |
-| Indigo  |                             |
-| Violet  |                             |
-| Cyan    | amr,agnostic                |
-| Magenta |                             |
+When the mapping configuration file is processed, a set of selectors is
+specified from the command-line using the `--selectors` argument, and these
+command-line selectors are used by comparing them to the selectors specified in
+the `selectors` column.
 
-For a given value of selectors, we separate the negated selectors from the
-non-negated selectors. The following two conditions must pass:
+The `selectors` column can have three types of selectors:
 
-1. For negated selectors: None of these selectors must have been specified from
-   the command-line (ie. we perform an AND operation for all negated
-   selectors). If there are no negated selectors then this rule always passes.
-2. For non-negated selectors: Any of these selectors must have been specified
-   from the command-line (ie. we perform an OR operation for all non-negated
-   selectors). If there are no non-negated selectors then this rule always
-   passes.
+1. *Include flags*: These are flags that do not start with "!" and do not have
+   a version specifier (eg. "amr", "b", etc).
+2. *Exclude flags*: These are flags that start with "!" and do not have a
+   version specifier (eg. "!deprecated", "!d", etc).
+3. *Versioned modules*: These are module selectors that have a module name and
+   a version specifier (eg. "odm>=3.0", "odm<3.0", etc).
 
-Following the above rules, if the `selectors` column is empty for a row, then
-that row is always retained.
+A row in a mapping configuration file is always retained if the `selector`
+column for that row is blank.
 
-So for the row with `Color` equal to `Blue`, the selectors are "!agnostic,amr".
-We keep the row if 1) "agnostic" was not specified form the command-line, and
-2) "amr" was specified from the command-line.
+If the `selector` column is not blank, then a row is removed/retained according
+to the following rules (using the example table below):
 
-For the row with `Color` equal to `Cyan`, the selectors are "amr,agnostic". We
-keep the row if either (or both) "amr" or "agnostic" were specified from the
-command-line.
+| row_num | selectors          |
+|---------|--------------------|
+|    0    | amr                |
+|    1    | !deprecated        |
+|    2    | a                  |
+|    3    | a, b               |
+|    4    | !d                 |
+|    5    | odm>=3.0           |
+|    6    | odm<3.0            |
+|    7    | odm>=3.0, odm<=3.1 |
 
-For the row with `Color` equal to `Yellow`, the selectors are "amr". We keep
-the row if "amr" was specified from the command-line.
-
-For the row with `Color` equal to `Orange`, the selectors are
-"!agnostic,!amr,other,other2". We keep the row if neither "agnostic" or "amr"
-were specified from the command-line, and either "other" or "other2" was
-specified from the command-line. For example, command-line selectors of
-"agnostic,other,other2" will result in dropping the `Orange` row; command-line
-selectors of "agnostic,other" will result in dropping the row; command-line
-selectors of "other" will result in retaining the row; command-line selectors
-of "other,other2" will result in retaining the row, and command-line selectors
-of "other3,other" will result in retaining the row.
+1. If include flag(s) are specified on the command-line and the row also has at
+   least one include flag: The row must have at least one of the command-line
+   include flags, otherwise it is dropped. For example, if the command-line
+   includes the flags "b,c", then row_num=0 and row_num=2 are dropped, while
+   all other rows are retained.
+2. If an exclude flag is specified on the command-line (eg. "!amr") and the row
+   has that flag (eg. "amr"), then the row is dropped. For example, if "!amr"
+   is provided on the command-line then row_num=0 is dropped.
+3. If a row has an exclude flag (eg. "!deprecated") and the command-line
+   includes that flag (eg. "deprecated"), then the row is dropped. For example,
+   if the flag "deprecated" is provided on the command-line then row_num=1 is
+   removed (also, row_num=0, 2, and 3 are also dropped, according to rule 1
+   above).
+4. A module version number can be specified form the command-line, in the
+   format "module=version" (eg. odm=3). For these selectors, if a row has that
+   module specified, along with a version specifier, then the row is retained
+   only if the command-line version agrees with the row version. For example,
+   if "odm=3" is specified on the command-line, then row_num=5 and row_num=7
+   are retained but row_num=6 is removed (all other rows are retained). As
+   another example, if "odm=3.2" is specified on the command-line, then
+   row_num=5 is retained but row_num=6 and row_num=7 are removed (all other
+   rows are retained). The allowable version specifiers in the `selectors`
+   column are: ==, !=, >=, <=, >, <, ~= (see [Version Specifiers in the Python
+   Packaging
+   guide](https://packaging.python.org/en/latest/specifications/version-specifiers/#id5)).
 
 ### sourceClass
 
