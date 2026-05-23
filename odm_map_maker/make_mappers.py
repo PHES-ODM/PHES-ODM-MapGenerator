@@ -250,11 +250,6 @@ class MakeMappers(object):
                         "slot_derivations": {
                             target_class: {
                                 "populated_from": source_class,
-                                # @TODO: Remove "range" : "string": This is only included to remove warnings
-                                # of unknown target range of target_class. Also, having a range of string
-                                # seems to force enum mappings where the source enum has no mapping to
-                                # the string "None", rather than the NULL value None.
-                                # "range": "string",
                             }
                         },
                     },
@@ -356,9 +351,6 @@ class MakeMappers(object):
                 new_dict = {
                     "name": target_slot,
                 }
-                # The MappingColumns.CUSTOM_DATA field is set for the current row. This is a dictionary that we merge to the target_slot derivation.
-                # if custom_data:
-                #     new_dict.update(json.loads(custom_data))
                 if slot_derivation_settings:
                     new_dict.update(slot_derivation_settings)
                 if target_expr:
@@ -391,12 +383,11 @@ class MakeMappers(object):
                 slot_derivations[target_slot].update(
                     {
                         "name": target_slot,
-                        "populated_from": source_slot,  # cleanup_slot_name(source_slot),
+                        "populated_from": source_slot,
                     }
                 )
-
-            if slot_derivation_settings:
-                slot_derivations[target_slot].update(slot_derivation_settings)
+                if slot_derivation_settings:
+                    slot_derivations[target_slot].update(slot_derivation_settings)
 
         return all_class_derivations
 
@@ -404,7 +395,6 @@ class MakeMappers(object):
         self, maps_df: pd.DataFrame
     ) -> Dict[str, Dict[str, Dict[str, Dict[str, Dict]]]]:
         """Extract all enum derivations found within the mapping DataFrame.
-        @TODO: Update the docstring, the return type has changed.
 
         Args:
             maps_df (pd.DataFrame): The mapping DataFrame that contains the information for mapping from the
@@ -412,32 +402,27 @@ class MakeMappers(object):
                 prepared with prepare_maps_df, prepare_enums_df, and prepare_wide_df).
 
         Raises:
-            ValueError: _description_
+            ValueError: An error occurred due to problems with the mapping data.
 
         Returns:
-            Dict[str, Dict[str, Dict]]: A dictionary in the form
-                return_value[source_class_name][target_class_name][source_slot_name][target_slot_name] = { all_derivations }. The items
-                at return_value[""][""] have no source class and target class name specified
+            Dict[str, Dict[str, Dict[str, Dict[str, Dict]]]]: A nested dictionary in the form
+                return_value[source_class][target_class][source_slot][target_slot] = { enum_derivations }.
+                Entries keyed by "" apply to all source/target classes or slots respectively.
                 Example:
                         {
-                            "nwss" : {
-                                "protocolSteps" : {
-                                    "methods[protocolSteps_method]": {
-                                        "name": "methods[protocolSteps_method]",
-                                        "mirror_source": false,
-                                        "populated_from": "vs_pcr_type",
-                                        "permissible_value_derivations": { ... }
-                                    },
-                                    "other_target_enum": {
-                                        "name": "other_target_enum",
-                                        "mirror_source": false,
-                                        "populated_from": "source_set",
-                                        "permissible_value_derivations": { ... }
-                                    },
-                                    ...
+                            "nwss": {
+                                "protocolSteps": {
+                                    "vs_pcr_type": {
+                                        "methods[protocolSteps_method]": {
+                                            "name": "methods[protocolSteps_method]",
+                                            "mirror_source": false,
+                                            "populated_from": "vs_pcr_type",
+                                            "permissible_value_derivations": { ... }
+                                        }
+                                    }
                                 }
                             },
-                            "other_source_class" : { ... }
+                            "other_source_class": { ... }
                         }
         """
         if maps_df is None:
@@ -517,9 +502,6 @@ class MakeMappers(object):
                     logger.error(
                         f"No source enumeration found for {source_class=}, {source_slot=} from slot range(s) {source_enum_names=} that has a permissible {source_enum_value=} ({target_class=}, {target_slot=}). Using source enumeration name '{source_enum_name}'"
                     )
-                    # raise ValueError(
-                    #     f"No source enumeration found for {source_class=}, {source_slot=} from slot range(s) {source_enum_names=} that has a permissible {source_enum_value=} ({target_class=}, {target_slot=})"
-                    # )
 
             # Get the target enumeration name based on the target class and slot
             if target_class and target_slot:
@@ -538,9 +520,6 @@ class MakeMappers(object):
                         logger.error(
                             f"No target enumeration found for {target_class=}, {target_slot=} from slot range(s) {target_enum_names=} that has a permissible value {target_enum_value=} ({source_class=}, {source_slot=}). Using target enumeration name '{target_enum_name}' (candidate enumerations: {target_enum_names})"
                         )
-                        # raise ValueError(
-                        #     f"No target enumeration found for {target_class=}, {target_slot=} from slot range(s) {target_enum_names=} that has a permissible value {target_enum_value=} ({source_class=}, {source_slot=})"
-                        # )
                 else:
                     # If there is no target enum name (eg. we're mapping from a source slot that is an enum to a target slot that is not an
                     # enum), then we create a unique target enum name to use. Target enum names can be anything, they are just placeholders
@@ -657,7 +636,6 @@ class MakeMappers(object):
         # Drop empty rows
         maps_df = maps_df.dropna(axis=0, how="all")
 
-        # @TODO: Remove this once the maps_file is finalized
         maps_df = self.drop_incomplete_rows(maps_df)
 
         # Only use the rows based on the values in the selectors column
@@ -693,11 +671,6 @@ class MakeMappers(object):
             schema=self.target_schema,
             cleanup_options=self.target_slot_format_operations,
         )
-        # ws_columns = [
-        #     MappingColumns.SOURCE_SLOT,
-        #     MappingColumns.TARGET_SLOT,
-        # ]
-        # maps_df[ws_columns] = cleanup_slot_name(maps_df[ws_columns])
 
         return maps_df.copy()
 
@@ -724,7 +697,6 @@ class MakeMappers(object):
         # Drop empty rows
         wide_df = wide_df.dropna(axis=0, how="all")
 
-        # @TODO: Remove this once the wide_file is finalized
         wide_df = self.drop_incomplete_rows(wide_df)
 
         # Only use the rows based on the values in the selectors column
@@ -764,11 +736,6 @@ class MakeMappers(object):
         wide_df = order_columns(wide_df, required_columns)
 
         # Cleanup source/target slot names
-        # ws_columns = [
-        #     MappingColumns.SOURCE_SLOT,
-        #     MappingColumns.TARGET_SLOT,
-        # ]
-        # ws_columns = [c for c in ws_columns if c in wide_df.columns]
         if MappingColumns.SOURCE_SLOT in wide_df.columns:
             wide_df[MappingColumns.SOURCE_SLOT] = cleanup_slot_name(
                 wide_df[MappingColumns.SOURCE_SLOT],
@@ -823,7 +790,6 @@ class MakeMappers(object):
         # Drop empty rows
         enums_df = enums_df.dropna(axis=0, how="all")
 
-        # @TODO: Remove this once the wide_file is finalized
         enums_df = self.drop_incomplete_rows(enums_df)
 
         # Only use the rows based on the values in the selectors column

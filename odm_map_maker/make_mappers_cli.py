@@ -96,8 +96,11 @@ def get_available_file_path(
     target_name = Path(source_file).name
     target_dir: Path = Path(target_dir)
 
+    stem, ext = os.path.splitext(target_name)
+    counter = 1
     while (target_dir / target_name).exists():
-        target_name = "%s_%s" % os.path.splitext(target_name)
+        target_name = f"{stem}_{counter}{ext}"
+        counter += 1
 
     return target_dir / target_name
 

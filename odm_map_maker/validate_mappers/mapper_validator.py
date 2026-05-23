@@ -516,10 +516,6 @@ class ValidateMappers(object):
                             [empty_permissible_value_derivations_df, df],
                             ignore_index=True,
                         )
-            # elif not enum_derivation.get("mirror_source", False):
-            #     logger.error(
-            #         f"Enum derivation has no permissible value derivations and mirror_source is False: {source_enum_name}"
-            #     )
 
         return (
             missing_source_enum_values_df,

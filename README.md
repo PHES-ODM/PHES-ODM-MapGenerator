@@ -30,6 +30,26 @@ Install Python library requirements:
 pip3 install -r requirements.txt
 ```
 
+## Running the Tests
+
+The test suite uses [pytest](https://docs.pytest.org/). Install it alongside the project dependencies if it is not already present:
+
+```console
+pip3 install pytest
+```
+
+Then run all tests from the repository root:
+
+```console
+pytest tests/
+```
+
+For more verbose output showing each test name:
+
+```console
+pytest tests/ -v
+```
+
 ## Getting Familiar
 
 Currently both ODM v1 to ODM v2 and NWSS to ODM v2 are partially supported (ie. they are not yet complete). ODM v1 to ODM v2 involves parsing the ODM v2 data dictionary, whereas NWSS to ODM v2 uses a separate mapping configuration file (located at [map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx](map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)). Mapping from ODM v1 to ODM v2 will be switched over to use a mapping configuration file in the near future. Therefore, if you're trying to get familiar with this repo and its code it is best to ignore ODM v1 to ODM v2 (including [map_maker/make_v1_to_vx.py](map_maker/make_v1_to_vx.py) and all code in [map_maker/odm_v2](map_maker/odm_v2)) and look at NWSS to ODM v2 instead. The main entrypoint for NWSS to ODM v2 is [map_maker/make_mappers_cli.py](map_maker/make_mappers_cli.py).

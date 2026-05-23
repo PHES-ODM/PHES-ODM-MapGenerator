@@ -224,7 +224,7 @@ def get_used_slots(expr: str, recognized_globals: List[str] = ["emap"]) -> List[
     return list(dict.fromkeys(used_slots))
 
 
-def parse_used_slots(node: ast.Attribute, path: List[str] = []) -> List[str]:
+def parse_used_slots(node: ast.Attribute, path: Optional[List[str]] = None) -> List[str]:
     """Recursively parse the slots in the attribute node. The returned path will be an array
     of names/variables that are used to make up the whole attribute. For example, for the attribute
     "enum.collection_device", the returned path will be ["enum", "collection_device"].
@@ -237,6 +237,8 @@ def parse_used_slots(node: ast.Attribute, path: List[str] = []) -> List[str]:
     Returns:
         List[str]: The slots associated with the attribute.
     """
+    if path is None:
+        path = []
     attr = node.attr
     v = node.value
     if isinstance(v, ast.Attribute):
@@ -533,7 +535,7 @@ def expand_wide_derivations(
                     # The value is "<sourceSlot>", so we populate from source_column
                     cur_slot_derivations[target_slot] = {
                         "name": target_slot,
-                        "populated_from": source_slot_variable,  # cleanup_slot_name(source_slot_variable),
+                        "populated_from": source_slot_variable,
                     }
                 else:
                     # The value is a constant, so we populate with the constant using expr

@@ -10,11 +10,11 @@ logger.info("This is a logging message")
 """
 
 from typing import Optional, Dict, List
+import os
 import sys
 import logging
 
-# Set to True for detailed logging output. Typically used for debugging.
-DETAILED_LOGGER = False
+DETAILED_LOGGER = os.environ.get("ODM_DETAILED_LOGGER", "").lower() in ("1", "true", "yes")
 
 if DETAILED_LOGGER:
     # Default logging format
@@ -87,18 +87,16 @@ def get_logger(name: str, level: Optional[str] = logging.INFO) -> logging.Logger
     Returns:
         logging.Logger: The logging object.
     """
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(
-        MultiFormatter(
-            fmt=DEFAULT_LOGGER_FORMAT,
-            alternate_fmts=ALTERNATE_LOGGER_FORMATS,
-            datefmt=LOGGER_DATE_FORMAT,
+    if not logging.root.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(
+            MultiFormatter(
+                fmt=DEFAULT_LOGGER_FORMAT,
+                alternate_fmts=ALTERNATE_LOGGER_FORMATS,
+                datefmt=LOGGER_DATE_FORMAT,
+            )
         )
-    )
-    logging.basicConfig(
-        handlers=[handler],
-        level=level,
-    )
+        logging.basicConfig(handlers=[handler], level=level)
 
     logger = logging.getLogger(name)
     if level:

@@ -110,6 +110,7 @@ def get_ranges_of_slot_defn(
         if not isinstance(cur_defn, dict):
             cur_defn = asdict(cur_defn)
         # Try getting the range
+        cur_ranges = []
         range_defn = cur_defn.get("range", None)
         if range_defn is not None:
             # range_defn is of type linkml_runtime.linkml_model.meta.ElementName
@@ -279,7 +280,7 @@ def get_permissible_values_from_enum_names(
     # Remove duplicates and sort
     permissible_values = list(dict.fromkeys(permissible_values))
     if sort_values:
-        permissible_values = sorted(permissible_values, lambda x: x.lower())
+        permissible_values = sorted(permissible_values, key=lambda x: x.lower())
 
     return permissible_values
 

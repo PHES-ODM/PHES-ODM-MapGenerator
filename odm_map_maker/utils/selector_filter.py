@@ -221,7 +221,7 @@ class SelectorFilter:
 
         return selectors_dict
 
-    def _seletors_pass(self, selectors: Dict, row_selectors: Dict) -> bool:
+    def _selectors_pass(self, selectors: Dict, row_selectors: Dict) -> bool:
         """Determine if the row (with the specified row_selectors) passes the selector test based on the
         given selectors. If a row passes the test then it is included in the output, if it isn't then it
         is filtered out.
@@ -263,15 +263,15 @@ class SelectorFilter:
         for row_mod, row_ver in row_module_version_selectors:
             # Check to see if the module is in the constructor selectors, if it is
             # not then fail
-            matching_mudule_selectors = [
+            matching_module_selectors = [
                 m for m in module_version_selectors if m[0] == row_mod
             ]
-            if not matching_mudule_selectors:
+            if not matching_module_selectors:
                 return False
             else:
                 # Make sure the row module version passes all the versions
                 # specified in matching_module_selectors
-                for _, ver in matching_mudule_selectors:
+                for _, ver in matching_module_selectors:
                     spec_set = SpecifierSet(row_ver)
                     if parse_version(ver) not in spec_set:
                         return False
@@ -350,7 +350,7 @@ class SelectorFilter:
             # Only keep the rows where the selectors pass the test
             df = df[
                 df[self.selector_column].map(
-                    lambda x: self._seletors_pass(self.selectors_dict, x)
+                    lambda x: self._selectors_pass(self.selectors_dict, x)
                 )
             ]
 

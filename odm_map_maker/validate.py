@@ -37,6 +37,9 @@ DATA_SOURCE_HELP = """The data file to validate."""
 MAX_ERRORS_HELP = """The maximum number of errors to report before exiting. If
                   0 then show all errors without exiting."""
 
+STRICT_HELP = """If set, raise an exception on the first validation error instead
+             of collecting all errors."""
+
 
 def _parse_value(value: Any, cls: str, slot: str, schema: SchemaView) -> Any:
     """Parse the value, as found in a table/class named cls, according to the format it should
@@ -186,6 +189,7 @@ def main(
         str, typer.Option(show_default=False, help=DATA_SOURCE_HELP)
     ],
     max_errors: Annotated[int, typer.Option(help=MAX_ERRORS_HELP)] = 0,
+    strict: Annotated[bool, typer.Option(help=STRICT_HELP)] = False,
 ):
     """Run LinkML validator on some data.
 
@@ -196,8 +200,6 @@ def main(
         max_errors (int): The maximum number of errors to report before exiting. If 0 then show all
             errors without exiting. Defaults to 0.
     """
-    strict = False
-
     plugins = [JsonschemaValidationPlugin(closed=True)]
     loader = loader_from_file(
         data_source,
@@ -224,8 +226,6 @@ def main(
     # Exit with or without error
     exit_code = 1 if severity_counter[Severity.ERROR] > 0 else 0
     sys.exit(exit_code)
-
-    # print(severity_counter)
 
 
 if __name__ == "__main__":
