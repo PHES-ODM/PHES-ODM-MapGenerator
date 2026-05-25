@@ -71,7 +71,6 @@ PHES-ODM-MapGenerator/
 │   ├── make_mappers.py              # Core mapping logic (MakeMappers class)
 │   ├── make_v1_to_vx.py             # Legacy: generate mappers from v1 using the data
 │   │                                #   dictionary (see make_v1_to_vx.md)
-│   ├── validate.py                  # Validate data files against a LinkML schema
 │   ├── configs/                     # Ready-to-use CLI configuration files
 │   │   ├── nwss_to_odm.yaml
 │   │   ├── odm_v1_to_odm.yaml
@@ -356,19 +355,6 @@ each mapping type.
 ## Utility Scripts
 
 Several additional scripts are available for specific tasks.
-
-### validate.py
-
-[odm_map_maker/validate.py](odm_map_maker/validate.py) validates a CSV data
-file against a LinkML schema using the LinkML JSON Schema validator. Use it to
-check that data files produced by the Mapper conform to the target schema.
-
-```console
-python odm_map_maker/validate.py \
-    --schema <schema.yaml> \
-    --source-class <ClassName> \
-    --data-source <data.csv>
-```
 
 ### slot_derivations_checker.py
 
