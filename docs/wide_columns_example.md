@@ -41,5 +41,5 @@ The tab has the following structure (described in full in
 
 See [Mapping Config Files](mapping_config_files.md#wide-tabs) for a complete
 description of every column, and the existing
-[nwss_to_odm_v2_mapping.xlsx](odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)
+[nwss_to_odm_v2_mapping.xlsx](../odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)
 workbook for a worked example.

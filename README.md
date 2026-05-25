@@ -96,11 +96,12 @@ PHES-ODM-MapGenerator/
 │       ├── schema_utils.py          # LinkML schema helpers
 │       └── selector_filter.py       # Row filtering by selector strings
 ├── tests/                           # pytest test suite
-├── mapping_config_files.md          # Reference: Excel mapping file column definitions
-├── make_mappers_cli_config.md       # Reference: YAML CLI config file format
-├── make_v1_to_vx.md                 # Reference: legacy make_v1_to_vx.py script
-├── mapper_validator.md              # Reference: mapper_validator.py script
-└── wide_columns_example.md          # Example: wide-to-long mapping
+└── docs/                            # Documentation
+    ├── mapping_config_files.md      # Reference: Excel mapping file column definitions
+    ├── make_mappers_cli_config.md   # Reference: YAML CLI config file format
+    ├── make_v1_to_vx.md             # Reference: legacy make_v1_to_vx.py script
+    ├── mapper_validator.md          # Reference: mapper_validator.py script
+    └── wide_columns_example.md      # Example: wide-to-long mapping
 ```
 
 ### Where to look when making changes
@@ -139,7 +140,7 @@ Each config file defaults to mapping to ODM v3. Pass `--target-schema`,
 Mapping files are Excel workbooks that contain all required information for
 mapping from a source dataset to a target dataset. They specify basic slot
 mappings, enumeration mappings, and wide-to-long column mappings. See
-[Mapping Config Files](mapping_config_files.md) for instructions on how to
+[Mapping Config Files](docs/mapping_config_files.md) for instructions on how to
 modify or create your own mapping files.
 
 ## General CLI
@@ -147,13 +148,13 @@ modify or create your own mapping files.
 The script [odm_map_maker/make_mappers_cli.py](odm_map_maker/make_mappers_cli.py)
 accepts the following command-line options. All options can also be specified in
 a YAML config file passed via `--config` — see
-[CLI Configuration Files](make_mappers_cli_config.md) for details.
+[CLI Configuration Files](docs/make_mappers_cli_config.md) for details.
 
 **--config** (Optional)  
 Path to a YAML configuration file. Keys are CLI option names (with hyphens or
 underscores). Values serve as defaults and are overridden by any arguments
 supplied on the command line. Paths in the config file are resolved relative to
-the config file's location. See [CLI Configuration Files](make_mappers_cli_config.md).
+the config file's location. See [CLI Configuration Files](docs/make_mappers_cli_config.md).
 
 **--source-schema** (Required)  
 Full path to the source dataset LinkML schema.
@@ -269,7 +270,7 @@ python odm_map_maker/make_mappers_cli.py \
 ```
 
 Slot names that begin with the `_extra_` prefix (special extra slots — see
-[Mapping Config Files](mapping_config_files.md#extra-columns)) are never
+[Mapping Config Files](docs/mapping_config_files.md#extra-columns)) are never
 transformed.
 
 ## ODM v1 to ODM
@@ -349,8 +350,8 @@ python odm_map_maker/make_mappers_cli.py \
 After generating mappers with `make_mappers_cli.py`, use
 [odm_map_maker/validate_mappers/mapper_validator.py](odm_map_maker/validate_mappers/mapper_validator.py)
 to check that all enumeration mappings are complete and consistent. See
-[Mapper Validator](mapper_validator.md) for full documentation and examples for
-each mapping type.
+[Mapper Validator](docs/mapper_validator.md) for full documentation and
+examples for each mapping type.
 
 ## Utility Scripts
 

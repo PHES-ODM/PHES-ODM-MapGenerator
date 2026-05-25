@@ -13,7 +13,7 @@ provided when running the appropriate scripts.
 
 This document describes the structure of these configuration files. To see an
 example mapping configuration file see
-[odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx](odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)
+[odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx](../odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)
 
 ## Maps tabs
 

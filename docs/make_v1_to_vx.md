@@ -1,6 +1,6 @@
 # Generating ODM v1 to ODM vx Mapper Specifications
 
-The script [odm_map_maker/make_v1_to_vx.py](odm_map_maker/make_v1_to_vx.py)
+The script [odm_map_maker/make_v1_to_vx.py](../odm_map_maker/make_v1_to_vx.py)
 generates all the LinkML Mapping specification files needed to map data from
 ODM v1 to a target ODM version (v2, v3, etc., referred to as "vx"). Each
 specification file covers a single v1-to-vx table pair. For v1 tables that
@@ -11,8 +11,9 @@ table.
 > **Note:** This script reads mapping information that is embedded directly in the
 > ODM vx data dictionary. The preferred approach going forward is to define mappings
 > in a separate configuration file instead; see
-> [odm_map_maker/make_mappers_cli.py](odm_map_maker/make_mappers_cli.py) and its
-> config files under [odm_map_maker/configs/](odm_map_maker/configs/).
+> [odm_map_maker/make_mappers_cli.py](../odm_map_maker/make_mappers_cli.py)
+> and its config files under
+> [odm_map_maker/configs/](../odm_map_maker/configs/).
 
 ## Running the Script
 
