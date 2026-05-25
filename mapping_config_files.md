@@ -131,11 +131,17 @@ The slot in the `targetClass` in the target dataset that we are populating
 
 ### targetValue
 
-The value to set in the `targetSlot` in the `targetClass`. If `sourceValue` is
-empty then this should be set to `{{sourceSlot}}`, where 'sourceSlot' is
-replaced with the value found in the row's `sourceSlot` column. If
-`sourceValue` is set (and therefore represents a source enumeration value),
-then `targetValue` equals the value we map the `sourceValue` to.
+The value to set in the `targetSlot` in the `targetClass`.
+
+If `sourceValue` is empty (i.e. this row is a simple slot-to-slot copy rather
+than an enum mapping), then `targetValue` must be set to `{{<sourceSlot>}}`
+— the literal two-brace syntax with the name from the row's own `sourceSlot`
+column. For example, if `sourceSlot` is `sample_id`, then `targetValue` should
+be `{{sample_id}}`. This tells the generator to populate the target slot by
+copying the source slot value.
+
+If `sourceValue` is set (and therefore represents a source enumeration value),
+then `targetValue` is the target enumeration value that `sourceValue` maps to.
 
 ### targetExpr
 
@@ -228,8 +234,8 @@ Any row that is completely empty is ignored.
 
 ### selectors
 
-The `selectors` column in the Wide tabs are used in the same way as specified
-above in the maps tabs.
+The `selectors` column in the wide tabs is used in the same way as in the maps
+tabs (see [selectors](#selectors) above).
 
 ### wideGroup
 
@@ -256,13 +262,13 @@ wide-column to pivot.
 
 ### sourceValue
 
-If not empty, then the value represents a source enumeration value for the
-`sourceSlot`, and we map this enumeration value to the value found in
-`targetValue`. All rows with the same `sourceClass`, `sourceSlot`,
-`targetClass`, and `wideGroup` are used for determining how the enumeration
-values are mapped for the same source slot. Only the first row in the group is
-used to determine the values to set in the output row (see [All other
-columns](#all-other-wide-columns) below for how these values are set).
+If not empty, represents a source enumeration value for the `sourceSlot`. We
+map this enumeration value to the value found in `targetValue`. All rows with
+the same `sourceClass`, `sourceSlot`, `targetClass`, and `wideGroup` together
+define the enumeration mapping for that slot. Only the first row in the group is
+used to determine the values to set in the output row (see
+[Target Value Columns (_value)](#target-value-columns-_value) below for how
+these values are set).
 
 ### targetClass
 
@@ -270,8 +276,9 @@ This is the class in the target dataset that we map the source slot to.
 
 ### targetValue
 
-If not empty, then this is the target value that we map enumerations to. If the
-source slot has the value found in `sourceValue`, then we map it to this value.
+If not empty, this is the target enumeration value that `sourceValue` maps to.
+If the source slot has the value found in `sourceValue`, then we map it to this
+value.
 
 ### notes
 
@@ -384,19 +391,19 @@ tab has the headings described below.
 
 ### selectors
 
-The `selectors` column in the Wide tabs are used in the same way as specified
-above in the maps tabs.
+The `selectors` column in the enums tabs is used in the same way as in the maps
+tabs (see [selectors](#selectors) above).
 
 ### sourceClass
 
-If specified, then this is the source class that the enumeration belongs to. It
-is typically paired with `sourceSlot` to identify the slot that the enumeration
+If specified, this is the source class that the enumeration belongs to. It is
+typically paired with `sourceSlot` to identify the slot that the enumeration
 mapping is for. If not specified then `sourceEnum` should be used.
 
 ### sourceSlot
 
-If specified, then this is the source slot (within the `sourceClass`) that the
-enumeration mapping is for. If `sourceClass` and `sourceSlot` are not used the
+If specified, this is the source slot (within the `sourceClass`) that the
+enumeration mapping is for. If `sourceClass` and `sourceSlot` are not used then
 `sourceEnum` should be used instead.
 
 ### sourceEnum
@@ -414,23 +421,23 @@ The enumeration value in the `sourceEnum` that we are mapping from.
 
 ### targetClass
 
-If set, then the target class of the `targetSlot` we are mapping to. We will
-extract the target enumeration name from the combination of `targetClass` and
+If set, the target class of the `targetSlot` we are mapping to. We will extract
+the target enumeration name from the combination of `targetClass` and
 `targetSlot`. Alternatively, these can be left blank and `targetEnum` can be
 used instead, to specify the target enumeration explicitly.
 
-If `targetEnum`, `targetClass`, and `targetSlot` are left blank them a fake
-target enumeration name is created.
+If `targetEnum`, `targetClass`, and `targetSlot` are left blank, a fake target
+enumeration name is created.
 
 ### targetSlot
 
-If set, then the target slot within the `targetClass` we are mapping to. We
-will extract the target enumeration name from the combination of `targetClass`
-and `targetSlot`. Alternatively, these can be left blank and `targetEnum` can
-be used instead, to specify the target enumeration explicitly.
+If set, the target slot within the `targetClass` we are mapping to. We will
+extract the target enumeration name from the combination of `targetClass` and
+`targetSlot`. Alternatively, these can be left blank and `targetEnum` can be
+used instead.
 
-If `targetEnum`, `targetClass`, and `targetSlot` are left blank them a fake
-target enumeration name is created.
+If `targetEnum`, `targetClass`, and `targetSlot` are left blank, a fake target
+enumeration name is created.
 
 ### targetEnum
 
@@ -438,8 +445,8 @@ If set, the name of the target enumeration to map to. It is only possible to
 map a `sourceEnum` to a single `targetEnum`, so be sure that `targetEnum` is
 the same for all rows of the same `sourceEnum`.
 
-If `targetEnum`, `targetClass`, and `targetSlot` are left blank them a fake
-target enumeration name is created.
+If `targetEnum`, `targetClass`, and `targetSlot` are left blank, a fake target
+enumeration name is created.
 
 ### targetValue
 
@@ -460,11 +467,11 @@ can also contain special tags recognized by downstream processes (such as a
 string to identify the specific type of sample for an output row, such as
 "primary sample" for the main sample, "technical replicate" for a replicate,
 and so on). While these extra columns can have any name, the ID Generator
-treats any slot name that is preceded by the string "_extra_" as a special
+treats any slot name that is preceded by the string `_extra_` as a special
 extra column, that gets automatically added behind-the-scenes to the target
 schema, but removed from the final output of the Mapper. It is therefore
 recommended to use this prefix when identifying slots that do not exist in the
 target schema. For example, in the `maps` tab an extra slot can be identified
-in the `targetSlot` column by "_extra_sample_ID", "_extra_tag", etc., while in
+in the `targetSlot` column by `_extra_sample_ID`, `_extra_tag`, etc., while in
 the `wide` tab they can be identified in column names such as
-"_extra_sample_ID_value" and "_extra_tag_expr".
+`_extra_sample_ID_value` and `_extra_tag_expr`.

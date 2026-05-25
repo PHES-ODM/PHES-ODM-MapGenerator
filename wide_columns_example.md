@@ -22,4 +22,24 @@ The generated Mapping YAML specs that handle the wide columns will have file nam
 
 ## Configuring Wide Columns
 
-Configuring wide columns in mappings from a source dataset to a target dataset is done through Excel mapping files. See the [Mapping Config Files](mapping_config_files.md) document for details.
+Wide columns are configured in the `wide` tab(s) of the Excel mapping file.
+The tab has the following structure (described in full in
+[Mapping Config Files — Wide tabs](mapping_config_files.md#wide-tabs)):
+
+- Each row in the `wide` tab represents one wide column to pivot.
+- **`sourceSlot`** — the source column to treat as a wide column (e.g.
+  `collection_storage_temp`).
+- **`_value` columns** — target columns to set for each output row. A column
+  named `unit_value` sets the `unit` target slot to a constant or copied value.
+  Use `{{slotName}}` to copy from a source slot.
+- **`_expr` columns** — like `_value` columns but specify LinkML expression
+  code instead of a value.
+- **`wideGroup`** — optional; groups rows so that the same source column can
+  produce multiple output rows (e.g. to apply different enum mappings).
+- **`wideOtherSlots`** — a JSON dictionary for per-row target slots that
+  shouldn't apply to all other rows in the same `wide` tab.
+
+See [Mapping Config Files](mapping_config_files.md#wide-tabs) for a complete
+description of every column, and the existing
+[nwss_to_odm_v2_mapping.xlsx](odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)
+workbook for a worked example.

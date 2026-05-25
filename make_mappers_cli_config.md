@@ -144,7 +144,7 @@ Copy one of the provided files and adjust the values. The supported keys mirror
 the CLI options exactly:
 
 | Key | CLI option | Type |
-|-----|-----------|------|
+| --- | --- | --- |
 | `source-schema` | `--source-schema` | path |
 | `target-schema` | `--target-schema` | path |
 | `mapping-excel-file` | `--mapping-excel-file` | path |
@@ -163,3 +163,39 @@ the CLI options exactly:
 
 Run `python odm_map_maker/make_mappers_cli.py --help` for descriptions of each
 option.
+
+## Slot format operations
+
+The `source-slot-format-operations` and `target-slot-format-operations` keys
+accept a YAML list of string transformation operations. These are applied in
+order to every slot name read from the mapping configuration file, allowing you
+to normalize names that differ in casing or punctuation from the LinkML schema.
+
+Available operations:
+
+| Operation | Effect |
+| --- | --- |
+| `lowercase` | Convert to lower case |
+| `uppercase` | Convert to upper case |
+| `alpha_numeric_underscore` | Replace every non-alphanumeric character with `_` |
+| `single_underscores` | Collapse consecutive underscores into one (`__` → `_`) |
+| `trim_trailing_underscores` | Remove trailing underscores |
+| `trim_whitespace` | Remove leading and trailing whitespace |
+| `remove_special` | Remove all non-alphanumeric, non-space characters |
+| `{ remove_chars: "xyz" }` | Remove each listed character (removes `x`, `y`, `z`) |
+
+The `remove_chars` operation is specified as a YAML mapping rather than a plain
+string. Wrap it in quotes so that it is parsed correctly:
+
+```yaml
+source-slot-format-operations:
+  - lowercase
+  - "{ remove_chars: '-'}"
+  - alpha_numeric_underscore
+  - single_underscores
+  - trim_trailing_underscores
+```
+
+Slot names that begin with the `_extra_` prefix (special extra slots — see
+[Mapping Config Files](mapping_config_files.md#extra-columns)) are never
+transformed by these operations.
