@@ -86,13 +86,12 @@ PHES-ODM-MapGenerator/
 │   │   ├── odm_v3/                  # ODM v3 LinkML schema
 │   │   └── pha4ge/                  # PHA4GE LinkML schema
 │   ├── validate_mappers/            # Validate generated mapper files
-│   │   └── mapper_validator.py
+│   │   ├── mapper_validator.py      # Validate mapper YAML files against schemas
+│   │   └── slot_derivations_checker.py  # Check for potential slot mapping problems
 │   ├── yaml_to_xlsx_mapper/         # Bootstrap an Excel mapping config from existing
-│   │   └── yaml_to_xlsx_mapper.py  #   mapper YAML files (reverse-engineering tool)
+│   │   └── yaml_to_xlsx_mapper.py   #   mapper YAML files (reverse-engineering tool)
 │   ├── odm_vx/                      # Internal helpers used by make_v1_to_vx.py (legacy)
 │   └── utils/                       # Internal utilities
-│       ├── checks/
-│       │   └── slot_derivations_checker.py  # Check for potential slot mapping problems
 │       ├── general_utils.py         # File I/O and DataFrame helpers
 │       ├── logger.py                # Logging setup
 │       ├── mapper_utils.py          # Mapper building helpers (MappingColumns,
@@ -392,7 +391,7 @@ python odm_map_maker/yaml_to_xlsx_mapper/yaml_to_xlsx_mapper.py \
 
 ### slot_derivations_checker.py
 
-[odm_map_maker/utils/checks/slot_derivations_checker.py](odm_map_maker/utils/checks/slot_derivations_checker.py)
+[odm_map_maker/validate_mappers/slot_derivations_checker.py](odm_map_maker/validate_mappers/slot_derivations_checker.py)
 inspects generated mapper YAML files for structural problems in slot derivations
 that would not be caught by `mapper_validator.py`. It supports two checks:
 
@@ -402,7 +401,7 @@ that would not be caught by `mapper_validator.py`. It supports two checks:
   target slots (which can produce invalid enum values).
 
 ```console
-python odm_map_maker/utils/checks/slot_derivations_checker.py \
+python odm_map_maker/validate_mappers/slot_derivations_checker.py \
     --checker multi_to_single \
     --mapper-dir <mappers-dir> \
     --source-schema <source-schema.yaml> \
