@@ -232,6 +232,14 @@ python odm_map_maker/make_mappers_cli.py \
     --selectors odm=2
 ```
 
+## Validating Mappers
+
+After generating mappers with `make_mappers_cli.py`, use
+[odm_map_maker/validate_mappers/mapper_validator.py](odm_map_maker/validate_mappers/mapper_validator.py)
+to check that all enumeration mappings are complete and consistent. See
+[Mapper Validator](mapper_validator.md) for full documentation and examples for
+each mapping type.
+
 ## Mapping Data
 
 Once all mapping specification YAML files are created, data can be mapped from
