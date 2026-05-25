@@ -13,7 +13,7 @@ provided when running the appropriate scripts.
 
 This document describes the structure of these configuration files. To see an
 example mapping configuration file see
-[map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx](map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)
+[odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx](odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)
 
 ## Maps tabs
 
@@ -76,11 +76,6 @@ to the following rules (using the example table below):
    row_num=0 and row_num=2 are dropped, while all other rows are retained. If the
    command-line has no include flags, then row_num=0, row_num=2, and row_num=3 are
    all dropped, while all other rows are retained.
-1. If include flag(s) are specified on the command-line and the row also has at
-   least one include flag: The row must have at least one of the command-line
-   include flags, otherwise it is dropped. For example, if the command-line
-   includes the flags "b,c", then row_num=0 and row_num=2 are dropped, while
-   all other rows are retained.
 2. If an exclude flag is specified on the command-line (eg. "!amr") and the row
    has that flag (eg. "amr"), then the row is dropped. For example, if "!amr"
    is provided on the command-line then row_num=0 is dropped.
@@ -98,7 +93,7 @@ to the following rules (using the example table below):
    row_num=5 and row_num=7 are retained but row_num=6 is removed (all other
    rows are retained). As another example, if "odm=3.2" is specified on the
    command-line, then row_num=5 is retained but row_num=6 and row_num=7 are
-   removed (all other rows are retained). If now version for "odm" is specified
+   removed (all other rows are retained). If no version for "odm" is specified
    on the command-line, then all of row_num=5, 6, and 7 are dropped. The
    allowable version specifiers in the `selectors` column are: ==, !=, >=, <=,
    >, <, ~= (see [Version Specifiers in the Python Packaging
@@ -145,7 +140,7 @@ then `targetValue` equals the value we map the `sourceValue` to.
 ### targetExpr
 
 An optional value, that if set is assigned to the `expr` slot of the slot
-derivation. The `expr` slot allows custom code to calcualte a value, that is
+derivation. The `expr` slot allows custom code to calculate a value, that is
 then assigned to the `targetSlot`. The custom code can be in the LinkML
 expression language or it can be Python code. For Python code the source class
 can be referenced with the `src` object variable and the result should be saved
@@ -184,6 +179,41 @@ slot derivation for the `targetSlot`. The slot will be set to `False` if
     "expr" : "(str(dashboard_ignore) == 'yes') + (str(analysis_ignore) == 'yes') == 0"
 }
 ```
+
+### enumDerivationSettings
+
+An optional YAML string. When set, the enum derivation dictionary for this
+row's enumeration mapping is updated with the values in this column. This can
+be used to set additional LinkML-Map enumeration derivation properties. For
+example, setting `mirror_source: true` will cause the mapper to mirror all
+source enumeration values that are not explicitly mapped in the configuration:
+
+```yaml
+mirror_source: true
+```
+
+If `sourceValue` and `targetValue` are both empty (i.e., the row specifies a
+slot mapping rather than an enum mapping), this column is ignored.
+
+### slotDerivationSettings
+
+An optional YAML string. When set, the slot derivation dictionary for this row
+is updated with the values in this column. This can be used to set additional
+LinkML-Map slot derivation properties that are not available through the other
+columns. For example:
+
+```yaml
+range: string
+```
+
+### Complete
+
+An optional column. When the `Complete` column is present in a tab, only rows
+where `Complete` equals `1` are processed; all other rows are ignored. This is
+useful for incrementally building a mapping configuration, allowing you to mark
+rows as complete as they are finalized. Rows where `Complete` is blank or any
+value other than `1` are dropped. If the `Complete` column is not present, all
+rows are processed.
 
 ## Wide tabs
 
@@ -297,7 +327,6 @@ The actual column name we set is determined by removing the `_expr` suffix.
 This works identically to `_value` columns, as described above. Any blank value
 will be ignored.
 
-
 ### wideOtherSlots
 
 This is a JSON string for a dictionary specifying additional columns and values
@@ -325,6 +354,11 @@ the `maps` tab or in [Target Value Columns
 (_value)](#target-value-columns-_value) and [Target Expression Columns
 (_expr)](#target-expression-columns-_expr)) in the `wide` tab for the current
 row.
+
+### Additional Columns
+
+The `enumDerivationSettings`, `slotDerivationSettings`, and `Complete` columns
+in the wide tabs are used in the same way as specified above in the maps tabs.
 
 ## Enums Tabs
 
@@ -410,6 +444,9 @@ target enumeration name is created.
 ### targetValue
 
 The enumeration value that we map the `sourceValue` to.
+
+The `enumDerivationSettings` and `Complete` columns in the enums tabs are used
+in the same way as specified above in the maps tabs.
 
 ## Extra Columns
 
