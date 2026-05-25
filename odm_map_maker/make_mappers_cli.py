@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Union, List, Optional, Annotated
 import os
 import shutil
+import yaml
 import typer
 
 from odm_map_maker.make_mappers import MakeMappers
@@ -75,6 +76,48 @@ used to allow automatically adding ontology IDs, as found in the target schema,
 onto enum values that do not have an ontology ID in the mapping
 configuration."""
 
+CONFIG_HELP = """Path to a YAML configuration file whose keys are CLI option
+names (with hyphens or underscores). Values in this file serve as defaults
+and are overridden by any arguments supplied on the command line. Path values
+in the config file are resolved relative to the config file's location."""
+
+# Option names whose values are file/directory paths and should be resolved
+# relative to the config file's directory.
+_PATH_KEYS = {
+    "source_schema", "target_schema", "mapping_excel_file",
+    "output_dir", "maps_files", "wide_files", "enums_files",
+}
+
+
+def _resolve_config_path(config_dir: Path, v: str) -> str:
+    p = Path(v)
+    return str(p if p.is_absolute() else (config_dir / p).resolve())
+
+
+def _config_callback(ctx: typer.Context, param: typer.CallbackParam, value: Optional[Path]):
+    """Load a YAML config file and inject its values into Click's default_map.
+
+    Path options are resolved relative to the config file's directory so that
+    the config file can be placed anywhere in the project tree without requiring
+    absolute paths.
+    """
+    if value is None:
+        return value
+    config_path = Path(value).resolve()
+    config_dir = config_path.parent
+    with open(config_path) as f:
+        config = yaml.safe_load(f) or {}
+    ctx.default_map = ctx.default_map or {}
+    for key, val in config.items():
+        normalized = key.replace("-", "_")
+        if normalized in _PATH_KEYS and val is not None:
+            if isinstance(val, list):
+                val = [_resolve_config_path(config_dir, str(v)) for v in val]
+            else:
+                val = _resolve_config_path(config_dir, str(val))
+        ctx.default_map[normalized] = val
+    return value
+
 
 def get_available_file_path(
     source_file: Union[str, Path], target_dir: Union[str, Path]
@@ -114,6 +157,16 @@ def main(
     target_schema: Annotated[
         Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
     ],
+    config: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--config",
+            callback=_config_callback,
+            is_eager=True,
+            show_default=False,
+            help=CONFIG_HELP,
+        ),
+    ] = None,
     mapping_excel_file: Annotated[
         Path, typer.Option(show_default=False, help=MAPPING_EXCEL_FILE_HELP)
     ] = None,
