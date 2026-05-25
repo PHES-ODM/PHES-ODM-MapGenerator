@@ -108,11 +108,11 @@ PHES-ODM-MapGenerator/
 
 | What you want to change | Where to look |
 | --- | --- |
-| Slot, enum, or wide mappings for an existing source | `odm_map_maker/data/mapping_config_files/*.xlsx` |
-| Selectors or schema paths for an existing mapping | `odm_map_maker/configs/*.yaml` |
+| Configuration files for generating the LinkML-Map mapping schemas | `odm_map_maker/data/mapping_config_files/*.xlsx` |
 | Add support for a new source dataset | Create a new Excel mapping file in `data/mapping_config_files/` and a config file in `configs/`; add a section in this README and a LinkML schema in `data/` |
 | Core mapper generation logic | `odm_map_maker/make_mappers.py` |
 | CLI behaviour | `odm_map_maker/make_mappers_cli.py` |
+| Configuration files provided to `odm_map_maker/make_mappers_cli.py` | `odm_map_maker/configs/*.yaml` |
 | Mapper validation logic | `odm_map_maker/validate_mappers/mapper_validator.py` |
 | Source or target LinkML schema | `odm_map_maker/data/<source>/linkml/<source>.yaml` |
 
