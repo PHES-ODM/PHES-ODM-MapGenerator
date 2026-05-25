@@ -1,0 +1,53 @@
+# Configuration file for make_mappers_cli.py
+# Maps NWSS reporting data to ODM v3 (default).
+#
+# All paths in this file are relative to the location of this config file.
+#
+# Usage (map NWSS reporting to ODM v3):
+#   python odm_map_maker/make_mappers_cli.py \
+#       --config odm_map_maker/configs/nwss_to_odm.yaml
+#
+# Usage (map NWSS reporting to ODM v2 instead):
+#   python odm_map_maker/make_mappers_cli.py \
+#       --config odm_map_maker/configs/nwss_to_odm.yaml \
+#       --target-schema odm_map_maker/data/odm_v2/linkml/odm_v2.yaml \
+#       --output-dir ../gen/nwss-reporting-to-v2 \
+#       --selectors odm=2
+#
+# Usage (map a different NWSS dictionary type, e.g. public_concentration, to ODM v3):
+#   python odm_map_maker/make_mappers_cli.py \
+#       --config odm_map_maker/configs/nwss_to_odm.yaml \
+#       --source-schema odm_map_maker/data/nwss_public_concentration/linkml/nwss_public_concentration.yaml \
+#       --output-dir ../gen/nwss-public_concentration-to-v3
+#
+# Command-line arguments take precedence over values in this file.
+
+source-schema: ../data/nwss_reporting/linkml/nwss_reporting.yaml
+target-schema: ../data/odm_v3/linkml/odm_v3.yaml
+mapping-excel-file: ../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx
+output-dir: ../../../gen/nwss-reporting-to-v3
+
+selectors:
+  - odm=3
+
+excel-maps-sheets:
+  - maps
+
+excel-wide-sheets:
+  - wide_measures
+  - wide_protocolRelationships
+  - wide_protocolSteps
+  - wide_qualityReports
+
+excel-enums-sheets:
+  - enums
+
+source-slot-format-operations:
+  - alpha_numeric_underscore
+  - single_underscores
+  - trim_trailing_underscores
+
+target-slot-format-operations:
+  - alpha_numeric_underscore
+  - single_underscores
+  - trim_trailing_underscores

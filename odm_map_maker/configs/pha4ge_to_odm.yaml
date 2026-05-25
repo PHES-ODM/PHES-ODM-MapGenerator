@@ -1,0 +1,73 @@
+# Configuration file for make_mappers_cli.py
+# Maps PHA4GE wastewater data to ODM v3 (default).
+#
+# All paths in this file are relative to the location of this config file.
+#
+# Usage (map PHA4GE to ODM v3):
+#   python odm_map_maker/make_mappers_cli.py \
+#       --config odm_map_maker/configs/pha4ge_to_odm.yaml
+#
+# Usage (map PHA4GE to ODM v2 instead):
+#   python odm_map_maker/make_mappers_cli.py \
+#       --config odm_map_maker/configs/pha4ge_to_odm.yaml \
+#       --target-schema odm_map_maker/data/odm_v2/linkml/odm_v2.yaml \
+#       --output-dir ../gen/pha4ge-to-v2 \
+#       --selectors odm=2
+#
+# Command-line arguments take precedence over values in this file.
+
+source-schema: ../data/pha4ge/linkml/pha4ge.yaml
+target-schema: ../data/odm_v3/linkml/odm_v3.yaml
+mapping-excel-file: ../data/mapping_config_files/pha4ge_to_odm_v2_mapping.xlsx
+output-dir: ../../../gen/pha4ge-to-v3
+
+selectors:
+  - odm=3
+
+excel-maps-sheets:
+  - sites_maps
+  - samples_maps
+  - repositories_maps
+  - polygons_maps
+  - measures_maps
+  - instruments_maps
+  - datasets_maps
+  - addresses_maps
+  - accessions_maps
+  - qualityReports_maps
+  - measureSets_maps
+  - protocols_maps
+
+excel-wide-sheets:
+  - samples_wide
+  - sampleRelationships_wide
+  - repositories_wide
+  - measures_wide
+  - datasets_wide
+  - contacts_wide
+  - organizations_wide
+  - measureSets_wide
+  - protocolRelationships_wide
+  - protocolSteps_wide
+  - protocols_wide
+
+excel-enums-sheets:
+  - global_enums
+  - samples_enums
+  - measures_enums
+  - addresses_enums
+  - sites_enums
+
+source-slot-format-operations:
+  - lowercase
+  - "{ remove_chars: '-'}"
+  - alpha_numeric_underscore
+  - single_underscores
+  - trim_trailing_underscores
+
+target-slot-format-operations:
+  - alpha_numeric_underscore
+  - single_underscores
+  - trim_trailing_underscores
+
+source-match-ontology-id-regex: '\[[A-Za-z0-9_]+:[A-Za-z0-9_]+\]$'

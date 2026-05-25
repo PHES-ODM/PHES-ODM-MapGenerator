@@ -1,0 +1,52 @@
+# Configuration file for make_mappers_cli.py
+# Maps ODM v1 to ODM v3 (default).
+#
+# All paths in this file are relative to the location of this config file.
+#
+# Usage (map ODM v1 to ODM v3):
+#   python odm_map_maker/make_mappers_cli.py \
+#       --config odm_map_maker/configs/odm_v1_to_odm.yaml
+#
+# Usage (map ODM v1 to ODM v2 instead):
+#   python odm_map_maker/make_mappers_cli.py \
+#       --config odm_map_maker/configs/odm_v1_to_odm.yaml \
+#       --target-schema odm_map_maker/data/odm_v2/linkml/odm_v2.yaml \
+#       --output-dir ../gen/odm-v1-to-v2 \
+#       --selectors odm=2
+#
+# Command-line arguments take precedence over values in this file.
+
+source-schema: ../data/odm_v1/linkml/odm_v1.yaml
+target-schema: ../data/odm_v3/linkml/odm_v3.yaml
+mapping-excel-file: ../data/mapping_config_files/odm_v1_to_v2_mapping.xlsx
+output-dir: ../../../gen/odm-v1-to-v3
+
+selectors:
+  - odm=3
+
+excel-maps-sheets:
+  - measures
+  - qualityReports
+  - polygons
+  - samples
+  - contacts
+  - instruments
+  - sites
+  - organizations
+  - protocols
+
+excel-wide-sheets:
+  - wide_protocolSteps
+
+excel-enums-sheets:
+  - enums
+
+source-slot-format-operations:
+  - alpha_numeric_underscore
+  - single_underscores
+  - trim_trailing_underscores
+
+target-slot-format-operations:
+  - alpha_numeric_underscore
+  - single_underscores
+  - trim_trailing_underscores
