@@ -88,8 +88,6 @@ PHES-ODM-MapGenerator/
 │   ├── validate_mappers/            # Validate generated mapper files
 │   │   ├── mapper_validator.py      # Validate mapper YAML files against schemas
 │   │   └── slot_derivations_checker.py  # Check for potential slot mapping problems
-│   ├── yaml_to_xlsx_mapper/         # Bootstrap an Excel mapping config from existing
-│   │   └── yaml_to_xlsx_mapper.py   #   mapper YAML files (reverse-engineering tool)
 │   ├── odm_vx/                      # Internal helpers used by make_v1_to_vx.py (legacy)
 │   └── utils/                       # Internal utilities
 │       ├── general_utils.py         # File I/O and DataFrame helpers
@@ -370,23 +368,6 @@ python odm_map_maker/validate.py \
     --schema <schema.yaml> \
     --source-class <ClassName> \
     --data-source <data.csv>
-```
-
-### yaml_to_xlsx_mapper.py
-
-[odm_map_maker/yaml_to_xlsx_mapper/yaml_to_xlsx_mapper.py](odm_map_maker/yaml_to_xlsx_mapper/yaml_to_xlsx_mapper.py)
-bootstraps an Excel mapping configuration file by reading a directory of
-existing LinkML Map YAML files and reverse-engineering the mapping structure
-into an Excel workbook. This is useful when you already have mapper YAMLs and
-want to create a human-editable starting point for a new or updated mapping
-configuration.
-
-```console
-python odm_map_maker/yaml_to_xlsx_mapper/yaml_to_xlsx_mapper.py \
-    --source-dir <mappers-dir> \
-    --source-schema <source-schema.yaml> \
-    --target-schema <target-schema.yaml> \
-    --output-dir <output-dir>
 ```
 
 ### slot_derivations_checker.py
