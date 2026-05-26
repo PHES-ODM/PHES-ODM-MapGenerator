@@ -1,5 +1,10 @@
 # <img src="img/ODM-logo.png" align="right" alt="" width="180"/> PHES-ODM LinkML Map Generator
 
+<!-- badges: start -->
+[![lint.yaml](https://github.com/PHES-ODM/PHES-ODM-MapGenerator/actions/workflows/lint.yaml/badge.svg)](https://github.com/PHES-ODM/PHES-ODM-MapGenerator/actions/workflows/lint.yaml)
+[![pytest.yaml](https://github.com/PHES-ODM/PHES-ODM-MapGenerator/actions/workflows/pytest.yaml/badge.svg)](https://github.com/PHES-ODM/PHES-ODM-MapGenerator/actions/workflows/pytest.yaml)
+<!-- badges: end -->
+
 The PHES-ODM Map Generator generates
 [LinkML Mapper](https://github.com/linkml/linkml-map) specifications for
 mapping between various data formats, such as ODM v1 to ODM v2/v3, NWSS to
