@@ -1,4 +1,4 @@
-# <img src="img/ODM-logo.png" align="right" alt="" width="180"/> PHES-ODM LinkML Map Generator
+# <img src="docs/img/ODM-logo.png" align="right" alt="" width="180"/> PHES-ODM LinkML Map Generator
 
 <!-- badges: start -->
 [![lint.yaml](https://github.com/PHES-ODM/PHES-ODM-MapGenerator/actions/workflows/lint.yaml/badge.svg)](https://github.com/PHES-ODM/PHES-ODM-MapGenerator/actions/workflows/lint.yaml)
