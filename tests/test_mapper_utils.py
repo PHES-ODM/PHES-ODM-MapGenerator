@@ -1,5 +1,5 @@
 import ast
-import pytest
+import pandas as pd
 
 from odm_map_maker.utils.mapper_utils import (
     format_slot_name,
@@ -7,8 +7,13 @@ from odm_map_maker.utils.mapper_utils import (
     is_wide_target_expr_slot,
     any_wide_slot_name,
     wide_slot_name,
+    wide_target_expr_slot_name,
     get_used_slots,
     parse_used_slots,
+    get_variable_reference,
+    get_source_slots_from_slot_derivation,
+    get_blank_class_derivation,
+    cleanup_slot_name,
 )
 
 
@@ -114,3 +119,117 @@ def test_parse_used_slots_no_shared_mutable_default():
     result2 = parse_used_slots(tree2)
     assert result1 == ["emap", "slot_a"]
     assert result2 == ["emap", "slot_b"]
+
+
+# ---------------------------------------------------------------------------
+# wide_target_expr_slot_name
+# ---------------------------------------------------------------------------
+
+def test_wide_target_expr_slot_name_with_suffix():
+    assert wide_target_expr_slot_name("measure_expr") == "measure"
+
+def test_wide_target_expr_slot_name_without_suffix():
+    assert wide_target_expr_slot_name("measure_value") is None
+
+def test_wide_target_expr_slot_name_no_suffix():
+    assert wide_target_expr_slot_name("measure") is None
+
+
+# ---------------------------------------------------------------------------
+# get_variable_reference
+# ---------------------------------------------------------------------------
+
+def test_get_variable_reference_valid():
+    result = get_variable_reference("{{sampleID}}", schema=None, format_operations=None)
+    assert result == "sampleID"
+
+def test_get_variable_reference_non_string():
+    assert get_variable_reference(42, schema=None, format_operations=None) is None
+
+def test_get_variable_reference_no_braces():
+    assert get_variable_reference("sampleID", schema=None, format_operations=None) is None
+
+def test_get_variable_reference_partial_braces():
+    assert get_variable_reference("{sampleID}", schema=None, format_operations=None) is None
+
+def test_get_variable_reference_with_format_operations():
+    result = get_variable_reference("{{Sample ID}}", schema=None, format_operations=["lowercase"])
+    assert result == "sample id"
+
+
+# ---------------------------------------------------------------------------
+# get_source_slots_from_slot_derivation
+# ---------------------------------------------------------------------------
+
+def test_get_source_slots_populated_from():
+    derivation = {"name": "targetSlot", "populated_from": "sourceSlot"}
+    result = get_source_slots_from_slot_derivation(derivation)
+    assert result == ["sourceSlot"]
+
+def test_get_source_slots_from_expr():
+    derivation = {"name": "targetSlot", "expr": "target = emap.sourceSlot"}
+    result = get_source_slots_from_slot_derivation(derivation, recognized_globals=["emap"])
+    assert result == ["sourceSlot"]
+
+def test_get_source_slots_from_expr_multiple():
+    derivation = {"name": "targetSlot", "expr": "target = emap.slotA + emap.slotB"}
+    result = get_source_slots_from_slot_derivation(derivation, recognized_globals=["emap"])
+    assert result == ["slotA", "slotB"]
+
+
+# ---------------------------------------------------------------------------
+# get_blank_class_derivation
+# ---------------------------------------------------------------------------
+
+def test_get_blank_class_derivation_structure():
+    result = get_blank_class_derivation("SourceClass", "TargetClass")
+    assert result["name"] == "TargetClass"
+    assert result["populated_from"] == "SourceClass"
+    assert result["slot_derivations"] == {}
+
+def test_get_blank_class_derivation_returns_new_dict_each_time():
+    d1 = get_blank_class_derivation("A", "B")
+    d2 = get_blank_class_derivation("A", "B")
+    d1["slot_derivations"]["x"] = 1
+    assert d2["slot_derivations"] == {}
+
+
+# ---------------------------------------------------------------------------
+# cleanup_slot_name
+# ---------------------------------------------------------------------------
+
+def test_cleanup_slot_name_no_options():
+    assert cleanup_slot_name("Hello World", schema=None, cleanup_options=None) == "Hello World"
+
+def test_cleanup_slot_name_string():
+    result = cleanup_slot_name("Hello World!", schema=None, cleanup_options=["lowercase"])
+    assert result == "hello world!"
+
+def test_cleanup_slot_name_dataframe():
+    df = pd.DataFrame({"col": ["Hello", "WORLD"]})
+    result = cleanup_slot_name(df, schema=None, cleanup_options=["lowercase"])
+    assert result["col"].tolist() == ["hello", "world"]
+
+def test_cleanup_slot_name_series():
+    s = pd.Series(["Hello", "WORLD"])
+    result = cleanup_slot_name(s, schema=None, cleanup_options=["lowercase"])
+    assert result.tolist() == ["hello", "world"]
+
+
+# ---------------------------------------------------------------------------
+# parse_used_slots — chained attribute (covers the recursive ast.Attribute branch)
+# ---------------------------------------------------------------------------
+
+def test_parse_used_slots_chained_attribute():
+    # "a.b.c" produces a nested ast.Attribute (c on (b on a))
+    tree = ast.parse("a.b.c").body[0].value
+    result = parse_used_slots(tree)
+    assert result == ["a", "b", "c"]
+
+def test_get_used_slots_chained_attribute_ignored_non_emap():
+    # Only first-level namespace check applies, deeper chains should still work
+    code = "x = emap.ns.slot"
+    # emap.ns is an Attribute; slot is an Attribute on that — only "ns" is a direct attribute of emap
+    slots = get_used_slots(code, recognized_globals=["emap"])
+    # "ns" is the direct attribute of emap here
+    assert "ns" in slots
