@@ -68,23 +68,27 @@ def validator():
 # enum_derivation_exists
 # ---------------------------------------------------------------------------
 
+
 def test_enum_derivation_exists_true(validator):
     mapper = {
         "enum_derivations": {
-            "DeviceEnum": {"name": "DeviceEnum", "populated_from": "CollectionDeviceEnum"}
+            "DeviceEnum": {
+                "name": "DeviceEnum",
+                "populated_from": "CollectionDeviceEnum",
+            }
         }
     }
     assert validator.enum_derivation_exists("CollectionDeviceEnum", mapper) is True
+
 
 def test_enum_derivation_exists_no_key(validator):
     mapper = {}
     assert validator.enum_derivation_exists("CollectionDeviceEnum", mapper) is False
 
+
 def test_enum_derivation_exists_wrong_enum(validator):
     mapper = {
-        "enum_derivations": {
-            "Other": {"name": "Other", "populated_from": "OtherEnum"}
-        }
+        "enum_derivations": {"Other": {"name": "Other", "populated_from": "OtherEnum"}}
     }
     assert validator.enum_derivation_exists("CollectionDeviceEnum", mapper) is False
 
@@ -93,13 +97,16 @@ def test_enum_derivation_exists_wrong_enum(validator):
 # replace_blanks
 # ---------------------------------------------------------------------------
 
+
 def test_replace_blanks_empty_string(validator):
     result = validator.replace_blanks(["", "value", ""])
     assert result == ["<blank>", "value", "<blank>"]
 
+
 def test_replace_blanks_all_non_empty(validator):
     result = validator.replace_blanks(["a", "b"])
     assert result == ["a", "b"]
+
 
 def test_replace_blanks_empty_list(validator):
     assert validator.replace_blanks([]) == []
@@ -109,10 +116,12 @@ def test_replace_blanks_empty_list(validator):
 # concat_data_frames
 # ---------------------------------------------------------------------------
 
+
 def test_concat_data_frames_empty_list(validator):
     result = validator.concat_data_frames([])
     assert isinstance(result, pd.DataFrame)
     assert len(result) == 0
+
 
 def test_concat_data_frames_drops_empty_dfs(validator):
     df1 = pd.DataFrame({"a": [1, 2]})
@@ -120,16 +129,19 @@ def test_concat_data_frames_drops_empty_dfs(validator):
     result = validator.concat_data_frames([df1, df2])
     assert len(result) == 2
 
+
 def test_concat_data_frames_single(validator):
     df = pd.DataFrame({"a": [1]})
     result = validator.concat_data_frames([df])
     assert len(result) == 1
+
 
 def test_concat_data_frames_multiple(validator):
     df1 = pd.DataFrame({"a": [1]})
     df2 = pd.DataFrame({"a": [2]})
     result = validator.concat_data_frames([df1, df2])
     assert list(result["a"]) == [1, 2]
+
 
 def test_concat_data_frames_with_blank_rows(validator):
     df1 = pd.DataFrame({"a": [1]})
@@ -143,25 +155,32 @@ def test_concat_data_frames_with_blank_rows(validator):
 # order_columns
 # ---------------------------------------------------------------------------
 
+
 def test_order_columns_orders_known_columns(validator):
-    df = pd.DataFrame({
-        EnumsColumns.TARGET_SLOT: ["ts"],
-        EnumsColumns.SOURCE_CLASS: ["sc"],
-        EnumsColumns.SOURCE_SLOT: ["ss"],
-    })
+    df = pd.DataFrame(
+        {
+            EnumsColumns.TARGET_SLOT: ["ts"],
+            EnumsColumns.SOURCE_CLASS: ["sc"],
+            EnumsColumns.SOURCE_SLOT: ["ss"],
+        }
+    )
     result = validator.order_columns(df)
     cols = list(result.columns)
     assert cols.index(EnumsColumns.SOURCE_CLASS) < cols.index(EnumsColumns.SOURCE_SLOT)
     assert cols.index(EnumsColumns.SOURCE_SLOT) < cols.index(EnumsColumns.TARGET_SLOT)
 
+
 def test_order_columns_extra_columns_at_end(validator):
-    df = pd.DataFrame({
-        "extra_col": [1],
-        EnumsColumns.SOURCE_CLASS: ["sc"],
-    })
+    df = pd.DataFrame(
+        {
+            "extra_col": [1],
+            EnumsColumns.SOURCE_CLASS: ["sc"],
+        }
+    )
     result = validator.order_columns(df)
     cols = list(result.columns)
     assert cols[-1] == "extra_col"
+
 
 def test_order_columns_returns_copy(validator):
     df = pd.DataFrame({EnumsColumns.SOURCE_CLASS: ["x"]})
@@ -174,17 +193,21 @@ def test_order_columns_returns_copy(validator):
 # simplify_enum_df
 # ---------------------------------------------------------------------------
 
+
 def test_simplify_enum_df_empty(validator):
     df = pd.DataFrame()
     result = validator.simplify_enum_df(df)
     assert len(result) == 0
 
+
 def test_simplify_enum_df_deduplicates_mapper_file(validator):
-    df = pd.DataFrame({
-        EnumsColumns.SOURCE_ENUM_NAME: ["MyEnum", "MyEnum"],
-        EnumsColumns.SOURCE_ENUM_VALUE: ["val1", "val1"],
-        EnumsColumns.MAPPER_FILE: ["file_a.yaml", "file_b.yaml"],
-    })
+    df = pd.DataFrame(
+        {
+            EnumsColumns.SOURCE_ENUM_NAME: ["MyEnum", "MyEnum"],
+            EnumsColumns.SOURCE_ENUM_VALUE: ["val1", "val1"],
+            EnumsColumns.MAPPER_FILE: ["file_a.yaml", "file_b.yaml"],
+        }
+    )
     result = validator.simplify_enum_df(df, sort_by=[])
     # Two rows with same enum+value should be merged into one
     assert len(result) == 1
@@ -192,11 +215,14 @@ def test_simplify_enum_df_deduplicates_mapper_file(validator):
     assert "file_b.yaml" in result.iloc[0][EnumsColumns.MAPPER_FILE]
     assert result.iloc[0][EnumsColumns.MAPPER_FILE_COUNT] == 2
 
+
 def test_simplify_enum_df_keeps_distinct_rows(validator):
-    df = pd.DataFrame({
-        EnumsColumns.SOURCE_ENUM_NAME: ["EnumA", "EnumB"],
-        EnumsColumns.SOURCE_ENUM_VALUE: ["val1", "val2"],
-        EnumsColumns.MAPPER_FILE: ["file1.yaml", "file2.yaml"],
-    })
+    df = pd.DataFrame(
+        {
+            EnumsColumns.SOURCE_ENUM_NAME: ["EnumA", "EnumB"],
+            EnumsColumns.SOURCE_ENUM_VALUE: ["val1", "val2"],
+            EnumsColumns.MAPPER_FILE: ["file1.yaml", "file2.yaml"],
+        }
+    )
     result = validator.simplify_enum_df(df, sort_by=[])
     assert len(result) == 2

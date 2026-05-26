@@ -84,8 +84,13 @@ in the config file are resolved relative to the config file's location."""
 # Option names whose values are file/directory paths and should be resolved
 # relative to the config file's directory.
 _PATH_KEYS = {
-    "source_schema", "target_schema", "mapping_excel_file",
-    "output_dir", "maps_files", "wide_files", "enums_files",
+    "source_schema",
+    "target_schema",
+    "mapping_excel_file",
+    "output_dir",
+    "maps_files",
+    "wide_files",
+    "enums_files",
 }
 
 
@@ -94,7 +99,9 @@ def _resolve_config_path(config_dir: Path, v: str) -> str:
     return str(p if p.is_absolute() else (config_dir / p).resolve())
 
 
-def _config_callback(ctx: typer.Context, param: typer.CallbackParam, value: Optional[Path]):
+def _config_callback(
+    ctx: typer.Context, param: typer.CallbackParam, value: Optional[Path]
+):
     """Load a YAML config file and inject its values into Click's default_map.
 
     Path options are resolved relative to the config file's directory so that

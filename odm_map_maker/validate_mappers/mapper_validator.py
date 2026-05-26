@@ -276,10 +276,15 @@ class ValidateMappers(object):
                 "slot_derivations"
             ].items():
                 # If the target slot can be a string, then any value is allowed
-                target_ranges = get_ranges_of_slot(target_class, target_slot, self.target_schema, exception_on_error=False)
+                target_ranges = get_ranges_of_slot(
+                    target_class,
+                    target_slot,
+                    self.target_schema,
+                    exception_on_error=False,
+                )
                 if target_ranges and "string" in target_ranges:
                     continue
-                
+
                 # Get the constant string value from the "expr"
                 expr: Optional[str] = slot_derivation.get("expr", None)
                 if not expr:
@@ -356,8 +361,10 @@ class ValidateMappers(object):
                     target_slot,
                     target_permissible_values_info,
                 ) in target_slots_permissible_values.items():
-                    target_slot_ranges = get_ranges_of_slot(target_class, target_slot, self.target_schema)
-                    
+                    target_slot_ranges = get_ranges_of_slot(
+                        target_class, target_slot, self.target_schema
+                    )
+
                     source_slots = target_permissible_values_info[
                         SourceToTargetEnumInfoKeys.SOURCE_SLOTS
                     ]
@@ -465,7 +472,11 @@ class ValidateMappers(object):
                         # info is in the format. If permissible_values is empty then it means the
                         # target slot does not have an enum range, and so all target values are allowed.
                         # All target values are also allowed if the target slot can be a string.
-                        if target_slot and permissible_values and "string" not in target_slot_ranges:
+                        if (
+                            target_slot
+                            and permissible_values
+                            and "string" not in target_slot_ranges
+                        ):
                             unrecognized_target_enum_values = [
                                 v[0]
                                 for v in targets_to_sources

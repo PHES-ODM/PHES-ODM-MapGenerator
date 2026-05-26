@@ -14,7 +14,11 @@ import os
 import sys
 import logging
 
-DETAILED_LOGGER = os.environ.get("ODM_DETAILED_LOGGER", "").lower() in ("1", "true", "yes")
+DETAILED_LOGGER = os.environ.get("ODM_DETAILED_LOGGER", "").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
 if DETAILED_LOGGER:
     # Default logging format
