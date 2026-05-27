@@ -320,7 +320,7 @@ def test_parse_df_values_not_inline_leaves_original_unchanged():
 
 def test_select_func_kwargs_filters_valid_keys():
     def my_func(a, b, c=1):
-        pass
+        a, b, c
 
     kwargs = {"a": 10, "b": 20, "d": 99}
     result = select_func_kwargs(my_func, kwargs)
@@ -331,14 +331,14 @@ def test_select_func_kwargs_filters_valid_keys():
 
 def test_select_func_kwargs_empty_kwargs():
     def my_func(a, b):
-        pass
+        a, b
 
     assert select_func_kwargs(my_func, {}) == {}
 
 
 def test_select_func_kwargs_no_overlap():
     def my_func(x, y):
-        pass
+        x, y
 
     result = select_func_kwargs(my_func, {"a": 1, "b": 2})
     assert result == {}
