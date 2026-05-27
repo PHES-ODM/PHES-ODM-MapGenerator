@@ -175,30 +175,30 @@ def test_wide_target_expr_slot_name_no_suffix():
 
 
 def test_get_variable_reference_valid():
-    result = get_variable_reference("{{sampleID}}", schema=None, format_operations=None)
+    result = get_variable_reference("{{sampleID}}", format_operations=None)
     assert result == "sampleID"
 
 
 def test_get_variable_reference_non_string():
-    assert get_variable_reference(42, schema=None, format_operations=None) is None
+    assert get_variable_reference(42, format_operations=None) is None
 
 
 def test_get_variable_reference_no_braces():
     assert (
-        get_variable_reference("sampleID", schema=None, format_operations=None) is None
+        get_variable_reference("sampleID", format_operations=None) is None
     )
 
 
 def test_get_variable_reference_partial_braces():
     assert (
-        get_variable_reference("{sampleID}", schema=None, format_operations=None)
+        get_variable_reference("{sampleID}", format_operations=None)
         is None
     )
 
 
 def test_get_variable_reference_with_format_operations():
     result = get_variable_reference(
-        "{{Sample ID}}", schema=None, format_operations=["lowercase"]
+        "{{Sample ID}}", format_operations=["lowercase"]
     )
     assert result == "sample id"
 
@@ -256,27 +256,27 @@ def test_get_blank_class_derivation_returns_new_dict_each_time():
 
 def test_cleanup_slot_name_no_options():
     assert (
-        cleanup_slot_name("Hello World", schema=None, cleanup_options=None)
+        cleanup_slot_name("Hello World", cleanup_options=None)
         == "Hello World"
     )
 
 
 def test_cleanup_slot_name_string():
     result = cleanup_slot_name(
-        "Hello World!", schema=None, cleanup_options=["lowercase"]
+        "Hello World!", cleanup_options=["lowercase"]
     )
     assert result == "hello world!"
 
 
 def test_cleanup_slot_name_dataframe():
     df = pd.DataFrame({"col": ["Hello", "WORLD"]})
-    result = cleanup_slot_name(df, schema=None, cleanup_options=["lowercase"])
+    result = cleanup_slot_name(df, cleanup_options=["lowercase"])
     assert result["col"].tolist() == ["hello", "world"]
 
 
 def test_cleanup_slot_name_series():
     s = pd.Series(["Hello", "WORLD"])
-    result = cleanup_slot_name(s, schema=None, cleanup_options=["lowercase"])
+    result = cleanup_slot_name(s, cleanup_options=["lowercase"])
     assert result.tolist() == ["hello", "world"]
 
 

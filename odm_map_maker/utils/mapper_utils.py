@@ -173,14 +173,13 @@ def wide_target_expr_slot_name(name: str) -> Optional[str]:
 
 
 def get_variable_reference(
-    v: Any, schema: SchemaView, format_operations: Optional[Union[str, List[str]]]
+    v: Any, format_operations: Optional[Union[str, List[str]]]
 ) -> Optional[str]:
     """Get the variable name that the value references. If the value is in the form {{variableName}} then the string
     "variableName" will be returned.
 
     Args:
         v (Any): The value to get the variable reference from.
-        schema (SchemaView): The schema that the variable/slot belongs to.
         format_operations: (Optional[Union[str, List[str]]]): Operations to apply to the variable to format it. See
             cleanup_slot_name.
 
@@ -193,7 +192,7 @@ def get_variable_reference(
     if match is None:
         return None
 
-    return cleanup_slot_name(match[1], schema=schema, cleanup_options=format_operations)
+    return cleanup_slot_name(match[1], cleanup_options=format_operations)
 
 
 def get_used_slots(expr: str, recognized_globals: List[str] = ["emap"]) -> List[str]:
@@ -234,7 +233,8 @@ def parse_used_slots(
     Args:
         i (ast.Attribute): The attribute node to recursively parse.
         path (List[str], optional): The current path of the attribute that gets passed in recursively.
-            Defaults to [].
+            When calling this function this should usually be left as None (which gets interpreted as
+            []). Defaults to None.
 
     Returns:
         List[str]: The slots associated with the attribute.
@@ -520,7 +520,6 @@ def expand_wide_derivations(
 
                 source_slot_variable = get_variable_reference(
                     target_value,
-                    schema=source_schema,
                     format_operations=source_slot_format_operations,
                 )
                 if target_expr and isinstance(target_expr, str):
@@ -648,17 +647,18 @@ def format_slot_name(val: str, format_options: Union[str, List[str]]) -> str:
 
 def cleanup_slot_name(
     data: Union[str, pd.DataFrame, pd.Series],
-    schema: SchemaView,
     cleanup_options: Optional[Union[str, List[str]]],
 ) -> Union[str, pd.DataFrame]:
     """Cleanup a slot name so that it can be used as a variable name, by replacing whitespace
-    and other non-alphanumeric characters with an underscore.
+    and other non-alphanumeric characters with an underscore or performing other processing
+    based on cleanup_options. This function simply calls format_slot_name on the passed
+    in string, DataFrame, or Series (ie. the data parameter).
 
     Args:
         data (Union[str, pd.DataFrame, pd.Series]): The data to cleanup. If a DataFrame or Series then cleanup all
             cells, if a string then cleanup the string.
-        schema (SchemaView): The schema that the slot belongs to.
-        cleanup_options (Optional[Union[str, List[str]]], optional): The cleanup options to perform.
+        cleanup_options (Optional[Union[str, List[str]]], optional): The cleanup options to perform. This
+            gets passed to format_slot_name as the format_options parameter.
 
     Returns:
         Union[str, pd.DataFrame]: The cleaned data.

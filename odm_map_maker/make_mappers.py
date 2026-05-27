@@ -455,7 +455,6 @@ class MakeMappers(object):
 
             variable_match = get_variable_reference(
                 target_enum_value,
-                self.source_schema,
                 format_operations=self.source_slot_format_operations,
             )
 
@@ -663,12 +662,10 @@ class MakeMappers(object):
         # Cleanup source/target slots (eg. replace whitespace with underscores, etc)
         maps_df[MappingColumns.SOURCE_SLOT] = cleanup_slot_name(
             maps_df[MappingColumns.SOURCE_SLOT],
-            schema=self.source_schema,
             cleanup_options=self.source_slot_format_operations,
         )
         maps_df[MappingColumns.TARGET_SLOT] = cleanup_slot_name(
             maps_df[MappingColumns.TARGET_SLOT],
-            schema=self.target_schema,
             cleanup_options=self.target_slot_format_operations,
         )
 
@@ -739,13 +736,11 @@ class MakeMappers(object):
         if MappingColumns.SOURCE_SLOT in wide_df.columns:
             wide_df[MappingColumns.SOURCE_SLOT] = cleanup_slot_name(
                 wide_df[MappingColumns.SOURCE_SLOT],
-                schema=self.source_schema,
                 cleanup_options=self.source_slot_format_operations,
             )
         if MappingColumns.TARGET_SLOT in wide_df.columns:
             wide_df[MappingColumns.TARGET_SLOT] = cleanup_slot_name(
                 wide_df[MappingColumns.TARGET_SLOT],
-                schema=self.target_schema,
                 cleanup_options=self.target_slot_format_operations,
             )
 
@@ -817,12 +812,10 @@ class MakeMappers(object):
         # Cleanup slot names (eg. replace whitespace with underscores)
         enums_df[MappingColumns.SOURCE_SLOT] = cleanup_slot_name(
             enums_df[MappingColumns.SOURCE_SLOT],
-            schema=self.source_schema,
             cleanup_options=self.source_slot_format_operations,
         )
         enums_df[MappingColumns.TARGET_SLOT] = cleanup_slot_name(
             enums_df[MappingColumns.TARGET_SLOT],
-            schema=self.target_schema,
             cleanup_options=self.target_slot_format_operations,
         )
 
