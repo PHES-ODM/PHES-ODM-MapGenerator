@@ -184,22 +184,15 @@ def test_get_variable_reference_non_string():
 
 
 def test_get_variable_reference_no_braces():
-    assert (
-        get_variable_reference("sampleID", format_operations=None) is None
-    )
+    assert get_variable_reference("sampleID", format_operations=None) is None
 
 
 def test_get_variable_reference_partial_braces():
-    assert (
-        get_variable_reference("{sampleID}", format_operations=None)
-        is None
-    )
+    assert get_variable_reference("{sampleID}", format_operations=None) is None
 
 
 def test_get_variable_reference_with_format_operations():
-    result = get_variable_reference(
-        "{{Sample ID}}", format_operations=["lowercase"]
-    )
+    result = get_variable_reference("{{Sample ID}}", format_operations=["lowercase"])
     assert result == "sample id"
 
 
@@ -255,16 +248,11 @@ def test_get_blank_class_derivation_returns_new_dict_each_time():
 
 
 def test_cleanup_slot_name_no_options():
-    assert (
-        cleanup_slot_name("Hello World", cleanup_options=None)
-        == "Hello World"
-    )
+    assert cleanup_slot_name("Hello World", cleanup_options=None) == "Hello World"
 
 
 def test_cleanup_slot_name_string():
-    result = cleanup_slot_name(
-        "Hello World!", cleanup_options=["lowercase"]
-    )
+    result = cleanup_slot_name("Hello World!", cleanup_options=["lowercase"])
     assert result == "hello world!"
 
 
