@@ -572,7 +572,7 @@ class ValidateMappers(object):
         """For a DataFrame that reports problems with enum derivations, that has the columns defined in EnumColumns,
         simplify the DataFrame by merging rows that are duplicates other than the EnumsColumns.MAPPER_FILE column. Within
         the grouped rows the values under EnumsColumns.MAPPER_FILE are combined (separated by a semi-colon). This makes
-        it easier for the user to read the DataFrames.
+        it easier for the user to visually read the DataFrames.
 
         Args:
             df (pd.DataFrame): The DataFrame to simplify.
