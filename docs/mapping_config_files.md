@@ -161,6 +161,8 @@ def a_or_b(a, b):
     if b:
         return b
     return ""
+
+
 target = a_or_b(src.sample_type, src.source_type)
 ```
 
