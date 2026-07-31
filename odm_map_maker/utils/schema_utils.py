@@ -2,18 +2,18 @@
 Utility functions for LinkML schemas.
 """
 
-from typing import Dict, List, Optional, Any, Union
-from dataclasses import asdict
-from linkml_runtime.linkml_model.meta import SlotDefinition
 import re
-import numpy as np
+from dataclasses import asdict
+from typing import Any
 
+import numpy as np
 from linkml_runtime import SchemaView
+from linkml_runtime.linkml_model.meta import SlotDefinition
 
 from odm_map_maker.utils.general_utils import choose_ignore_case_value
 
 
-def all_classes_without_tree_root(schema: SchemaView) -> List[str]:
+def all_classes_without_tree_root(schema: SchemaView) -> list[str]:
     """Get a list of all classes in the schema, excluding the tree root class that contains
     all the classes.
 
@@ -29,7 +29,7 @@ def all_classes_without_tree_root(schema: SchemaView) -> List[str]:
 
 def get_slot_definition(
     cls: str, slot: str, schema: SchemaView, exception_on_error: bool = True
-) -> Dict:
+) -> dict:
     """Get the full definition for the slot. This includes fields that are attributes of the class.
     If a slot is modified with a slot_usage, then we also update the returned dictionary with the
     slot usage information.
@@ -50,16 +50,17 @@ def get_slot_definition(
     else:
         try:
             return asdict(schema.induced_slot(slot, cls))
-        except Exception:
+        except ValueError:
+            # SchemaView raises a ValueError when the class or slot does not exist
             return None
 
 
 def get_ranges_of_slot(
     class_name: str,
-    slot_name: Union[str, List[str]],
+    slot_name: str | list[str],
     schema: SchemaView,
     exception_on_error: bool = True,
-) -> List[str]:
+) -> list[str]:
     """Get the range(s) (if any) of the slot(s) in the specified class.
 
     Args:
@@ -92,8 +93,8 @@ def get_ranges_of_slot(
 
 
 def get_ranges_of_slot_defn(
-    slot_defn: Union[Dict, SlotDefinition, List[SlotDefinition]],
-) -> List[str]:
+    slot_defn: dict | SlotDefinition | list[SlotDefinition],
+) -> list[str]:
     """Get the range(s) (if any) of the slot definition(s).
 
     Args:
@@ -103,7 +104,7 @@ def get_ranges_of_slot_defn(
         List[str]: A list of range(s) for the specified slot(s), if at least one range exists. If
             no range is found then an empty list is returned.
     """
-    if isinstance(slot_defn, (SlotDefinition, Dict)):
+    if isinstance(slot_defn, (SlotDefinition, dict)):
         slot_defn = [slot_defn]
     ranges = []
     for cur_defn in slot_defn:
@@ -136,11 +137,11 @@ def get_ranges_of_slot_defn(
 
 
 def get_enum_name_with_permissible_value(
-    enum_names: List[str],
+    enum_names: list[str],
     permissible_value: Any,
     schema: SchemaView,
-    match_ontology_id: Optional[str],
-) -> Optional[str]:
+    match_ontology_id: str | None,
+) -> str | None:
     """Get the first enumeration name that contains the specified permissible value.
 
     Args:
@@ -175,7 +176,7 @@ def add_ontoid_to_enum_value(
     schema: SchemaView,
     enum_name: str,
     enum_value: str,
-    match_ontology_id: Optional[str],
+    match_ontology_id: str | None,
 ) -> str:
     """Add an ontology ID to an enum value, if an ontology ID is present for that enum value
     in the schema. For example, an enum value of "degree Celsius (C)" might be changed to
@@ -201,7 +202,7 @@ def add_ontoid_to_enum_value(
     enum_defn = schema.get_enum(enum_name)
     if not enum_defn:
         return enum_value
-    for permissible_value in enum_defn.permissible_values.keys():
+    for permissible_value in enum_defn.permissible_values:
         if (
             remove_ontology_id(
                 str(permissible_value), match_ontology_id=match_ontology_id
@@ -212,7 +213,7 @@ def add_ontoid_to_enum_value(
     return enum_value
 
 
-def remove_ontology_id(val: str, match_ontology_id: Optional[str]) -> str:
+def remove_ontology_id(val: str, match_ontology_id: str | None) -> str:
     """Remove an ontology ID from the end of a value. For example, "degree Celsius (C) [UO:0000027]" would
         become "degree Celsius (C)"
 
@@ -231,7 +232,7 @@ def remove_ontology_id(val: str, match_ontology_id: Optional[str]) -> str:
     return val
 
 
-def get_enum_names_for_slot(cls: str, slot: str, schema: SchemaView) -> List[str]:
+def get_enum_names_for_slot(cls: str, slot: str, schema: SchemaView) -> list[str]:
     """Get the enumeration names (if any) for the range of the specified slot in the specified class.
 
     Args:
@@ -256,8 +257,8 @@ def get_enum_names_for_slot(cls: str, slot: str, schema: SchemaView) -> List[str
 
 
 def get_permissible_values_from_enum_names(
-    enum_names: List[str], schema: SchemaView, sort_values: bool = False
-) -> List[str]:
+    enum_names: list[str], schema: SchemaView, sort_values: bool = False
+) -> list[str]:
     """Get all the permissible values for all the specified enumerations in the schema.
 
     Args:
@@ -302,8 +303,8 @@ def remove_ignored_text_from_class_name(class_name: str) -> str:
 
 
 def find_class(
-    class_name: str, schema: Optional[SchemaView], ignore_case: bool
-) -> Optional[str]:
+    class_name: str, schema: SchemaView | None, ignore_case: bool
+) -> str | None:
     """Figure out which class the class_name string should belong to, making the search
     fairly flexible. We will typically search for a recognized class name in the string,
     so for example "1 - WWMeasure (2024-11-30)" would map to the class "WWMeasure".
@@ -356,8 +357,8 @@ def find_class(
 
 
 def get_class(
-    class_name: str, schema: Optional[SchemaView], ignore_case: bool
-) -> Optional[str]:
+    class_name: str, schema: SchemaView | None, ignore_case: bool
+) -> str | None:
     """Get the recognized class name based on the string class_name (optionally case-
     sensitive or case-insensitive), or None if the class name does not exist.
 

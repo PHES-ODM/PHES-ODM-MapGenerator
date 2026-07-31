@@ -1,9 +1,10 @@
-from pathlib import Path
-from typing import Union, List, Optional, Annotated
 import os
 import shutil
-import yaml
+from pathlib import Path
+from typing import Annotated
+
 import typer
+import yaml
 
 from odm_map_maker.make_mappers import MakeMappers
 from odm_map_maker.utils.general_utils import clear_dirs, extract_sheets, get_logger
@@ -100,7 +101,7 @@ def _resolve_config_path(config_dir: Path, v: str) -> str:
 
 
 def _config_callback(
-    ctx: typer.Context, param: typer.CallbackParam, value: Optional[Path]
+    ctx: typer.Context, param: typer.CallbackParam, value: Path | None
 ):
     """Load a YAML config file and inject its values into Click's default_map.
 
@@ -126,9 +127,7 @@ def _config_callback(
     return value
 
 
-def get_available_file_path(
-    source_file: Union[str, Path], target_dir: Union[str, Path]
-) -> Path:
+def get_available_file_path(source_file: str | Path, target_dir: str | Path) -> Path:
     """Get a full path and filename in the target directory that is not currently being used by an
     existing file in the directory. The name of the file will be similar (but not necessarily identical)
     to the file name from the source_file. The returned path can be used to create a new file in the
@@ -165,7 +164,7 @@ def main(
         Path, typer.Option(show_default=False, help=SOURCE_SCHEMA_HELP)
     ],
     config: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(
             "--config",
             callback=_config_callback,
@@ -175,43 +174,44 @@ def main(
         ),
     ] = None,
     mapping_excel_file: Annotated[
-        Path, typer.Option(show_default=False, help=MAPPING_EXCEL_FILE_HELP)
+        Path | None, typer.Option(show_default=False, help=MAPPING_EXCEL_FILE_HELP)
     ] = None,
     excel_maps_sheets: Annotated[
-        List[str], typer.Option(show_default=False, help=EXCEL_MAPS_SHEETS_HELP)
+        list[str] | None, typer.Option(show_default=False, help=EXCEL_MAPS_SHEETS_HELP)
     ] = None,
     excel_wide_sheets: Annotated[
-        List[str], typer.Option(show_default=False, help=EXCEL_WIDE_SHEETS_HELP)
+        list[str] | None, typer.Option(show_default=False, help=EXCEL_WIDE_SHEETS_HELP)
     ] = None,
     excel_enums_sheets: Annotated[
-        List[str], typer.Option(show_default=False, help=EXCEL_ENUMS_SHEETS_HELP)
+        list[str] | None,
+        typer.Option(show_default=False, help=EXCEL_ENUMS_SHEETS_HELP),
     ] = None,
     maps_files: Annotated[
-        List[Path], typer.Option(show_default=False, help=MAPS_FILES_HELP)
+        list[Path] | None, typer.Option(show_default=False, help=MAPS_FILES_HELP)
     ] = None,
     wide_files: Annotated[
-        List[Path], typer.Option(show_default=False, help=WIDE_FILES_HELP)
+        list[Path] | None, typer.Option(show_default=False, help=WIDE_FILES_HELP)
     ] = None,
     enums_files: Annotated[
-        List[Path], typer.Option(show_default=False, help=ENUMS_FILES_HELP)
+        list[Path] | None, typer.Option(show_default=False, help=ENUMS_FILES_HELP)
     ] = None,
     selectors: Annotated[
-        Optional[List[str]], typer.Option(show_default=False, help=SELECTORS_HELP)
+        list[str] | None, typer.Option(show_default=False, help=SELECTORS_HELP)
     ] = None,
     source_slot_format_operations: Annotated[
-        Optional[List[str]],
+        list[str] | None,
         typer.Option(show_default=False, help=SOURCE_SLOT_FORMAT_OPERATIONS_HELP),
     ] = None,
     target_slot_format_operations: Annotated[
-        Optional[List[str]],
+        list[str] | None,
         typer.Option(show_default=False, help=TARGET_SLOT_FORMAT_OPERATIONS_HELP),
     ] = None,
     source_match_ontology_id_regex: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(show_default=False, help=SOURCE_MATCH_ONTOLOGY_ID_REGEX_HELP),
     ] = None,
     target_match_ontology_id_regex: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(show_default=False, help=TARGET_MATCH_ONTOLOGY_ID_REGEX_HELP),
     ] = None,
 ):

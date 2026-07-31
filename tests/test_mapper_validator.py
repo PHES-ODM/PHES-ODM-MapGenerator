@@ -1,12 +1,12 @@
 import textwrap
-import pytest
+
 import pandas as pd
+import pytest
 
 from odm_map_maker.validate_mappers.mapper_validator import (
-    ValidateMappers,
     EnumsColumns,
+    ValidateMappers,
 )
-
 
 # ---------------------------------------------------------------------------
 # Minimal schemas and mapper fixture

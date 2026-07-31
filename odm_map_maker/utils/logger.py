@@ -9,10 +9,9 @@ logger.info("This is a logging message")
 ```
 """
 
-from typing import Optional, Dict, List
+import logging
 import os
 import sys
-import logging
 
 DETAILED_LOGGER = os.environ.get("ODM_DETAILED_LOGGER", "").lower() in (
     "1",
@@ -49,9 +48,9 @@ for logger_name in [
 class MultiFormatter(logging.Formatter):
     def __init__(
         self,
-        fmt: Optional[str] = None,
-        alternate_fmts: Dict[int, str] = None,
-        datefmt: Optional[str] = None,
+        fmt: str | None = None,
+        alternate_fmts: dict[int, str] | None = None,
+        datefmt: str | None = None,
         **kwargs,
     ):
         """Allow different logging formats for different logging levels.
@@ -77,7 +76,7 @@ class MultiFormatter(logging.Formatter):
         return result
 
 
-def get_logger(name: str, level: Optional[str] = logging.INFO) -> logging.Logger:
+def get_logger(name: str, level: str | None = logging.INFO) -> logging.Logger:
     """Get the logger with the specified name, setting is configuration as well as output format.
     The name can be any arbitrary string. For example:
 
@@ -109,7 +108,7 @@ def get_logger(name: str, level: Optional[str] = logging.INFO) -> logging.Logger
 
 
 def make_logger_bullet_list(
-    items: List,
+    items: list,
     bullet: str = "- ",
     end: str = "\n",
     last_end: str = "",

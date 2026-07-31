@@ -2,16 +2,17 @@
 Utility functions for ODM and LinkML.
 """
 
-import os
-from pathlib import Path
-import pandas as pd
-from pandas._libs.parsers import STR_NA_VALUES
-import yaml
 import inspect
-from typing import Union, List, Optional, Any, Dict, Callable
+import os
 import re
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
 
+import pandas as pd
+import yaml
 from linkml_runtime import SchemaView
+from pandas._libs.parsers import STR_NA_VALUES
 
 from odm_map_maker.utils.logger import get_logger
 
@@ -25,7 +26,7 @@ TREE_ROOT_CLASS_NAME = "Container"
 RECOGNIZED_EXTENSIONS = [".tsv", ".txt", ".csv", ".yaml", ".yml"]
 
 
-def order_columns(df: pd.DataFrame, column_order: List[str]) -> pd.DataFrame:
+def order_columns(df: pd.DataFrame, column_order: list[str]) -> pd.DataFrame:
     """Order the columns in a DataFrame.
 
     Args:
@@ -41,7 +42,7 @@ def order_columns(df: pd.DataFrame, column_order: List[str]) -> pd.DataFrame:
 
 
 def save_data_frame(
-    df: pd.DataFrame, output_file: Union[str, Path], strip: bool = True, **kwargs
+    df: pd.DataFrame, output_file: str | Path, strip: bool = True, **kwargs
 ):
     """Save a Pandas DataFrame to disk as a TSV, CSV, or YAML file.
 
@@ -102,8 +103,8 @@ def strip_whitespace(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def clear_dirs(
-    dirs: Union[Union[str, Path], List[Union[str, Path]]],
-    extensions: Union[str, List[str]] = [".tsv", ".csv", ".yaml"],
+    dirs: str | Path | list[str | Path],
+    extensions: str | list[str] | None = None,
 ):
     """Remove all TSV, CSV, and YAML files in all the specified directories.
 
@@ -114,7 +115,9 @@ def clear_dirs(
             should be prefixed by a dot.
             (Defaults to [".tsv", ".csv", ".yaml"])
     """
-    if isinstance(extensions, str):
+    if extensions is None:
+        extensions = [".tsv", ".csv", ".yaml"]
+    elif isinstance(extensions, str):
         extensions = [extensions]
     extensions = [e.lower() for e in extensions]
     if isinstance(dirs, (str, Path)):
@@ -129,13 +132,13 @@ def clear_dirs(
 
 
 def extract_sheets(
-    file: Union[str, Path],
-    sheets: Union[str, List[str]],
-    output_dir: Optional[Union[str, Path]] = None,
-    output_names: Union[str, List[str]] = None,
-    na_values: Dict[str, Dict[str, Union[str, List[str]]]] = None,
-    default_na_values: List[str] = STR_NA_VALUES,
-    read_excel_kwargs: Dict[str, Any] = None,
+    file: str | Path,
+    sheets: str | list[str],
+    output_dir: str | Path | None = None,
+    output_names: str | list[str] | None = None,
+    na_values: dict[str, dict[str, str | list[str]]] | None = None,
+    default_na_values: list[str] = STR_NA_VALUES,
+    read_excel_kwargs: dict[str, Any] | None = None,
 ):
     """Extract the specified sheets from Excel file and save them as separate CSV files.
 
@@ -190,7 +193,7 @@ def extract_sheets(
     # Load all sheets one at a time, using the specified na_values
     dfs = {}
     for sheet in sheets:
-        if sheet not in pre_dfs.keys():
+        if sheet not in pre_dfs:
             logger.error(f"Sheet '{sheet}' does not exist in Excel file: {file}")
             continue
         pre_df = pre_dfs[sheet]
@@ -220,9 +223,9 @@ def extract_sheets(
 
 def choose_ignore_case_value(
     val: str,
-    allowable_values: List[str],
-    lowercase_allowable_values: Optional[List[str]] = None,
-    return_same_if_missing: Optional[bool] = True,
+    allowable_values: list[str],
+    lowercase_allowable_values: list[str] | None = None,
+    return_same_if_missing: bool | None = True,
 ) -> str:
     """Convert a value to match the capitalization of the same value in allowable_values.
 
@@ -261,7 +264,7 @@ def choose_ignore_case_value(
 
 
 def get_class_name_from_file_name(
-    file_name: Union[str, Path], schema: Optional[SchemaView] = None
+    file_name: str | Path, schema: SchemaView | None = None
 ) -> str:
     """Get the LinkML class name based on a data file name. Data files are named as "class_name[...].ext".
 
@@ -282,7 +285,7 @@ def get_class_name_from_file_name(
     return class_name
 
 
-def expand_multi_rows(df: pd.DataFrame, columns: Union[List[str], str]) -> pd.DataFrame:
+def expand_multi_rows(df: pd.DataFrame, columns: list[str] | str) -> pd.DataFrame:
     """For all specified columns in the DataFrame df, over all rows, make duplicate rows whenever
     a column value has a semi-colon (;) in it, with each new row having the different values when
     splitting the original values by semi-colons.
@@ -338,7 +341,7 @@ def expand_multi_rows(df: pd.DataFrame, columns: Union[List[str], str]) -> pd.Da
     # rows below and then readd the expanded rows to the DataFrame.
     df = df[~df.index.isin(multi_df.index)]
 
-    def _select_element(i: int, arr: List) -> str:
+    def _select_element(i: int, arr: list) -> str:
         # Select element number i in arr. If i is out of bounds then select the last element.
         if len(arr) > i:
             val = arr[i]
@@ -350,10 +353,12 @@ def expand_multi_rows(df: pd.DataFrame, columns: Union[List[str], str]) -> pd.Da
     for i in range(max_multi):
         # Keep any row where at least one of the columns has i+1 or more values
         new_rows_df = multi_df[
-            multi_df[columns].map(lambda x: len(x) > i).sum(axis=1) > 0
+            multi_df[columns].map(lambda x, i=i: len(x) > i).sum(axis=1) > 0
         ].copy()
         # Select the ith element
-        new_rows_df[columns] = new_rows_df[columns].map(lambda x: _select_element(i, x))
+        new_rows_df[columns] = new_rows_df[columns].map(
+            lambda x, i=i: _select_element(i, x)
+        )
         split_rows_dfs.append(new_rows_df)
 
     df = pd.concat([df, *split_rows_dfs]).reset_index(drop=True)
@@ -361,7 +366,7 @@ def expand_multi_rows(df: pd.DataFrame, columns: Union[List[str], str]) -> pd.Da
     return df
 
 
-def rename_items(items: List[str], renames: Dict[str, str]) -> List[str]:
+def rename_items(items: list[str], renames: dict[str, str]) -> list[str]:
     """Rename the string items in the list according to the renames dictionary. The keys of the
     dictionary are the original names and the values are the new values to rename them to. A copy of
     items is made, the original is left unmodified.
@@ -426,7 +431,7 @@ def parse_numeric(value: str) -> Any:
         return value
 
 
-def select_func_kwargs(func: Callable, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+def select_func_kwargs(func: Callable, kwargs: dict[str, Any]) -> dict[str, Any]:
     """Only select the keyword arguments in the dictionary that are acceptable arguments
     for the function.
 
@@ -440,6 +445,6 @@ def select_func_kwargs(func: Callable, kwargs: Dict[str, Any]) -> Dict[str, Any]
     """
     args, _, _, _, kwonlyargs, *_ = inspect.getfullargspec(func)
     all_args = list(dict.fromkeys(list(args) + list(kwonlyargs)))
-    existing_keywords = [k for k in all_args if k in kwargs.keys()]
+    existing_keywords = [k for k in all_args if k in kwargs]
     kwargs = {k: kwargs[k] for k in existing_keywords}
     return kwargs

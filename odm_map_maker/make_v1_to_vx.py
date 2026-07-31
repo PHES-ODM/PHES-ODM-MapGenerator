@@ -10,6 +10,7 @@ the mappings. See make_mappers.py, and see make_mappers_cli.py for an example.
 
 from pathlib import Path
 from typing import Annotated
+
 import typer
 
 from odm_map_maker.odm_vx.make_vx_mappers_from_parts import make_mappers
@@ -76,7 +77,7 @@ def main(
     target_schema: Annotated[
         Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
     ],
-    wide_dir: Annotated[Path, typer.Option(help=WIDE_DIR_HELP)] = None,
+    wide_dir: Annotated[Path | None, typer.Option(help=WIDE_DIR_HELP)] = None,
     max_mapping_only: Annotated[bool, typer.Option(help=MAX_MAPPING_ONLY_HELP)] = False,
 ):
     """Make the LinkML mapper configuration (YAML) files required for mapping from ODM v1 to ODM vx.

@@ -1,21 +1,21 @@
 import ast
+
 import pandas as pd
 
 from odm_map_maker.utils.mapper_utils import (
-    format_slot_name,
-    is_wide_target_value_slot,
-    is_wide_target_expr_slot,
     any_wide_slot_name,
+    cleanup_slot_name,
+    format_slot_name,
+    get_blank_class_derivation,
+    get_source_slots_from_slot_derivation,
+    get_used_slots,
+    get_variable_reference,
+    is_wide_target_expr_slot,
+    is_wide_target_value_slot,
+    parse_used_slots,
     wide_slot_name,
     wide_target_expr_slot_name,
-    get_used_slots,
-    parse_used_slots,
-    get_variable_reference,
-    get_source_slots_from_slot_derivation,
-    get_blank_class_derivation,
-    cleanup_slot_name,
 )
-
 
 # ---------------------------------------------------------------------------
 # format_slot_name

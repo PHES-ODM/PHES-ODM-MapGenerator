@@ -82,11 +82,12 @@ remove_selectors_column=False)
 ```
 """
 
-from typing import List, Any, Tuple, Dict, Union
+import re
+from typing import Any
+
 import pandas as pd
 from packaging.specifiers import SpecifierSet
 from packaging.version import parse as parse_version
-import re
 
 
 class SelectorTypes:
@@ -100,7 +101,7 @@ class SelectorTypes:
 
 
 class SelectorFilter:
-    def __init__(self, selectors: Union[str, List, Tuple], selector_column: str):
+    def __init__(self, selectors: str | list | tuple, selector_column: str):
         self.selectors_dict = self._gather_selectors(
             selectors, equals_version_only=True
         )
@@ -148,7 +149,7 @@ class SelectorFilter:
             res = re.match(r"([A-Za-z0-9_]+)\s*([<>=!~]+)(\s*)([\d\.]+)", s)
             if res is not None and len(res.groups()) == 4:
                 module = res.groups()[0]
-                version = "%s%s" % (res.groups()[1], res.groups()[3])
+                version = f"{res.groups()[1]}{res.groups()[3]}"
                 return SelectorTypes.MODULE_VERSION, (module, version)
 
         # EXCLUDE selectors are preceded by "!"
@@ -158,7 +159,7 @@ class SelectorFilter:
 
         return SelectorTypes.INCLUDE, s
 
-    def _gather_selectors(self, selectors: Any, equals_version_only: bool) -> Dict:
+    def _gather_selectors(self, selectors: Any, equals_version_only: bool) -> dict:
         """From the specified selectors (which can be a string, list or tuple), gather the selectors
         into a dictionary where the keys are the selector types (from SelectorTypes) and the values
         are lists of the selector values.
@@ -221,7 +222,7 @@ class SelectorFilter:
 
         return selectors_dict
 
-    def _selectors_pass(self, selectors: Dict, row_selectors: Dict) -> bool:
+    def _selectors_pass(self, selectors: dict, row_selectors: dict) -> bool:
         """Determine if the row (with the specified row_selectors) passes the selector test based on the
         given selectors. If a row passes the test then it is included in the output, if it isn't then it
         is filtered out.

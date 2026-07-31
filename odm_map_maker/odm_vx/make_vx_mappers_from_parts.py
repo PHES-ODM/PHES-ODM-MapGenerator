@@ -9,30 +9,30 @@ and contacts.lastName from it?
 - Reporter table is empty, is this alright?
 """
 
-import pandas as pd
-from pathlib import Path
-import yaml
 import os
-from typing import Union, Dict, List, Optional, Annotated
-import typer
+from pathlib import Path
+from typing import Annotated
 
+import pandas as pd
+import typer
+import yaml
 from linkml_runtime import SchemaView
 
-from odm_map_maker.utils.logger import get_logger
+from odm_map_maker.odm_vx.vx_mapping import VxMappingColumns, VxMappingVariableLocations
+from odm_map_maker.odm_vx.vx_utils import (
+    odm_get_available_class_names,
+    vx_get_header_rows,
+)
 from odm_map_maker.utils.general_utils import (
-    read_data_frame,
     TREE_ROOT_CLASS_NAME,
     get_class_name_from_file_name,
+    read_data_frame,
 )
+from odm_map_maker.utils.logger import get_logger
 from odm_map_maker.utils.mapper_utils import (
-    select_required_enum_derivations,
     expand_wide_derivations,
+    select_required_enum_derivations,
 )
-from odm_map_maker.odm_vx.vx_utils import (
-    vx_get_header_rows,
-    odm_get_available_class_names,
-)
-from odm_map_maker.odm_vx.vx_mapping import VxMappingColumns, VxMappingVariableLocations
 
 VX_PART_ID_COL = "partID"
 VX_ENUM_NAME_COL = "vxEnumName"
@@ -83,9 +83,9 @@ def make_mappers(
     prepared_parts_file: Path,
     source_schema: Path,
     target_schema: Path,
-    max_mapping_only: Optional[bool] = False,
-    custom_wide_dir: List[Path] = None,
-) -> List[Dict]:
+    max_mapping_only: bool | None = False,
+    custom_wide_dir: list[Path] | None = None,
+) -> list[dict]:
     """Make the LinkML mapper specifications for mapping from all source tables to all ODM vx tables
     where a mapping between the tables exists. A separate specification is created for each source table to
     vx table mapping.
@@ -193,7 +193,7 @@ def make_mappers(
         ].unique()
     )
 
-    class_derivations: Dict[str, List[Dict]] = {}
+    class_derivations: dict[str, list[dict]] = {}
 
     # Create a class derivation for all source tables to a vX table.
     v1_to_vx_classes = config["v1_to_vx_classes"]
@@ -227,7 +227,7 @@ def make_mappers(
             logger.info(
                 f"Adding class derivation from {cur_source_name} to {cur_target_name}"
             )
-            if cur_target_name not in class_derivations.keys():
+            if cur_target_name not in class_derivations:
                 class_derivations[cur_target_name] = []
             class_derivations[cur_target_name].append(cur_dict)
 
@@ -276,7 +276,7 @@ def make_mappers(
     return res
 
 
-def make_enum_derivations(df: pd.DataFrame, source_enum_name: str) -> Dict[str, Dict]:
+def make_enum_derivations(df: pd.DataFrame, source_enum_name: str) -> dict[str, dict]:
     """Create the LinkML mapper enum_derivation dictionary for converting the source enumeration
     source_enum_name to the proper ODM vx enumeration(s).
 
@@ -337,7 +337,7 @@ def make_enum_derivations(df: pd.DataFrame, source_enum_name: str) -> Dict[str, 
         if vx_target_enum_name not in permissible_value_derivations:
             permissible_value_derivations[vx_target_enum_name] = {}
 
-        if vx_part_id in permissible_value_derivations[vx_target_enum_name].keys():
+        if vx_part_id in permissible_value_derivations[vx_target_enum_name]:
             # There is already an enum value mapping to vx_part_id. We can't specify more than
             # one source enum value in the "populated_from" field, but we can in
             # the "sources" field. So we add the "sources" field and start adding extra populated_from
@@ -371,12 +371,12 @@ def make_class_derivations(
     df: pd.DataFrame,
     source_table_name: str,
     max_mapping_only: bool,
-    custom_wide_dfs: Optional[List[pd.DataFrame]],
+    custom_wide_dfs: list[pd.DataFrame] | None,
     source_schema: SchemaView,
     target_schema: SchemaView,
-    source_slot_format_operations: Optional[Union[str, List[str]]],
-    target_slot_format_operations: Optional[Union[str, List[str]]],
-) -> List[Dict]:
+    source_slot_format_operations: str | list[str] | None,
+    target_slot_format_operations: str | list[str] | None,
+) -> list[dict]:
     """Make a LinkML mapper class_derivation dictionary for converting the source class source_table_name
     to the proper ODM vx class.
 
@@ -449,7 +449,7 @@ def make_class_derivations(
         for _, row in mappings_df.iterrows():
             vx_variable = row[VX_PART_ID_COL]
             source_variable = row[VxMappingColumns.SOURCE_VARIABLE]
-            if vx_variable in slot_derivations.keys():
+            if vx_variable in slot_derivations:
                 logger.warning(
                     f"{vx_variable} already found in slot derivations from source table {source_table_name} onto vx table {target_class_name} (source var={source_variable}, vx var={vx_variable})"
                 )
@@ -495,11 +495,11 @@ def make_class_derivations(
 
 
 def save_all_mappers(
-    class_derivations: Dict,
-    enum_derivations: Dict,
+    class_derivations: dict,
+    enum_derivations: dict,
     schema: SchemaView,
-    output_dir: Union[str, Path],
-) -> List[Dict]:
+    output_dir: str | Path,
+) -> list[dict]:
     """For each class derivation, create a separate mapper specification file (yaml file).
     These specs each map from a single source table to a single vx table.
 
@@ -602,10 +602,10 @@ def main(
         Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
     ],
     max_mapping_only: Annotated[
-        Optional[bool], typer.Option(help=MAX_MAPPING_ONLY_HELP)
+        bool | None, typer.Option(help=MAX_MAPPING_ONLY_HELP)
     ] = False,
     custom_wide_dir: Annotated[
-        List[Path], typer.Option(help=CUSTOM_WIDE_DIR_HELP)
+        list[Path] | None, typer.Option(help=CUSTOM_WIDE_DIR_HELP)
     ] = None,
 ):
     make_mappers(

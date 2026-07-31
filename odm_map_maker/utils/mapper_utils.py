@@ -2,12 +2,12 @@
 Utility functions for LinkML Mapper
 """
 
-from typing import Dict, List, Union, Any, Optional
-import pandas as pd
-import re
-import yaml
 import ast
+import re
+from typing import Any
 
+import pandas as pd
+import yaml
 from linkml_runtime import SchemaView
 
 from odm_map_maker.utils.logger import get_logger
@@ -93,7 +93,7 @@ def is_wide_slot(name: Any, suffix: str) -> bool:
     return name.endswith(suffix)
 
 
-def wide_slot_name(name: str, suffix: str) -> Optional[str]:
+def wide_slot_name(name: str, suffix: str) -> str | None:
     """Get the name of the special wide slot with the suffix removed. If name does not end in the suffix then None is returned.
 
     eg. If name is "qualityRepID_value" and suffix is "_value", then "qualityRepID" is returned.
@@ -110,7 +110,7 @@ def wide_slot_name(name: str, suffix: str) -> Optional[str]:
     return name[0 : -len(suffix)]
 
 
-def any_wide_slot_name(name: str) -> Optional[str]:
+def any_wide_slot_name(name: str) -> str | None:
     """Get the slot that the wide column name refers to. This removes any recognized wide slot name suffix
     from the specified column name. This includes _value and _expr suffixes. If no recognized suffix is present then None
     is returned.
@@ -158,7 +158,7 @@ def is_wide_target_expr_slot(name: Any) -> bool:
     return is_wide_slot(name, WIDE_SPEC_EXPR_SUFFIX)
 
 
-def wide_target_expr_slot_name(name: str) -> Optional[str]:
+def wide_target_expr_slot_name(name: str) -> str | None:
     """Remove the _expr suffix from the specified special wide column name. Returns
     None if it does not end with the _expr suffix.
 
@@ -173,8 +173,8 @@ def wide_target_expr_slot_name(name: str) -> Optional[str]:
 
 
 def get_variable_reference(
-    v: Any, format_operations: Optional[Union[str, List[str]]]
-) -> Optional[str]:
+    v: Any, format_operations: str | list[str] | None
+) -> str | None:
     """Get the variable name that the value references. If the value is in the form {{variableName}} then the string
     "variableName" will be returned.
 
@@ -195,7 +195,7 @@ def get_variable_reference(
     return cleanup_slot_name(match[1], cleanup_options=format_operations)
 
 
-def get_used_slots(expr: str, recognized_globals: List[str] = ["emap"]) -> List[str]:
+def get_used_slots(expr: str, recognized_globals: list[str] | None = None) -> list[str]:
     """Get all the slots referenced in the Python code specified in expr. Slots are any
     attributes taken on the global variables in recognized_globals. For example, if
     recognized_globals is ["enum"], then any attribute of enum is returned. If
@@ -212,20 +212,19 @@ def get_used_slots(expr: str, recognized_globals: List[str] = ["emap"]) -> List[
     Returns:
         List[str]: List of slots referenced in the code specified by expr.
     """
+    if recognized_globals is None:
+        recognized_globals = ["emap"]
     used_slots = []
     s = ast.parse(expr)
     for i in ast.walk(s):
         if isinstance(i, ast.Attribute):
             slots = parse_used_slots(i)
-            if len(slots) >= 2:
-                if slots[0] in recognized_globals:
-                    used_slots += [slots[1]]
+            if len(slots) >= 2 and slots[0] in recognized_globals:
+                used_slots += [slots[1]]
     return list(dict.fromkeys(used_slots))
 
 
-def parse_used_slots(
-    node: ast.Attribute, path: Optional[List[str]] = None
-) -> List[str]:
+def parse_used_slots(node: ast.Attribute, path: list[str] | None = None) -> list[str]:
     """Recursively parse the slots in the attribute node. The returned path will be an array
     of names/variables that are used to make up the whole attribute. For example, for the attribute
     "enum.collection_device", the returned path will be ["enum", "collection_device"].
@@ -252,8 +251,8 @@ def parse_used_slots(
 
 
 def get_source_slots_from_slot_derivation(
-    slot_derivation: Dict, recognized_globals: List[str] = ["emap"]
-) -> List[str]:
+    slot_derivation: dict, recognized_globals: list[str] | None = None
+) -> list[str]:
     """Get a list of all source slot names that are used to populate a target slot from the
     specified slot derivation. recognized_globals can be used to restrict which slots are
     returned in "expr" blocks of the derivation to those slots that are accessed through
@@ -291,11 +290,11 @@ def get_source_slots_from_slot_derivation(
 def select_required_enum_derivations(
     source_class: str,
     target_class: str,
-    class_derivation: Dict,
-    enum_derivations: List[Dict],
+    class_derivation: dict,
+    enum_derivations: list[dict],
     schema: SchemaView,
     mirror_missing_enum_derivations: bool = True,
-) -> Dict:
+) -> dict:
     """Select all the enumeration derivations required by the specified class derivation. The enumeration
     derivations have all the permissible_value_derivations used. In some cases, the enum derivation might
     have no permissible_value_derivations set but will have mirror_source set to True.
@@ -417,13 +416,13 @@ def select_required_enum_derivations(
 def expand_wide_derivations(
     source_class_name: str,
     target_class_name: str,
-    slot_derivations: Dict,
-    custom_wide_dfs: Union[List[pd.DataFrame], pd.DataFrame],
+    slot_derivations: dict,
+    custom_wide_dfs: list[pd.DataFrame] | pd.DataFrame,
     source_schema: SchemaView,
     target_schema: SchemaView,
-    source_slot_format_operations: Optional[Union[str, List[str]]],
-    target_slot_format_operations: Optional[Union[str, List[str]]],
-) -> List[Dict]:
+    source_slot_format_operations: str | list[str] | None,
+    target_slot_format_operations: str | list[str] | None,
+) -> list[dict]:
     """Using custom wide DataFrames and an already calculated slot_derivations, see if there are any
     custom wide-to-long columns for the current source class to target class slot_derivations. If there are,
     then create multiple new slot_derivations (for multiple mappers) based on the original slot_derivations, each new
@@ -571,7 +570,7 @@ def expand_wide_derivations(
     return results
 
 
-def get_blank_class_derivation(source_class: str, target_class: str) -> Dict:
+def get_blank_class_derivation(source_class: str, target_class: str) -> dict:
     """Create a new LinkML class derivation dictionary with an empty slots derivation.
 
     Args:
@@ -588,7 +587,7 @@ def get_blank_class_derivation(source_class: str, target_class: str) -> Dict:
     }
 
 
-def format_slot_name(val: str, format_options: Union[str, List[str]]) -> str:
+def format_slot_name(val: str, format_options: str | list[str]) -> str:
     """Format the specified slot using the specified formatting options.
 
     Args:
@@ -646,9 +645,9 @@ def format_slot_name(val: str, format_options: Union[str, List[str]]) -> str:
 
 
 def cleanup_slot_name(
-    data: Union[str, pd.DataFrame, pd.Series],
-    cleanup_options: Optional[Union[str, List[str]]],
-) -> Union[str, pd.DataFrame]:
+    data: str | pd.DataFrame | pd.Series,
+    cleanup_options: str | list[str] | None,
+) -> str | pd.DataFrame:
     """Cleanup a slot name so that it can be used as a variable name, by replacing whitespace
     and other non-alphanumeric characters with an underscore or performing other processing
     based on cleanup_options. This function simply calls format_slot_name on the passed

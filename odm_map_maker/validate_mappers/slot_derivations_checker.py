@@ -1,21 +1,21 @@
-import re
 import os
-import yaml
-from typing import Union, List, Annotated
-from pathlib import Path
+import re
 from abc import abstractmethod
-import typer
+from pathlib import Path
+from typing import Annotated
 
+import typer
+import yaml
+from linkml_map.datamodel.transformer_model import SlotDerivation
 from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model.meta import SlotDefinition
-from linkml_map.datamodel.transformer_model import SlotDerivation
 
-from odm_map_maker.utils.logger import get_logger, make_logger_bullet_list
 from odm_map_maker.utils.general_utils import (
-    get_class_name_from_file_name,
     TREE_ROOT_CLASS_NAME,
+    get_class_name_from_file_name,
 )
-from odm_map_maker.utils.schema_utils import get_ranges_of_slot_defn, get_ranges_of_slot
+from odm_map_maker.utils.logger import get_logger, make_logger_bullet_list
+from odm_map_maker.utils.schema_utils import get_ranges_of_slot, get_ranges_of_slot_defn
 
 logger = get_logger(__name__)
 
@@ -67,9 +67,9 @@ TARGET_SCHEMA_HELP = """The LinkML schema for the target dataset of the mappers.
 class SlotDerivationChecker:
     def __init__(
         self,
-        mapper_dir: Union[str, Path],
-        source_schema: Union[str, Path],
-        target_schema: Union[str, Path],
+        mapper_dir: str | Path,
+        source_schema: str | Path,
+        target_schema: str | Path,
     ):
         self.mapper_dir = Path(mapper_dir)
         self.source_schema = SchemaView(source_schema)
@@ -97,16 +97,16 @@ class SlotDerivationChecker:
     def add_error(self, msg: str):
         if not self.errors_added:
             self.errors_added = True
-            self.errors.append(f"Error(s) in {str(self._current_file)}")
+            self.errors.append(f"Error(s) in {self._current_file!s}")
         self.errors.append(msg)
 
     def add_warning(self, msg: str):
         if not self.warnings_added:
             self.warnings_added = True
-            self.warnings.append(f"Warnings(s) in {str(self._current_file)}")
+            self.warnings.append(f"Warnings(s) in {self._current_file!s}")
         self.warnings.append(msg)
 
-    def extract_vars(self, expr: str) -> List[str]:
+    def extract_vars(self, expr: str) -> list[str]:
         vars = []
         for ns in EXPR_NAME_SPACES:
             pat = f"(?<![A-Za-z0-9_\\.]){ns}\\.([A-Za-z_]([A-Za-z0-9_]*))(?![A-Za-z0-9_\\.])"
@@ -116,7 +116,7 @@ class SlotDerivationChecker:
                     vars.append(match[0])
         return list(dict.fromkeys(vars))
 
-    def check_file(self, file: Union[str, Path]):
+    def check_file(self, file: str | Path):
         self.set_current_file(file)
 
         with open(file, "r") as f:
@@ -187,8 +187,8 @@ class SlotDerivationChecker:
         target_slot_name: str,
         source_slot_defn: SlotDefinition,
         target_slot_defn: SlotDefinition,
-        source_ranges: List[str],
-        target_ranges: List[str],
+        source_ranges: list[str],
+        target_ranges: list[str],
     ): ...
 
 
@@ -207,8 +207,8 @@ class FreeTextToEnumChecker(SlotDerivationChecker):
         target_slot_name: str,
         source_slot_defn: SlotDefinition,
         target_slot_defn: SlotDefinition,
-        source_ranges: List[str],
-        target_ranges: List[str],
+        source_ranges: list[str],
+        target_ranges: list[str],
     ):
         extra_error_info = ""
 
@@ -262,8 +262,8 @@ class MultiToSingleSlotChecker(SlotDerivationChecker):
         target_slot_name: str,
         source_slot_defn: SlotDefinition,
         target_slot_defn: SlotDefinition,
-        source_ranges: List[str],
-        target_ranges: List[str],
+        source_ranges: list[str],
+        target_ranges: list[str],
     ):
         expr = None
         if not source_slot_name:
@@ -277,7 +277,7 @@ class MultiToSingleSlotChecker(SlotDerivationChecker):
             target_slot_name = [target_slot_name]
 
         def _is_multivalued(
-            slots: List[str], class_name: str, schema: SchemaView
+            slots: list[str], class_name: str, schema: SchemaView
         ) -> bool:
             for slot in slots:
                 slot_defn = schema.induced_slot(slot, class_name)
@@ -294,7 +294,7 @@ class MultiToSingleSlotChecker(SlotDerivationChecker):
 
         if is_source_multivalued and not is_target_multivalued:
 
-            def _make_slots_str(slots: List[str]) -> str:
+            def _make_slots_str(slots: list[str]) -> str:
                 if len(slots) == 1:
                     return slots[0]
                 else:

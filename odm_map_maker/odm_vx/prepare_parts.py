@@ -6,16 +6,17 @@ SiteMeasureFractionAnalyzedDefault
 What to do with inactive rows? eg. caRepDate is depreciated.
 """
 
-import typer
-import pandas as pd
-from typing import Union, List, Any, Optional, Dict, Annotated
+from typing import Annotated, Any
 
-from odm_map_maker.utils.logger import get_logger
-from odm_map_maker.utils.general_utils import (
-    save_data_frame,
-    expand_multi_rows,
-)
+import pandas as pd
+import typer
+
 from odm_map_maker.odm_vx.vx_mapping import VxMappingColumns, VxMappingVariableLocations
+from odm_map_maker.utils.general_utils import (
+    expand_multi_rows,
+    save_data_frame,
+)
+from odm_map_maker.utils.logger import get_logger
 
 VX_ENUM_NAME_COL = "vxEnumName"
 
@@ -50,7 +51,7 @@ OUTPUT_FILE_HELP = """CSV file to save the prepared file to."""
 def prepare_parts(
     parts_file: str,
     output_file: str,
-    map_columns: Optional[Dict[str, str]] = None,
+    map_columns: dict[str, str] | None = None,
 ):
     """Prepare the ODM vx parts file by doing some basic cleaning and reorganizing. We will only
     keep rows corresponding to a mapping from a source class to ODM vx. We also expand rows that
@@ -123,7 +124,7 @@ def prepare_parts(
     save_data_frame(df, output_file, index=False)
 
 
-def select_and_values(df: pd.DataFrame, columns: Union[List[str], str]) -> pd.DataFrame:
+def select_and_values(df: pd.DataFrame, columns: list[str] | str) -> pd.DataFrame:
     """In the specified columns of the DataFrame df, select the first item whenever an
     AND_TAG is found in it, after stripping off spaces and brackets. If no AND_TAG is found
     then we leave the value unchanged.

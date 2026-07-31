@@ -1,10 +1,10 @@
-from typing import Union, List, Tuple, Annotated, Dict, Optional
-from pathlib import Path
 import os
-import yaml
+from pathlib import Path
+from typing import Annotated
+
 import pandas as pd
 import typer
-
+import yaml
 from linkml_runtime import SchemaView
 
 from odm_map_maker.utils.logger import get_logger
@@ -12,9 +12,9 @@ from odm_map_maker.utils.mapper_utils import get_source_slots_from_slot_derivati
 from odm_map_maker.utils.schema_utils import (
     get_class,
     get_enum_names_for_slot,
-    get_slot_definition,
     get_permissible_values_from_enum_names,
     get_ranges_of_slot,
+    get_slot_definition,
 )
 
 logger = get_logger(__name__)
@@ -64,11 +64,26 @@ class SourceToTargetEnumInfoKeys:
     TARGET_ENUM_NAMES = "target_enum_names"
 
 
-class ValidateMappers(object):
+def add_global_df(df: pd.DataFrame, global_df: pd.DataFrame) -> pd.DataFrame:
+    """Add the single row in global_df to all rows in the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to add global_df to. The passed in df is left unchanged, instead
+            a copy is returned.
+        global_df (pd.DataFrame): Single row DataFrame with the columns to add to all rows of df.
+
+    Returns:
+        pd.DataFrame: The DataFrame with global_df added to all rows.
+    """
+    new_global_df = pd.concat([global_df] * max(1, len(df)), ignore_index=True)
+    return pd.concat([df, new_global_df], axis=1, join="inner")
+
+
+class ValidateMappers:
     def __init__(
         self,
-        source_schema: Union[str, Path, SchemaView],
-        target_schema: Union[str, Path, SchemaView],
+        source_schema: str | Path | SchemaView,
+        target_schema: str | Path | SchemaView,
     ):
         if not isinstance(source_schema, SchemaView):
             source_schema = SchemaView(source_schema)
@@ -101,7 +116,7 @@ class ValidateMappers(object):
                 for source_slot in source_slots:
                     try:
                         slot_definition = self.source_schema.induced_slot(source_slot)
-                    except Exception:
+                    except ValueError:
                         logger.error(
                             f"Source slot {source_slot} found in mapper does not exist"
                         )
@@ -141,8 +156,8 @@ class ValidateMappers(object):
         return len(matching_enums) > 0
 
     def get_source_enum_to_target_enum_info(
-        self, mapper: Dict, source_enum: str
-    ) -> Dict[str, Dict[str, Dict[str, List[str]]]]:
+        self, mapper: dict, source_enum: str
+    ) -> dict[str, dict[str, dict[str, list[str]]]]:
         """From the specified LinkML-Map schema, get all slot mappings that map from the source enumeration to any slot
         in the target class, and collect the information about those mappings. The information includes a list of all
         enum values that the target slot can take on, all the source slots/classes that we map from, and all the
@@ -228,12 +243,12 @@ class ValidateMappers(object):
                     ].extend(target_enums)
         return info
 
-    def replace_blanks(self, values: List[str]) -> List[str]:
+    def replace_blanks(self, values: list[str]) -> list[str]:
         return [v if v else "<blank>" for v in values]
 
     def validate_mapper(
-        self, mapper: dict, mapper_file: Union[str, Path]
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        self, mapper: dict, mapper_file: str | Path
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Run the validator on the specified LinkML-Map schema.
 
         We will check for unrecognized source or target enum values, incomplete permissible value derivations (ie.
@@ -286,7 +301,7 @@ class ValidateMappers(object):
                     continue
 
                 # Get the constant string value from the "expr"
-                expr: Optional[str] = slot_derivation.get("expr", None)
+                expr: str | None = slot_derivation.get("expr", None)
                 if not expr:
                     continue
                 expr = expr.strip()
@@ -296,7 +311,11 @@ class ValidateMappers(object):
                     continue
                 try:
                     target_value = yaml.safe_load(expr)
-                except Exception:
+                except yaml.YAMLError:
+                    logger.warning(
+                        f"Could not parse the constant expression '{expr}' for target slot "
+                        f"'{target_slot}' in target class '{target_class}'"
+                    )
                     continue
 
                 # See if the target_value is a permissible value for the target slot
@@ -336,7 +355,7 @@ class ValidateMappers(object):
                 )
 
         # Go through all enum derivations and validate them
-        for enum_derivation_name, enum_derivation in mapper["enum_derivations"].items():
+        for enum_derivation in mapper["enum_derivations"].values():
             source_enum_name = enum_derivation["populated_from"]
             allowable_source_enum_values = get_permissible_values_from_enum_names(
                 [source_enum_name], self.source_schema
@@ -390,21 +409,6 @@ class ValidateMappers(object):
                         }
                     )
 
-                    def add_global_df(df: pd.DataFrame) -> pd.DataFrame:
-                        """Add global_df to all rows in the DataFrame.
-
-                        Args:
-                            df (pd.DataFrame): The DataFrame to add global_df to. The passed in df is left unchanged, instead
-                                a copy is returned.
-
-                        Returns:
-                            pd.DataFrame: The DataFrame with global_df added to all rows.
-                        """
-                        new_global_df = pd.concat(
-                            [global_df] * max(1, len(df)), ignore_index=True
-                        )
-                        return pd.concat([df, new_global_df], axis=1, join="inner")
-
                     if "permissible_value_derivations" in enum_derivation:
                         # Go through all permissible value derivations of the current enum derivation and collect
                         # all the source enum values (sources) that are being mapped as well as all target enum
@@ -449,7 +453,7 @@ class ValidateMappers(object):
                                     ),
                                 }
                             )
-                            df = add_global_df(df)
+                            df = add_global_df(df, global_df)
                             unrecognized_source_enum_values_df = pd.concat(
                                 [unrecognized_source_enum_values_df, df],
                                 ignore_index=True,
@@ -463,7 +467,7 @@ class ValidateMappers(object):
                                     ),
                                 }
                             )
-                            df = add_global_df(df)
+                            df = add_global_df(df, global_df)
                             missing_source_enum_values_df = pd.concat(
                                 [missing_source_enum_values_df, df], ignore_index=True
                             )
@@ -516,7 +520,7 @@ class ValidateMappers(object):
                                         ],
                                     }
                                 )
-                                df = add_global_df(df)
+                                df = add_global_df(df, global_df)
                                 unrecognized_target_enum_values_df = pd.concat(
                                     [unrecognized_target_enum_values_df, df],
                                     ignore_index=True,
@@ -537,7 +541,7 @@ class ValidateMappers(object):
         )
 
     def concat_data_frames(
-        self, dfs: List[pd.DataFrame], insert_blank_rows: bool = False
+        self, dfs: list[pd.DataFrame], insert_blank_rows: bool = False
     ) -> pd.DataFrame:
         """Concatenate an array of DataFrames, and optionally put a blank row in between each non-empty
         DataFrame.
@@ -567,7 +571,7 @@ class ValidateMappers(object):
         return pd.concat(dfs, ignore_index=True)
 
     def simplify_enum_df(
-        self, df: pd.DataFrame, sort_by: List[str] = [EnumsColumns.SOURCE_ENUM_NAME]
+        self, df: pd.DataFrame, sort_by: list[str] | None = None
     ) -> pd.DataFrame:
         """For a DataFrame that reports problems with enum derivations, that has the columns defined in EnumColumns,
         simplify the DataFrame by merging rows that are duplicates other than the EnumsColumns.MAPPER_FILE column. Within
@@ -611,6 +615,8 @@ class ValidateMappers(object):
         df = df.sort_values(group_by).reset_index(drop=True)
 
         # Sort by sort_by
+        if sort_by is None:
+            sort_by = [EnumsColumns.SOURCE_ENUM_NAME]
         sort_by = [c for c in sort_by if c in df.columns]
         if sort_by:
             # Organize/sort the final DataFrame by the enum name
@@ -644,9 +650,9 @@ class ValidateMappers(object):
 
     def validate(
         self,
-        mappers_dir: Union[str, Path],
-        output_dir: Union[str, Path],
-        output_tag: Optional[str],
+        mappers_dir: str | Path,
+        output_dir: str | Path,
+        output_tag: str | None,
         simplify: bool,
     ):
         """Do a full validation of all LinkML-Map schemas in the mapper directory, and output the results
@@ -799,7 +805,7 @@ def main(
         Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
     ],
     output_dir: Annotated[Path, typer.Option(show_default=False, help=OUTPUT_DIR_HELP)],
-    tag: Annotated[str, typer.Option(show_default=False, help=TAG_HELP)] = None,
+    tag: Annotated[str | None, typer.Option(show_default=False, help=TAG_HELP)] = None,
     simplify: Annotated[bool, typer.Option(help=SIMPLIFY_HELP)] = True,
 ):
     val = ValidateMappers(source_schema, target_schema)

@@ -1,22 +1,22 @@
 import os
-import pytest
+
 import pandas as pd
+import pytest
 
 from odm_map_maker.utils.general_utils import (
-    order_columns,
-    strip_whitespace,
-    rename_items,
-    parse_numeric,
+    choose_ignore_case_value,
+    clear_dirs,
     expand_multi_rows,
     get_class_name_from_file_name,
-    save_data_frame,
-    read_data_frame,
-    clear_dirs,
-    choose_ignore_case_value,
+    order_columns,
     parse_df_values,
+    parse_numeric,
+    read_data_frame,
+    rename_items,
+    save_data_frame,
     select_func_kwargs,
+    strip_whitespace,
 )
-
 
 # ---------------------------------------------------------------------------
 # order_columns
@@ -320,7 +320,7 @@ def test_parse_df_values_not_inline_leaves_original_unchanged():
 
 def test_select_func_kwargs_filters_valid_keys():
     def my_func(a, b, c=1):
-        a, b, c
+        _ = (a, b, c)
 
     kwargs = {"a": 10, "b": 20, "d": 99}
     result = select_func_kwargs(my_func, kwargs)
@@ -331,14 +331,14 @@ def test_select_func_kwargs_filters_valid_keys():
 
 def test_select_func_kwargs_empty_kwargs():
     def my_func(a, b):
-        a, b
+        _ = (a, b)
 
     assert select_func_kwargs(my_func, {}) == {}
 
 
 def test_select_func_kwargs_no_overlap():
     def my_func(x, y):
-        x, y
+        _ = (x, y)
 
     result = select_func_kwargs(my_func, {"a": 1, "b": 2})
     assert result == {}

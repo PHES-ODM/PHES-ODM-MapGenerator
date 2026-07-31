@@ -1,24 +1,23 @@
-import pytest
 import textwrap
 
+import pytest
 from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model.meta import SlotDefinition
 
 from odm_map_maker.utils.schema_utils import (
-    get_ranges_of_slot_defn,
-    remove_ontology_id,
-    remove_ignored_text_from_class_name,
-    all_classes_without_tree_root,
-    get_slot_definition,
-    get_ranges_of_slot,
-    get_enum_name_with_permissible_value,
     add_ontoid_to_enum_value,
-    get_enum_names_for_slot,
-    get_permissible_values_from_enum_names,
+    all_classes_without_tree_root,
     find_class,
     get_class,
+    get_enum_name_with_permissible_value,
+    get_enum_names_for_slot,
+    get_permissible_values_from_enum_names,
+    get_ranges_of_slot,
+    get_ranges_of_slot_defn,
+    get_slot_definition,
+    remove_ignored_text_from_class_name,
+    remove_ontology_id,
 )
-
 
 # ---------------------------------------------------------------------------
 # Minimal schema fixture used for all schema-dependent tests
@@ -223,7 +222,7 @@ def test_get_slot_definition_no_exception_returns_none(schema):
 
 
 def test_get_slot_definition_raises_by_default(schema):
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         get_slot_definition("Sample", "nonexistent", schema, exception_on_error=True)
 
 

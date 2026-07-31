@@ -6,62 +6,62 @@ specify both the mappings between source and target classes, wide-to-long column
 mappings.
 """
 
-import pandas as pd
-from pathlib import Path
-from typing import Union, List, Dict, Optional, Any
-import os
-import yaml
 import json
+import os
 import re
+from pathlib import Path
+from typing import Any
 
+import pandas as pd
+import yaml
 from linkml_runtime import SchemaView
 from linkml_runtime.linkml_model.meta import SchemaDefinition
 from linkml_runtime.utils.schema_as_dict import schema_as_dict
 
-from odm_map_maker.utils.logger import get_logger
-from odm_map_maker.utils.selector_filter import SelectorFilter
 from odm_map_maker.utils.general_utils import (
-    read_data_frame,
-    strip_whitespace,
-    order_columns,
     EMPTY_CONFIG_VALUE,
     TREE_ROOT_CLASS_NAME,
+    order_columns,
+    read_data_frame,
+    strip_whitespace,
+)
+from odm_map_maker.utils.logger import get_logger
+from odm_map_maker.utils.mapper_utils import (
+    CONFIG_READ_KWARGS,
+    MappingColumns,
+    any_wide_slot_name,
+    cleanup_slot_name,
+    expand_wide_derivations,
+    get_blank_class_derivation,
+    get_variable_reference,
+    is_wide_target_expr_slot,
+    is_wide_target_value_slot,
+    select_required_enum_derivations,
 )
 from odm_map_maker.utils.schema_utils import (
-    get_enum_names_for_slot,
-    get_enum_name_with_permissible_value,
     add_ontoid_to_enum_value,
+    get_enum_name_with_permissible_value,
+    get_enum_names_for_slot,
 )
-from odm_map_maker.utils.mapper_utils import (
-    select_required_enum_derivations,
-    expand_wide_derivations,
-    get_variable_reference,
-    MappingColumns,
-    is_wide_target_value_slot,
-    is_wide_target_expr_slot,
-    any_wide_slot_name,
-    get_blank_class_derivation,
-    cleanup_slot_name,
-    CONFIG_READ_KWARGS,
-)
+from odm_map_maker.utils.selector_filter import SelectorFilter
 
 logger = get_logger(__name__)
 
 
-class MakeMappers(object):
+class MakeMappers:
     def __init__(
         self,
-        maps_files: Union[Union[str, Path], List[Union[str, Path]]],
-        wide_files: Union[Union[str, Path], List[Union[str, Path]]],
-        enums_files: Union[Union[str, Path], List[Union[str, Path]]],
-        mapper_dir: Union[str, Path],
-        source_schema: Union[str, Path],
-        target_schema: Union[str, Path],
-        selectors: Optional[List[str]],
-        source_slot_format_operations: Optional[Union[str, List[str]]],
-        target_slot_format_operations: Optional[Union[str, List[str]]],
-        source_match_ontology_id_regex: Optional[str],
-        target_match_ontology_id_regex: Optional[str],
+        maps_files: str | Path | list[str | Path],
+        wide_files: str | Path | list[str | Path],
+        enums_files: str | Path | list[str | Path],
+        mapper_dir: str | Path,
+        source_schema: str | Path,
+        target_schema: str | Path,
+        selectors: list[str] | None,
+        source_slot_format_operations: str | list[str] | None,
+        target_slot_format_operations: str | list[str] | None,
+        source_match_ontology_id_regex: str | None,
+        target_match_ontology_id_regex: str | None,
     ):
         """Construct map maker for generating LinkML mapping files.
 
@@ -273,7 +273,7 @@ class MakeMappers(object):
 
     def extract_class_derivations(
         self, maps_df: pd.DataFrame
-    ) -> Dict[str, Dict[str, Dict]]:
+    ) -> dict[str, dict[str, dict]]:
         """Extract all class derivations in a DataFrame (typically from the mapping config file).
 
         Args:
@@ -306,7 +306,7 @@ class MakeMappers(object):
 
         # This dictionary has a separate key for each source class. Within each source class there is a key for each target class
         # that forms the actual class derivation
-        all_class_derivations: Dict[str, Dict[str, Dict]] = {}
+        all_class_derivations: dict[str, dict[str, dict]] = {}
         for _, row in maps_df.iterrows():
             # Get all the data from the row
             source_class = row[MappingColumns.SOURCE_CLASS]
@@ -355,13 +355,15 @@ class MakeMappers(object):
                     new_dict.update(slot_derivation_settings)
                 if target_expr:
                     new_dict["expr"] = target_expr
-                if target_slot in slot_derivations:
-                    # The slot derivation for target_slot already exists (ie. it was added in a previous row of maps_df). Here we make sure
-                    # that the slot derivation for target_slot will be left unchanged.
-                    if slot_derivations[target_slot] != new_dict:
-                        raise ValueError(
-                            f"Target slot '{target_slot}' in target class '{target_class}' from source class '{source_class}' already exists in slot_derivations but has different custom fields (expected '{new_dict}' but found '{slot_derivations[target_slot]}')"
-                        )
+                # If the slot derivation for target_slot already exists (ie. it was added in a previous row of maps_df) then
+                # we make sure that the slot derivation for target_slot will be left unchanged.
+                if (
+                    target_slot in slot_derivations
+                    and slot_derivations[target_slot] != new_dict
+                ):
+                    raise ValueError(
+                        f"Target slot '{target_slot}' in target class '{target_class}' from source class '{source_class}' already exists in slot_derivations but has different custom fields (expected '{new_dict}' but found '{slot_derivations[target_slot]}')"
+                    )
                 slot_derivations[target_slot] = new_dict
             else:
                 # Add the slot derivation for target_slot (populating from source_slot)
@@ -393,7 +395,7 @@ class MakeMappers(object):
 
     def extract_enum_derivations(
         self, maps_df: pd.DataFrame
-    ) -> Dict[str, Dict[str, Dict[str, Dict[str, Dict]]]]:
+    ) -> dict[str, dict[str, dict[str, dict[str, dict]]]]:
         """Extract all enum derivations found within the mapping DataFrame.
 
         Args:
@@ -434,7 +436,7 @@ class MakeMappers(object):
         # are not specified (ie. applies to all source/target class pairs).
         # Enum derivations where source_class and target_class are specified take precedence over enum
         # derivations where source_class and target_class are "".
-        all_enum_derivations: Dict[str, Dict[str, Dict]] = {}
+        all_enum_derivations: dict[str, dict[str, dict]] = {}
         for _, row in maps_df.iterrows():
             # Get all the row's data
             source_class = row.get(MappingColumns.SOURCE_CLASS, "")
@@ -614,7 +616,7 @@ class MakeMappers(object):
 
         return all_enum_derivations
 
-    def prepare_maps_df(self, maps_file: Union[str, Path]) -> pd.DataFrame:
+    def prepare_maps_df(self, maps_file: str | Path) -> pd.DataFrame:
         """Load and prepare the mapping specification file from disk. This DataFrame specifies all
         the mappings other than the wide column mappings (wide columns data is prepared by
         prepare_wide_df).
@@ -671,7 +673,7 @@ class MakeMappers(object):
 
         return maps_df.copy()
 
-    def prepare_wide_df(self, wide_file: Union[str, Path]) -> pd.DataFrame:
+    def prepare_wide_df(self, wide_file: str | Path) -> pd.DataFrame:
         """Load and prepare the wide column configuration file from disk. This DataFrame specifies
         all the columns that act as wide columns in the source schema, along with details for how
         to map the wide columns to the target schema. It may also include some additional enum
@@ -765,7 +767,7 @@ class MakeMappers(object):
 
         return df.copy()
 
-    def prepare_enums_df(self, enums_file: Union[str, Path]) -> pd.DataFrame:
+    def prepare_enums_df(self, enums_file: str | Path) -> pd.DataFrame:
         """Load and prepare the enums configuration file from disk. This DataFrame specifies enumeration
         mappings from source to target enums (note that enums can also be specified in the maps sheet, via
         prepare_maps_df).
@@ -823,10 +825,10 @@ class MakeMappers(object):
 
     def make_wide_derivations(
         self,
-        class_derivation: Dict,
+        class_derivation: dict,
         custom_wide_df: pd.DataFrame,
-        class_enum_derivations: List[Dict[str, Dict[str, Dict]]],
-    ) -> List[Dict]:
+        class_enum_derivations: list[dict[str, dict[str, dict]]],
+    ) -> list[dict]:
         """Based on the provided class derivation, make a separate class derivation for each wide column specified
         in custom_wide_df. We will also select all the enum derivations required by the new wide derivations from
         class_enum_derivations.
@@ -1006,7 +1008,7 @@ class MakeMappers(object):
 
         return results
 
-    def merge_enum_derivations(self, enum_derivations: List[Dict]) -> Dict:
+    def merge_enum_derivations(self, enum_derivations: list[dict]) -> dict:
         """Merge a list of enum derivations into a single enum derivations dictionary, where the keys are the target
         enum name and the values are the derivations.
         Each populated_from field in the merged derivations is unique. If more than one enum derivation exists
@@ -1054,8 +1056,8 @@ class MakeMappers(object):
         return results
 
     def get_class_enum_derivations(
-        self, source_class: str, target_class: str, class_enum_derivations: List[Dict]
-    ) -> Dict:
+        self, source_class: str, target_class: str, class_enum_derivations: list[dict]
+    ) -> dict:
         """Retrieve all enum derivations that involve mapping from the source_class to target_class from
         class_enum_derivations, and merge them by calling merge_enum_derivations. This can be run on the value
         returned by extract_enum_derivations, which is a dictionary with a top-level key being the source class
@@ -1101,9 +1103,7 @@ class MakeMappers(object):
         # Merge the list of derivations into a single derivation
         return self.merge_enum_derivations(group)
 
-    def save_schema_definition(
-        self, schema: SchemaDefinition, output_file: Union[str, Path]
-    ):
+    def save_schema_definition(self, schema: SchemaDefinition, output_file: str | Path):
         """Save the schema to disk as a LinkML YAML schema file.
 
         Args:

@@ -2,7 +2,8 @@
 Utility functions for ODM LinkML Schema Generator, specific to ODM vx dictionary.
 """
 
-from typing import Union, Any, List, Optional
+from typing import Any
+
 import pandas as pd
 
 # In the ODM vx data dictionary, in the parts sheet, each table (eg. samples, sites, measures) has
@@ -36,7 +37,7 @@ _vx_enum_name_exceptions = {
 ODM_PARTS_COLUMN_CLASS_TAG = "Order"
 
 
-def odm_get_available_class_names(headers: Union[pd.DataFrame, List[str]]) -> List[str]:
+def odm_get_available_class_names(headers: pd.DataFrame | list[str]) -> list[str]:
     """Get a list of all ODM class/table names that are defined in a ODM parts sheet that contains
     the specified headers.
 
@@ -60,8 +61,8 @@ def odm_get_available_class_names(headers: Union[pd.DataFrame, List[str]]) -> Li
 
 def vx_get_header_rows(
     df: pd.DataFrame,
-    tables: Union[str, List[str]],
-    header_tags: Optional[Union[str, List[str]]] = None,
+    tables: str | list[str],
+    header_tags: str | list[str] | None = None,
 ) -> pd.DataFrame:
     """Retrieve all rows in the DataFrame that correspond to a column in any of the specified
     ODM vx tables.
@@ -99,7 +100,7 @@ def vx_get_header_rows(
 def vx_keep_active_rows(
     df: pd.DataFrame,
     status_column: str = "status",
-    keep_status: Union[Any, List[Any]] = "active",
+    keep_status: Any | list[Any] = "active",
 ) -> pd.DataFrame:
     """Keep only rows that have an "active" status. Status is specified in a single column in the
     DataFrame.
@@ -130,8 +131,4 @@ def vx_get_enum_name_from_part_id(part_id: str) -> str:
     Returns:
         str: The enumeration name (for the partID)
     """
-    if part_id in _vx_enum_name_exceptions.keys():
-        name = _vx_enum_name_exceptions[part_id]
-    else:
-        name = f"{part_id}s"
-    return name
+    return _vx_enum_name_exceptions.get(part_id, f"{part_id}s")
