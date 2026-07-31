@@ -24,7 +24,7 @@ This tool is one half of a two-repository workflow:
 To clone the repository and create a new virtual environment, run the following on the command-line:
 
 ```console
-git clone git@github.com:Big-Life-Lab/PHES-ODM-MapGenerator.git
+git clone git@github.com:PHES-ODM/PHES-ODM-MapGenerator.git
 cd PHES-ODM-MapGenerator
 python3 -m venv .env
 ```
