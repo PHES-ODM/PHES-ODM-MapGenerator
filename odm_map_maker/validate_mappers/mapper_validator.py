@@ -8,7 +8,10 @@ import yaml
 from linkml_runtime import SchemaView
 
 from odm_map_maker.utils.logger import get_logger
-from odm_map_maker.utils.mapper_utils import get_source_slots_from_slot_derivation
+from odm_map_maker.utils.mapper_utils import (
+    ENUM_MAPPED_EXPR_GLOBALS,
+    get_source_slots_from_slot_derivation,
+)
 from odm_map_maker.utils.schema_utils import (
     get_class,
     get_enum_names_for_slot,
@@ -107,8 +110,10 @@ class ValidateMappers:
             for target_slot, slot_derivation in class_derivation[
                 "slot_derivations"
             ].items():
+                # For "expr" blocks we only want the source slots whose values are mapped
+                # through an enum derivation.
                 source_slots = get_source_slots_from_slot_derivation(
-                    slot_derivation, recognized_globals=["emap"]
+                    slot_derivation, recognized_globals=ENUM_MAPPED_EXPR_GLOBALS
                 )
 
                 # Go through all the source slots, and make sure an enum derivation exists for all of
@@ -197,9 +202,10 @@ class ValidateMappers:
                 # if not target_enums:
                 #     continue
 
-                # Get all the source slots that are part of the slot derivation
+                # Get all the source slots that are part of the slot derivation. For "expr" blocks we
+                # only want the source slots whose values are mapped through an enum derivation.
                 source_slot_names = get_source_slots_from_slot_derivation(
-                    slot_derivation, recognized_globals=["emap"]
+                    slot_derivation, recognized_globals=ENUM_MAPPED_EXPR_GLOBALS
                 )
 
                 # For all the source slots, if the slot has source_enum as part of its range then get the

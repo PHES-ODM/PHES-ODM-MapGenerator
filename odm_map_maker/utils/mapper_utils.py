@@ -29,6 +29,17 @@ WIDE_SPEC_VALUE_SUFFIX = "_value"
 # and used as an LinkML expr block (ie. code to execute to calcualte the column value)
 WIDE_SPEC_EXPR_SUFFIX = "_expr"
 
+# The global variables in "expr" blocks of a slot derivation whose source slots have their values
+# mapped through an enumeration derivation. An attribute taken on one of these globals
+# (eg. "myGlobal.source_slot") is a reference to a source slot whose value is enum mapped, so an enum
+# derivation is needed for it. This deliberately excludes globals that reference a source slot
+# without mapping its value, such as "src" (eg. "src.source_slot" copies the source value as-is and
+# needs no enum derivation). "emap" was previously listed here but no longer performs enum mapping.
+# Pass this list to get_used_slots and get_source_slots_from_slot_derivation to find the enum mapped
+# slots of an expr block; adding a global here is then all that's needed for those callers to pick
+# it up.
+ENUM_MAPPED_EXPR_GLOBALS: list[str] = []
+
 
 class MappingColumns:
     """Columns used internally that specify the mappings. These are assigned to the columns in the
@@ -195,7 +206,7 @@ def get_variable_reference(
     return cleanup_slot_name(match[1], cleanup_options=format_operations)
 
 
-def get_used_slots(expr: str, recognized_globals: list[str] | None = None) -> list[str]:
+def get_used_slots(expr: str, recognized_globals: list[str]) -> list[str]:
     """Get all the slots referenced in the Python code specified in expr. Slots are any
     attributes taken on the global variables in recognized_globals. For example, if
     recognized_globals is ["enum"], then any attribute of enum is returned. If
@@ -204,16 +215,15 @@ def get_used_slots(expr: str, recognized_globals: list[str] | None = None) -> li
 
     Args:
         expr (str): The code to get the referenced slots from.
-        recognized_globals (List[str], optional): The recognized global variables that
+        recognized_globals (List[str]): The recognized global variables that
             we want to get the slots of that are referened in the code. If recognized_globals
             has "enum", then if "enum.slot_name" is found in expr then "slot_name" will be
-            part of the returned list. Defaults to ["emap"].
+            part of the returned list. Callers that want the slots whose values are mapped
+            through an enumeration derivation should pass ENUM_MAPPED_EXPR_GLOBALS.
 
     Returns:
         List[str]: List of slots referenced in the code specified by expr.
     """
-    if recognized_globals is None:
-        recognized_globals = ["emap"]
     used_slots = []
     s = ast.parse(expr)
     for i in ast.walk(s):
@@ -251,7 +261,7 @@ def parse_used_slots(node: ast.Attribute, path: list[str] | None = None) -> list
 
 
 def get_source_slots_from_slot_derivation(
-    slot_derivation: dict, recognized_globals: list[str] | None = None
+    slot_derivation: dict, recognized_globals: list[str]
 ) -> list[str]:
     """Get a list of all source slot names that are used to populate a target slot from the
     specified slot derivation. recognized_globals can be used to restrict which slots are
@@ -267,10 +277,11 @@ def get_source_slots_from_slot_derivation(
         recognized_globals (List[str]): Restrict the returned slots that are found in
             "expr" blocks of the derivation to those slots that are accessed through
             any of the global namespaces listed in recognized_globals. For example,
-            if recognized_globals=["emap"], then an "expr" block of the form
-            "target = emap.source_slot" will return ["source_slot"], but an "expr"
+            if recognized_globals=["myGlobal"], then an "expr" block of the form
+            "target = myGlobal.source_slot" will return ["source_slot"], but an "expr"
             block of the form "target = src.source_slot" will return the empty value [].
-            (Defaults to ["emap"])
+            Callers that want the slots whose values are mapped through an enumeration
+            derivation should pass ENUM_MAPPED_EXPR_GLOBALS.
 
     Returns:
         List[str]: A list of all source slots that are used in the slot derivation. This includes
@@ -278,9 +289,9 @@ def get_source_slots_from_slot_derivation(
             the "expr" field that are accessed using a namespace specified in recognized_globals.
     """
     if expr := slot_derivation.get("expr", None):
-        # The slot derivation uses an expr. We look for all slot names that are preceded by "emap"
-        # (eg. emap.source_slot) in the expr code. These will give us the slot names that are used
-        # and that need to be transformed as an enumeration
+        # The slot derivation uses an expr. We look for all slot names that are preceded by one of
+        # the recognized globals (eg. myGlobal.source_slot) in the expr code. These will give us the
+        # slot names that are used and that need to be transformed as an enumeration.
         source_slot_names = get_used_slots(expr, recognized_globals=recognized_globals)
     else:
         source_slot_names = [slot_derivation["populated_from"]]
@@ -300,8 +311,9 @@ def select_required_enum_derivations(
     have no permissible_value_derivations set but will have mirror_source set to True.
 
     To select the enum derivations we go through each slot derivation and get the derivation's populated_from field
-    or expr field. For expr fields, we extract all referenced source slots that are referenced with the "emap" namespace
-    (eg. target = emap.source_slot). From the source slots found, we extract the slot's definition.
+    or expr field. For expr fields, we extract all referenced source slots that are referenced with one of the
+    global namespaces in ENUM_MAPPED_EXPR_GLOBALS (eg. target = myGlobal.source_slot). From the source slots
+    found, we extract the slot's definition.
     If the slot definition has a range that's an enum, we keep the enum derivation for that range.
 
     Args:
@@ -345,9 +357,13 @@ def select_required_enum_derivations(
         if "populated_from" not in slot_derivation and "expr" not in slot_derivation:
             continue
 
-        # Get the source and target slot names for the current slot derivation
+        # Get the source and target slot names for the current slot derivation. For "expr" blocks the
+        # recognized globals should only be the globals that would result in mapping an enumeration
+        # (ie. we would require the enumeration mapping), which is what ENUM_MAPPED_EXPR_GLOBALS is.
+        # The "src" global (eg. src.slot_name) only uses the source slot_name, without mapping it, so
+        # "src" is not included as a recognized global here.
         source_slot_names = get_source_slots_from_slot_derivation(
-            slot_derivation, recognized_globals=["emap"]
+            slot_derivation, recognized_globals=ENUM_MAPPED_EXPR_GLOBALS
         )
         target_slot_name = slot_derivation["name"]
 

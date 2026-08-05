@@ -118,38 +118,38 @@ def test_any_wide_slot_name():
 
 
 def test_get_used_slots_simple():
-    code = "target = emap.collection_device"
-    slots = get_used_slots(code, recognized_globals=["emap"])
+    code = "target = myGlobal.collection_device"
+    slots = get_used_slots(code, recognized_globals=["myGlobal"])
     assert slots == ["collection_device"]
 
 
 def test_get_used_slots_multiple():
-    code = "x = emap.slot_a + emap.slot_b"
-    slots = get_used_slots(code, recognized_globals=["emap"])
+    code = "x = myGlobal.slot_a + myGlobal.slot_b"
+    slots = get_used_slots(code, recognized_globals=["myGlobal"])
     assert slots == ["slot_a", "slot_b"]
 
 
 def test_get_used_slots_ignores_other_namespaces():
-    code = "x = src.slot_a + emap.slot_b"
-    slots = get_used_slots(code, recognized_globals=["emap"])
+    code = "x = src.slot_a + myGlobal.slot_b"
+    slots = get_used_slots(code, recognized_globals=["myGlobal"])
     assert slots == ["slot_b"]
 
 
 def test_get_used_slots_deduplicates():
-    code = "x = emap.slot_a + emap.slot_a"
-    slots = get_used_slots(code, recognized_globals=["emap"])
+    code = "x = myGlobal.slot_a + myGlobal.slot_a"
+    slots = get_used_slots(code, recognized_globals=["myGlobal"])
     assert slots == ["slot_a"]
 
 
 def test_parse_used_slots_no_shared_mutable_default():
     # Calling parse_used_slots twice with no explicit path argument should
     # not accumulate results between calls.
-    tree1 = ast.parse("emap.slot_a").body[0].value
-    tree2 = ast.parse("emap.slot_b").body[0].value
+    tree1 = ast.parse("myGlobal.slot_a").body[0].value
+    tree2 = ast.parse("myGlobal.slot_b").body[0].value
     result1 = parse_used_slots(tree1)
     result2 = parse_used_slots(tree2)
-    assert result1 == ["emap", "slot_a"]
-    assert result2 == ["emap", "slot_b"]
+    assert result1 == ["myGlobal", "slot_a"]
+    assert result2 == ["myGlobal", "slot_b"]
 
 
 # ---------------------------------------------------------------------------
@@ -203,22 +203,25 @@ def test_get_variable_reference_with_format_operations():
 
 def test_get_source_slots_populated_from():
     derivation = {"name": "targetSlot", "populated_from": "sourceSlot"}
-    result = get_source_slots_from_slot_derivation(derivation)
+    result = get_source_slots_from_slot_derivation(derivation, recognized_globals=[])
     assert result == ["sourceSlot"]
 
 
 def test_get_source_slots_from_expr():
-    derivation = {"name": "targetSlot", "expr": "target = emap.sourceSlot"}
+    derivation = {"name": "targetSlot", "expr": "target = myGlobal.sourceSlot"}
     result = get_source_slots_from_slot_derivation(
-        derivation, recognized_globals=["emap"]
+        derivation, recognized_globals=["myGlobal"]
     )
     assert result == ["sourceSlot"]
 
 
 def test_get_source_slots_from_expr_multiple():
-    derivation = {"name": "targetSlot", "expr": "target = emap.slotA + emap.slotB"}
+    derivation = {
+        "name": "targetSlot",
+        "expr": "target = myGlobal.slotA + myGlobal.slotB",
+    }
     result = get_source_slots_from_slot_derivation(
-        derivation, recognized_globals=["emap"]
+        derivation, recognized_globals=["myGlobal"]
     )
     assert result == ["slotA", "slotB"]
 
@@ -280,10 +283,10 @@ def test_parse_used_slots_chained_attribute():
     assert result == ["a", "b", "c"]
 
 
-def test_get_used_slots_chained_attribute_ignored_non_emap():
+def test_get_used_slots_chained_attribute():
     # Only first-level namespace check applies, deeper chains should still work
-    code = "x = emap.ns.slot"
-    # emap.ns is an Attribute; slot is an Attribute on that — only "ns" is a direct attribute of emap
-    slots = get_used_slots(code, recognized_globals=["emap"])
-    # "ns" is the direct attribute of emap here
+    code = "x = myGlobal.ns.slot"
+    # myGlobal.ns is an Attribute; slot is an Attribute on that — only "ns" is a direct attribute of myGlobal
+    slots = get_used_slots(code, recognized_globals=["myGlobal"])
+    # "ns" is the direct attribute of myGlobal here
     assert "ns" in slots

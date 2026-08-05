@@ -15,14 +15,17 @@ from odm_map_maker.utils.general_utils import (
     get_class_name_from_file_name,
 )
 from odm_map_maker.utils.logger import get_logger, make_logger_bullet_list
+from odm_map_maker.utils.mapper_utils import ENUM_MAPPED_EXPR_GLOBALS
 from odm_map_maker.utils.schema_utils import get_ranges_of_slot, get_ranges_of_slot_defn
 
 logger = get_logger(__name__)
 
 # Allowable namespaces in LinkML-Map expr blocks. Names preceded by these (plus a dot) are variables
-# eg. src.collection_device, emap.collection_device. These are used by SlotDerivationChecker.extract_vars
-# to extract all slot/variable references in expr code.
-EXPR_NAME_SPACES = ["src", "emap"]
+# eg. src.collection_device. These are used by SlotDerivationChecker.extract_vars to extract all
+# slot/variable references in expr code. This is the source namespace ("src") plus all the globals
+# whose source slots are enum mapped, so that adding a global to ENUM_MAPPED_EXPR_GLOBALS also makes
+# it an allowable namespace here. dict.fromkeys removes any duplicates while preserving the order.
+EXPR_NAME_SPACES = list(dict.fromkeys(["src"] + ENUM_MAPPED_EXPR_GLOBALS))
 
 app = typer.Typer(
     pretty_exceptions_show_locals=False,
