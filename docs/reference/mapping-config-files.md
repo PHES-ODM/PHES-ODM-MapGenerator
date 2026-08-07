@@ -11,9 +11,28 @@ While these tabs in mapping configuration files are usually named `maps`,
 `wide`, and `enums`, they can be given any name, as long as the names are
 provided when running the appropriate scripts.
 
-This document describes the structure of these configuration files. To see an
-example mapping configuration file see
-[odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx](../odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)
+This document is the column-by-column reference for those files. For the
+concepts behind them — what a class, slot, enumeration, or selector is — start
+with [Concepts and vocabulary](../explanation/concepts.md). To edit an existing
+mapping, see [Fix an incorrect mapping](../how-to/fix-a-mapping.md). For a
+worked example workbook, see
+[odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx](../../odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx).
+
+## Which tab do I need?
+
+| I want to… | Tab | Section |
+| --- | --- | --- |
+| Copy a source column into a target column | `maps` | [Maps tabs](#maps-tabs) |
+| Map source enum values onto target enum values, for one slot | `maps` | [sourceValue](#sourcevalue) / [targetValue](#targetvalue) |
+| Map enum values shared by several slots, or named by enumeration | `enums` | [Enums tabs](#enums-tabs) |
+| Compute a target value with an expression | `maps` | [targetExpr](#targetexpr) |
+| Turn one source column into several output rows | `wide` | [Wide tabs](#wide-tabs) |
+| Include or exclude a row for a particular run | any | [selectors](#selectors) |
+| Carry data that has no slot in the target schema | any | [Extra Columns](#extra-columns) |
+
+Some columns appear in more than one tab type with the same meaning. Where a
+column is described more than once below, the fullest description is the one in
+[Maps tabs](#maps-tabs).
 
 ## Maps tabs
 
@@ -24,8 +43,6 @@ another. The `maps` tab is also where you can specify mappings of enumerations.
 Any row that is completely empty is ignored. Multiple `maps` tabs are allowed,
 their names must be specified when running the appropriate scripts. The `maps`
 tab has the headings described below.
-
-Any row that is completely empty is ignored.
 
 ### selectors
 
@@ -227,12 +244,10 @@ rows are processed.
 
 The `wide` tab(s) specify how to pivot wide-columns. For details on what
 pivoting wide columns means, see the [Wide Columns
-Example](wide_columns_example.md) document.
+Example](../explanation/wide-columns.md) document.
 
 There can be multiple `wide` tabs, which are specified on the command-line when
 running the appropriate scripts. Any row that is completely empty is ignored.
-
-Any row that is completely empty is ignored.
 
 ### selectors
 

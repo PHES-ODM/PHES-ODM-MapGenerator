@@ -197,5 +197,5 @@ source-slot-format-operations:
 ```
 
 Slot names that begin with the `_extra_` prefix (special extra slots — see
-[Mapping Config Files](mapping_config_files.md#extra-columns)) are never
+[Mapping Config Files](mapping-config-files.md#extra-columns)) are never
 transformed by these operations.
