@@ -16,10 +16,8 @@ mapping is looked up through the schema.
 ## 2. Create the mapping workbook
 
 Add a workbook to `odm_map_maker/data/mapping_config_files/` with `maps`,
-`wide`, and `enums` tabs as needed.
-
-To avoid starting from a blank sheet, bootstrap it from an existing set of
-mappers — see [Bootstrap a workbook from existing mappers](bootstrap-a-workbook.md).
+`wide`, and `enums` tabs as needed. To avoid starting from a blank sheet, copy an
+existing workbook for a related source format and edit it down.
 
 Column reference:
 [Mapping Configuration Files](../reference/mapping-config-files.md).

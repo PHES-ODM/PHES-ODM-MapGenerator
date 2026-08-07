@@ -19,11 +19,9 @@ and know roughly what you are trying to achieve. If you do not, work through the
 | --- | --- |
 | [Generate mappers for ODM v2 instead of v3](target-odm-v2.md) | The target is v2, not the default v3 |
 | [Add support for a new source dataset](add-a-new-source-dataset.md) | Mapping a format the repository does not handle yet |
-| [Bootstrap a workbook from existing mappers](bootstrap-a-workbook.md) | You have working mappers and want an editable workbook from them |
 
 ## Checking output
 
 | Guide | For when |
 | --- | --- |
 | [Check generated mappers](check-generated-mappers.md) | After every generation run |
-| [Validate a data file against a schema](validate-a-data-file.md) | Confirming that a CSV/TSV conforms to a LinkML schema |

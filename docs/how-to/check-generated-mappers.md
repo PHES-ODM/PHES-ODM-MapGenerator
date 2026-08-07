@@ -68,8 +68,3 @@ then either you passed the wrong `--target-schema`, or a workbook row maps to a
 slot the target class does not have. The checker stops at the first such slot,
 so fix them one at a time. See
 [Slot Derivations Checker — Troubleshooting](../reference/slot-derivations-checker.md#troubleshooting).
-
-## Check the transformed data too
-
-The tools above inspect *mappers*. To check a *data file* against a schema, see
-[Validate a data file](validate-a-data-file.md).

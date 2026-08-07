@@ -64,9 +64,8 @@ mapped to the measures table in ODM v2) might be named
 `mapper-nwss-measures[000,0001=collection_storage_temp].yaml`.
 
 The same bracket decoration appears in the class derivation name inside the
-file, which is how tools such as
-[yaml_to_xlsx_mapper.py](../reference/yaml-to-xlsx-mapper.md) tell a wide mapper
-from an ordinary one.
+file, which is how a wide mapper can be told apart from an ordinary one by
+reading the mapper alone.
 
 ## See also
 

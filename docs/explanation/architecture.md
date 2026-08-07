@@ -11,7 +11,6 @@ PHES-ODM-MapGenerator/
 ├── odm_map_maker/
 │   ├── make_mappers_cli.py       # Entry point: CLI, config loading, sheet extraction
 │   ├── make_mappers.py           # MakeMappers — the generation engine
-│   ├── validate.py               # Validate a data file against a LinkML schema
 │   ├── make_v1_to_vx.py          # Legacy generator driven by the ODM data dictionary
 │   ├── configs/                  # Ready-to-use CLI config files (one per mapping)
 │   ├── data/                     # LinkML schemas + Excel mapping workbooks
@@ -26,8 +25,6 @@ PHES-ODM-MapGenerator/
 │   ├── validate_mappers/
 │   │   ├── mapper_validator.py         # Enumeration completeness/consistency checks
 │   │   └── slot_derivations_checker.py # Structural slot-derivation checks
-│   ├── yaml_to_xlsx_mapper/
-│   │   └── yaml_to_xlsx_mapper.py      # Reverse: mapper YAML → Excel workbook
 │   ├── odm_vx/                   # Helpers used only by the legacy make_v1_to_vx.py
 │   └── utils/                    # Shared helpers (see table below)
 ├── tests/                        # pytest suite
@@ -172,8 +169,6 @@ outputs downstream is how this repository works around that limitation — see
 | --- | --- |
 | [validate_mappers/mapper_validator.py](../../odm_map_maker/validate_mappers/mapper_validator.py) | Enumeration completeness and consistency checks over a directory of mappers. See [Mapper Validator](../reference/mapper-validator.md). |
 | [validate_mappers/slot_derivations_checker.py](../../odm_map_maker/validate_mappers/slot_derivations_checker.py) | Pluggable structural checks over slot derivations. See [Slot Derivations Checker](../reference/slot-derivations-checker.md). |
-| [validate.py](../../odm_map_maker/validate.py) | Validate a CSV/TSV data file against a LinkML schema. See [Data Validator](../reference/data-validator.md). |
-| [yaml_to_xlsx_mapper/yaml_to_xlsx_mapper.py](../../odm_map_maker/yaml_to_xlsx_mapper/yaml_to_xlsx_mapper.py) | Reverse-engineer mappers into a bootstrap workbook. See [YAML to XLSX Mapper](../reference/yaml-to-xlsx-mapper.md). |
 
 ### Legacy — `make_v1_to_vx.py` and `odm_vx/`
 

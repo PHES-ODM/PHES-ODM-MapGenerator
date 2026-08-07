@@ -74,8 +74,6 @@ The pages you are most likely to want:
 | [Wide Columns](docs/explanation/wide-columns.md) | Why one input row sometimes becomes several output rows |
 | [Mapper Validator](docs/reference/mapper-validator.md) | Checking enumeration mappings in generated mappers |
 | [Slot Derivations Checker](docs/reference/slot-derivations-checker.md) | Checking slot derivations for structural problems |
-| [Data Validator](docs/reference/data-validator.md) | Validating a CSV/TSV data file against a LinkML schema |
-| [YAML to XLSX Mapper](docs/reference/yaml-to-xlsx-mapper.md) | Bootstrapping an Excel workbook from existing mappers |
 | [ODM v1 to vx (legacy)](docs/reference/make-v1-to-vx.md) | The older data-dictionary-driven generator |
 | [Contributing](CONTRIBUTING.md) | Dev setup, tests, linting, conventions |
 
@@ -140,8 +138,6 @@ PHES-ODM-MapGenerator/
 ├── odm_map_maker/                   # Main package
 │   ├── make_mappers_cli.py          # Primary entry point — generate mapper YAML files
 │   ├── make_mappers.py              # Core mapping logic (MakeMappers class)
-│   ├── validate.py                  # Validate a CSV/TSV data file against a LinkML
-│   │                                #   schema (see docs/reference/data-validator.md)
 │   ├── make_v1_to_vx.py             # Legacy: generate mappers from v1 using the data
 │   │                                #   dictionary (see docs/reference/make-v1-to-vx.md)
 │   ├── configs/                     # Ready-to-use CLI configuration files
@@ -160,8 +156,6 @@ PHES-ODM-MapGenerator/
 │   ├── validate_mappers/            # Validate generated mapper files
 │   │   ├── mapper_validator.py      # Validate mapper YAML files against schemas
 │   │   └── slot_derivations_checker.py  # Check for potential slot mapping problems
-│   ├── yaml_to_xlsx_mapper/         # Reverse: mapper YAML files → Excel workbook
-│   │   └── yaml_to_xlsx_mapper.py
 │   ├── odm_vx/                      # Internal helpers used by make_v1_to_vx.py (legacy)
 │   └── utils/                       # Internal utilities
 │       ├── general_utils.py         # File I/O and DataFrame helpers
@@ -182,8 +176,6 @@ PHES-ODM-MapGenerator/
     ├── make_mappers_cli_config.md   # Reference: YAML CLI config file format
     ├── mapper_validator.md          # Reference: mapper_validator.py script
     ├── slot_derivations_checker.md  # Reference: slot_derivations_checker.py script
-    ├── validate.md                  # Reference: validate.py script
-    ├── yaml_to_xlsx_mapper.md       # Reference: yaml_to_xlsx_mapper.py script
     └── make_v1_to_vx.md             # Reference: legacy make_v1_to_vx.py script
 ```
 
@@ -442,8 +434,6 @@ examples for each mapping type.
 
 ## Utility Scripts
 
-Several additional scripts are available for specific tasks.
-
 ### slot_derivations_checker.py
 
 [odm_map_maker/validate_mappers/slot_derivations_checker.py](odm_map_maker/validate_mappers/slot_derivations_checker.py)
@@ -465,44 +455,6 @@ python odm_map_maker/validate_mappers/slot_derivations_checker.py \
 
 See [Slot Derivations Checker](docs/reference/slot-derivations-checker.md) for full
 documentation.
-
-### validate.py
-
-[odm_map_maker/validate.py](odm_map_maker/validate.py) validates a CSV or TSV
-**data** file against a LinkML schema — as opposed to the two scripts above,
-which validate mapper specifications. Use it to confirm that a source extract
-conforms to its schema, or that transformed output conforms to the ODM.
-
-```console
-python odm_map_maker/validate.py \
-    --schema odm_map_maker/data/odm_v3/linkml/odm_v3.yaml \
-    --source-class samples \
-    --data-source <data-file.csv>
-```
-
-The exit code is `1` if any error-severity issue was found, so the script can be
-dropped straight into a shell pipeline. See
-[Data Validator](docs/reference/data-validator.md) for full documentation.
-
-### yaml_to_xlsx_mapper.py
-
-[odm_map_maker/yaml_to_xlsx_mapper/yaml_to_xlsx_mapper.py](odm_map_maker/yaml_to_xlsx_mapper/yaml_to_xlsx_mapper.py)
-runs the pipeline backwards: it reads a directory of LinkML Map YAML files and
-writes a `mapping_config.xlsx` workbook. Use it to bootstrap a new mapping
-configuration from an existing set of mappers rather than starting from a blank
-sheet.
-
-```console
-python odm_map_maker/yaml_to_xlsx_mapper/yaml_to_xlsx_mapper.py \
-    --source-dir <mappers-dir> \
-    --source-schema <source-schema.yaml> \
-    --target-schema <target-schema.yaml> \
-    --output-dir <output-dir>
-```
-
-The output is a starting point, not a finished configuration — review every
-sheet before feeding it back into `make_mappers_cli.py`. See
-[YAML to XLSX Mapper](docs/reference/yaml-to-xlsx-mapper.md) for full documentation.
 
 ## Contributing
 

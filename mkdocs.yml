@@ -48,9 +48,7 @@ nav:
       - Find out why a row was ignored: how-to/find-out-why-a-row-was-ignored.md
       - Generate mappers for ODM v2: how-to/target-odm-v2.md
       - Add a new source dataset: how-to/add-a-new-source-dataset.md
-      - Bootstrap a workbook: how-to/bootstrap-a-workbook.md
       - Check generated mappers: how-to/check-generated-mappers.md
-      - Validate a data file: how-to/validate-a-data-file.md
   - Explanation:
       - Overview: explanation/index.md
       - Concepts and Vocabulary: explanation/concepts.md
@@ -62,6 +60,4 @@ nav:
       - CLI Configuration Files: reference/cli-config-files.md
       - Mapper Validator: reference/mapper-validator.md
       - Slot Derivations Checker: reference/slot-derivations-checker.md
-      - Data Validator: reference/data-validator.md
-      - YAML to XLSX Mapper: reference/yaml-to-xlsx-mapper.md
       - ODM v1 to vx (legacy): reference/make-v1-to-vx.md

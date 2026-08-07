@@ -89,9 +89,7 @@ calling `SchemaView` from the engine, so behaviour such as ontology-ID handling
 stays consistent.
 
 **Logging, not printing.** Use `get_logger(__name__)` from
-[utils/logger.py](odm_map_maker/utils/logger.py). The one intentional exception
-is [validate.py](odm_map_maker/validate.py), which prints per-row validation
-results to standard output so they can be piped.
+[utils/logger.py](odm_map_maker/utils/logger.py) rather than `print`.
 
 **CLI scripts use Typer.** Each script defines an `app = typer.Typer(...)`, puts
 its help text in module-level `*_HELP` constants, and annotates options with
