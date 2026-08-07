@@ -65,7 +65,6 @@ first pass; work through them against the workbook.
 
 ## 5. Document it
 
-- Add a section to [README.md](../../README.md).
 - List the new config file in
   [CLI Configuration Files](../reference/cli-config-files.md#provided-config-files).
 - Add validator invocations for it to

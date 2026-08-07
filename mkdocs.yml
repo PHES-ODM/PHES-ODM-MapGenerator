@@ -51,15 +51,10 @@ markdown_extensions:
   - attr_list
   - def_list
   - footnotes
-  - md_in_html
   - tables
   - toc:
       permalink: true
   - pymdownx.details
-  # Required for the :material-...: icons used in the card grid on the home page.
-  - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
@@ -78,10 +73,7 @@ validation:
   links:
     not_found: ignore
 
-# The four sections follow the Divio/Diataxis framework: tutorials teach,
-# how-to guides solve a task, explanation gives background, reference describes.
-# A new document belongs in exactly one of them — if it seems to fit two, it is
-# probably two documents.
+# CONTRIBUTING.md explains which section a new page belongs in.
 #
 # Each section's index.md is listed bare rather than as "Overview: ...", so that
 # the navigation.indexes feature attaches it to the section heading itself.

@@ -73,15 +73,91 @@ Path options affected by this rule: `--source-schema`, `--target-schema`,
 **Paths supplied directly on the command line are not affected** — they remain
 relative to the working directory as usual.
 
+## Command-line options
+
+Every option below can be given on the command line or as a config file key.
+Config keys are the long option name without the leading `--`, written with
+either hyphens or underscores. Options that accept multiple values are repeated
+on the command line and written as a YAML list in a config file.
+
+`python odm_map_maker/make_mappers_cli.py --help` prints the same list.
+
+**`--config`** (optional) — Path to a YAML configuration file, as described
+above.
+
+**`--source-schema`** (required) — Full path to the source dataset LinkML
+schema.
+
+**`--target-schema`** (required) — Full path to the target dataset LinkML
+schema.
+
+**`--output-dir`** (required) — Directory to save all generated output to. Two
+sub-directories are created:
+
+- *configs*: Extracted maps, wide, and enums configuration files.
+- *mappers*: Generated [LinkML Map](https://github.com/linkml/linkml-map) YAML
+  schemas — the main artifacts produced by the script.
+
+**`--mapping-excel-file`** (optional) — The Excel mapping configuration file. It
+can contain any number of maps, wide, and enums sheets, named via
+`--excel-maps-sheets`, `--excel-wide-sheets`, and `--excel-enums-sheets`.
+Additional CSV/TSV files can be supplied with `--maps-files`, `--wide-files`,
+and `--enums-files`. At least one maps sheet or file must be provided. See
+[Mapping Configuration Files](mapping-config-files.md) for what each sheet
+contains.
+
+**`--excel-maps-sheets`** (optional) — One or more sheet names in the Excel file
+that contain maps configurations.
+
+**`--excel-wide-sheets`** (optional) — One or more sheet names in the Excel file
+that contain wide-column configurations.
+
+**`--excel-enums-sheets`** (optional) — One or more sheet names in the Excel
+file that contain enumeration configurations.
+
+**`--maps-files`** (optional) — One or more paths to CSV or TSV maps
+configuration files.
+
+**`--wide-files`** (optional) — One or more paths to CSV or TSV wide-column
+configuration files.
+
+**`--enums-files`** (optional) — One or more paths to CSV or TSV enumeration
+configuration files.
+
+**`--selectors`** (optional) — Flags or module-version strings used to include
+or exclude rows in the mapping configuration files. A flag is a plain string
+(letters, numbers, underscores), optionally negated with `!`. A module version
+has the form `module=version` (e.g. `odm=3`). Multiple selectors can be combined
+in a single comma-separated string (e.g. `amr,!deprecated,odm=3`). The full
+syntax is described under [Selectors](mapping-config-files.md#selectors).
+
+**`--source-slot-format-operations`** (optional) — Formatting operations applied
+to all source slot names found in the configuration file before looking them up
+in the source schema. Useful when the config file uses a different casing or
+punctuation convention than the schema. See
+[Slot format operations](#slot-format-operations).
+
+**`--target-slot-format-operations`** (optional) — The same, applied to all
+target slot names before looking them up in the target schema.
+
+**`--source-match-ontology-id-regex`** (optional) — Regular expression that
+matches ontology IDs in source schema enum values. When set, ontology IDs found
+in the source schema are automatically added to enum values that lack one in the
+mapping configuration.
+
+**`--target-match-ontology-id-regex`** (optional) — The same, for ontology IDs
+in target schema enum values.
+
 ## Provided config files
 
 Ready-to-use config files are in `odm_map_maker/configs/`. Each file defaults
 to mapping to ODM v3; pass `--target-schema`, `--output-dir`, and `--selectors`
 on the command line to map to v2 instead.
 
-### ODM v1 to ODM (`odm_v1_to_odm.yaml`)
+### ODM v1 to ODM
 
-Maps ODM v1 tables to ODM v3 (default) or v2.
+`odm_map_maker/configs/odm_v1_to_odm.yaml` maps ODM v1 tables to ODM v3
+(default) or v2.
 
 ```console
 # Map to ODM v3 (default)
@@ -96,11 +172,12 @@ python odm_map_maker/make_mappers_cli.py \
     --selectors odm=2
 ```
 
-### NWSS to ODM (`nwss_to_odm.yaml`)
+### NWSS to ODM
 
-Maps NWSS reporting data to ODM v3 (default) or v2. To use a different NWSS
-dictionary type (`public_concentration`, `public_metric`), override
-`--source-schema` on the command line.
+`odm_map_maker/configs/nwss_to_odm.yaml` maps NWSS reporting data to ODM v3
+(default) or v2. To use a different NWSS dictionary type
+(`public_concentration`, `public_metric`), override `--source-schema` on the
+command line.
 
 ```console
 # Map NWSS reporting to ODM v3 (default)
@@ -121,9 +198,10 @@ python odm_map_maker/make_mappers_cli.py \
     --output-dir ../gen/nwss-public_concentration-to-v3
 ```
 
-### PHA4GE to ODM (`pha4ge_to_odm.yaml`)
+### PHA4GE to ODM
 
-Maps PHA4GE wastewater data to ODM v3 (default) or v2.
+`odm_map_maker/configs/pha4ge_to_odm.yaml` maps PHA4GE wastewater data to ODM v3
+(default) or v2.
 
 ```console
 # Map PHA4GE to ODM v3 (default)
@@ -140,29 +218,8 @@ python odm_map_maker/make_mappers_cli.py \
 
 ## Writing your own config file
 
-Copy one of the provided files and adjust the values. The supported keys mirror
-the CLI options exactly:
-
-| Key | CLI option | Type |
-| --- | --- | --- |
-| `source-schema` | `--source-schema` | path |
-| `target-schema` | `--target-schema` | path |
-| `mapping-excel-file` | `--mapping-excel-file` | path |
-| `output-dir` | `--output-dir` | path |
-| `maps-files` | `--maps-files` | list of paths |
-| `wide-files` | `--wide-files` | list of paths |
-| `enums-files` | `--enums-files` | list of paths |
-| `excel-maps-sheets` | `--excel-maps-sheets` | list of strings |
-| `excel-wide-sheets` | `--excel-wide-sheets` | list of strings |
-| `excel-enums-sheets` | `--excel-enums-sheets` | list of strings |
-| `selectors` | `--selectors` | list of strings |
-| `source-slot-format-operations` | `--source-slot-format-operations` | list of strings |
-| `target-slot-format-operations` | `--target-slot-format-operations` | list of strings |
-| `source-match-ontology-id-regex` | `--source-match-ontology-id-regex` | string |
-| `target-match-ontology-id-regex` | `--target-match-ontology-id-regex` | string |
-
-Run `python odm_map_maker/make_mappers_cli.py --help` for descriptions of each
-option.
+Copy one of the provided files and adjust the values. The supported keys are the
+[command-line options](#command-line-options) without their leading `--`.
 
 ## Slot format operations
 

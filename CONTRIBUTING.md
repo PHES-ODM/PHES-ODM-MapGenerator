@@ -153,12 +153,14 @@ Documentation follows the [Divio/Diátaxis](https://diataxis.fr/) framework. A
 new page belongs in exactly one of these — if it seems to fit two, it is
 probably two pages.
 
-| Section | Purpose | A page there… |
-| --- | --- | --- |
-| `docs/tutorials/` | Teach a beginner by doing | is followed start to finish, works on throwaway data, and never offers alternatives or caveats mid-step |
-| `docs/how-to/` | Solve one stated problem | assumes competence, starts from a goal ("Fix an incorrect mapping"), and links out rather than explaining |
-| `docs/explanation/` | Give background and rationale | discusses why, may cover trade-offs and history, and contains no instructions to follow |
-| `docs/reference/` | Describe the machinery | is exhaustive and dry, is structured like the thing it describes, and does not teach |
+- `docs/tutorials/` — teaches a beginner by doing: followed start to finish, on
+  throwaway data, with no alternatives or caveats mid-step.
+- `docs/how-to/` — solves one stated problem: assumes competence, starts from a
+  goal, links out rather than explaining.
+- `docs/explanation/` — gives background and rationale: no instructions to
+  follow.
+- `docs/reference/` — describes the machinery: exhaustive, dry, and structured
+  like the thing it describes.
 
 The most common mistake is putting how-to material in a reference page. If you
 catch yourself writing "first…, then…" in `docs/reference/`, it belongs in
@@ -169,14 +171,32 @@ When you add a page, also add it to the section's `index.md` table and to the
 
 ### Keep docs in the same change as the code
 
+Each fact is documented in exactly one place; the README links to `docs/` rather
+than repeating it. Update the one place, not several.
+
 | If you change | Also update |
 | --- | --- |
-| A CLI option | The script's `*_HELP` constant, the option list in [README.md](README.md), and the relevant page under `docs/reference/` |
+| A CLI option | The script's `*_HELP` constant and [docs/reference/cli-config-files.md](docs/reference/cli-config-files.md) |
 | A workbook column | [docs/reference/mapping-config-files.md](docs/reference/mapping-config-files.md) |
 | The generation pipeline | [docs/explanation/architecture.md](docs/explanation/architecture.md) |
-| A new config file in `configs/` | [README.md](README.md) and [docs/reference/cli-config-files.md](docs/reference/cli-config-files.md) |
+| A new config file in `configs/` | [docs/reference/cli-config-files.md](docs/reference/cli-config-files.md#provided-config-files) |
 | A step a newcomer would trip over | [docs/tutorials/generate-your-first-mappers.md](docs/tutorials/generate-your-first-mappers.md) |
 | A recurring support question | A new page in [docs/how-to/](docs/how-to/) |
+
+**The one deliberate exception.** The commands that generate the three headline
+mappings — ODM v1, NWSS, and PHA4GE to ODM v3 — are repeated verbatim in three
+places, so that a new user can run them without navigating anywhere:
+
+- [README.md](README.md#generate-the-mappers)
+- [docs/index.md](docs/index.md#generate-the-mappers)
+- [docs/reference/cli-config-files.md](docs/reference/cli-config-files.md#provided-config-files)
+  (which also carries the ODM v2 and alternate-NWSS variants)
+
+If you rename a shipped config file, change its default `output-dir`, or add a
+fourth headline mapping, update all three. The README additionally repeats the
+`mapper_validator.py` invocation for each of the three, which must stay in step
+with [docs/reference/mapper-validator.md](docs/reference/mapper-validator.md).
+Nothing else in the README is allowed to duplicate `docs/`.
 
 ## Pull requests
 
