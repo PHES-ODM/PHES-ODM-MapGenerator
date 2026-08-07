@@ -5,24 +5,59 @@ The PHES-ODM Map Generator turns human-editable Excel mapping workbooks into
 describe how to convert data from one wastewater-surveillance format (ODM v1,
 NWSS, PHA4GE) into another (ODM v2 or v3).
 
-## The four kinds of documentation
+## Where to start
 
 This documentation follows the [Diátaxis](https://diataxis.fr/) (Divio)
-framework. Each section answers a different kind of question, so pick the one
-that matches what you need right now.
+framework, which splits writing into four kinds. Each answers a different
+question, so pick the one that matches what you are doing right now.
 
-| Section | Answers | Read when |
-| --- | --- | --- |
-| **[Tutorials](tutorials/index.md)** | "Teach me the basics" | You are new and want to learn by doing |
-| **[How-to guides](how-to/index.md)** | "How do I do X?" | You have a specific task in front of you |
-| **[Explanation](explanation/index.md)** | "Why is it like this?" | You want to understand the design |
-| **[Reference](reference/index.md)** | "What does this option do?" | You need exact details about a format or tool |
+<div class="grid cards" markdown>
+
+- :material-school: **[Tutorials](tutorials/index.md)**
+
+    ---
+
+    *Learning-oriented.* Start here if the project is new to you. Follow along
+    from an empty checkout to a set of mapper YAML files you can open and read.
+
+    [Generate your first mappers →](tutorials/generate-your-first-mappers.md)
+
+- :material-wrench: **[How-to guides](how-to/index.md)**
+
+    ---
+
+    *Goal-oriented.* Recipes for a specific job you already know you need to
+    do: correct a wrong mapping, map a wide column, target ODM v2, add a new
+    source dataset.
+
+    [Browse the guides →](how-to/index.md)
+
+- :material-lightbulb: **[Explanation](explanation/index.md)**
+
+    ---
+
+    *Understanding-oriented.* Background and design reasoning: the vocabulary
+    used throughout, how the generator is put together, and why wide columns
+    need special handling.
+
+    [Read the background →](explanation/index.md)
+
+- :material-book-open-variant: **[Reference](reference/index.md)**
+
+    ---
+
+    *Information-oriented.* Dry descriptions of what exists: every column of
+    the mapping workbooks, the CLI configuration files, and the checking tools.
+
+    [Look something up →](reference/index.md)
+
+</div>
 
 Tutorials and how-to guides are *practical* — they get something done.
 Reference and explanation are *theoretical* — they inform. Tutorials and
 explanation serve *study*; how-to guides and reference serve *work*.
 
-## Start here
+## Pick a page
 
 | If you are… | Read |
 | --- | --- |

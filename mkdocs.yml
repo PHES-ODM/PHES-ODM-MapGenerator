@@ -9,16 +9,64 @@ repo_name: PHES-ODM/PHES-ODM-MapGenerator
 # and every "Edit on GitHub" link 404s.
 edit_uri: edit/main/docs/
 
+docs_dir: docs
+site_dir: site
+
 theme:
-  name: readthedocs
-  highlightjs: true
+  name: material
   logo: img/ODM-logo.png
+  favicon: img/ODM-logo.png
+  features:
+    # No navigation.tabs: keeping every section in the left sidebar gives a full
+    # table of contents for the whole site rather than one tab at a time.
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.indexes
+    - navigation.tracking
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
 
 markdown_extensions:
-  # toc, tables and fenced_code are always enabled by mkdocs; this only adds
-  # clickable anchors to each heading.
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
   - toc:
       permalink: true
+  - pymdownx.details
+  # Required for the :material-...: icons used in the card grid on the home page.
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
 
 # These documents are primarily read on GitHub, so they link to source files
 # and to the root-level README.md and CONTRIBUTING.md using repository-relative
@@ -34,14 +82,17 @@ validation:
 # how-to guides solve a task, explanation gives background, reference describes.
 # A new document belongs in exactly one of them — if it seems to fit two, it is
 # probably two documents.
+#
+# Each section's index.md is listed bare rather than as "Overview: ...", so that
+# the navigation.indexes feature attaches it to the section heading itself.
 nav:
   - Home: index.md
   - Tutorials:
-      - Overview: tutorials/index.md
+      - tutorials/index.md
       - Generate your first mappers: tutorials/generate-your-first-mappers.md
       - Write a mapping from scratch: tutorials/write-a-mapping-from-scratch.md
-  - How-To Guides:
-      - Overview: how-to/index.md
+  - How-to guides:
+      - how-to/index.md
       - Fix an incorrect mapping: how-to/fix-a-mapping.md
       - Map a wide column: how-to/map-a-wide-column.md
       - Normalize slot names: how-to/normalize-slot-names.md
@@ -50,14 +101,21 @@ nav:
       - Add a new source dataset: how-to/add-a-new-source-dataset.md
       - Check generated mappers: how-to/check-generated-mappers.md
   - Explanation:
-      - Overview: explanation/index.md
+      - explanation/index.md
       - Concepts and Vocabulary: explanation/concepts.md
       - Architecture: explanation/architecture.md
       - Wide Columns: explanation/wide-columns.md
   - Reference:
-      - Overview: reference/index.md
+      - reference/index.md
       - Mapping Configuration Files: reference/mapping-config-files.md
       - CLI Configuration Files: reference/cli-config-files.md
       - Mapper Validator: reference/mapper-validator.md
       - Slot Derivations Checker: reference/slot-derivations-checker.md
       - ODM v1 to vx (legacy): reference/make-v1-to-vx.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/PHES-ODM/PHES-ODM-MapGenerator
+    - icon: fontawesome/solid/globe
+      link: https://phes-odm.org

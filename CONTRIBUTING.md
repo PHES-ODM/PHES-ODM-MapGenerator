@@ -23,9 +23,10 @@ pip install -r requirements-dev.txt
 pip install -e . --no-deps
 ```
 
-`requirements-dev.txt` includes `requirements.txt` plus pytest, pytest-cov, and
-ruff. The editable install makes the `odm_map_maker` package importable from
-anywhere and provides the `odm-map-maker` console script.
+`requirements-dev.txt` includes `requirements.txt` and `requirements-docs.txt`,
+plus pytest, pytest-cov, and ruff. The editable install makes the
+`odm_map_maker` package importable from anywhere and provides the
+`odm-map-maker` console script.
 
 ## Checks
 
@@ -132,14 +133,16 @@ Adding tests for engine behaviour you touch is welcome.
 
 Documentation lives in [docs/](docs/) and is indexed by
 [docs/index.md](docs/index.md). It is built with
-[MkDocs](https://www.mkdocs.org/) and published to GitHub Pages by
-[.github/workflows/docs.yaml](.github/workflows/docs.yaml) on every push to
-`main`.
+[MkDocs](https://www.mkdocs.org/) with the
+[Material](https://squidfunk.github.io/mkdocs-material/) theme, and published to
+GitHub Pages by [.github/workflows/docs.yaml](.github/workflows/docs.yaml) on
+every push to `main`.
 
-Preview the site locally:
+Preview the site locally. `requirements-docs.txt` holds only the site build
+dependencies, so this works without installing the runtime packages:
 
 ```console
-pip install -r requirements-dev.txt
+pip install -r requirements-docs.txt
 mkdocs serve                       # http://127.0.0.1:8000
 mkdocs build --strict              # what CI runs
 ```
