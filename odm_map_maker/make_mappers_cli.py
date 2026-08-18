@@ -273,10 +273,10 @@ def main(
 
     configs_dir = output_dir / "configs"
     mapper_dir = output_dir / "mappers"
-    mapped_dir = output_dir / "mapped_data"
+    configs_dir.mkdir(parents = True, exist_ok = True)
 
     # Clean up directories (ie. delete old csv, tsv, and yaml files)
-    clear_dirs([configs_dir, mapper_dir, mapped_dir])
+    clear_dirs([configs_dir, mapper_dir])
 
     # Extract the required maps/wide/enums sheets from the mapping config/Excel file
     if mapping_excel_file:

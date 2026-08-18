@@ -2,14 +2,18 @@
 
 The PHES-ODM Map Generator turns human-editable Excel mapping workbooks into
 [LinkML Map](https://github.com/linkml/linkml-map) YAML specifications that
-describe how to convert data from one wastewater-surveillance format (ODM v1,
-NWSS, PHA4GE) into another (ODM v2 or v3).
+describe, in part, how to convert data from one wastewater-surveillance format
+(ODM v1, NWSS, PHA4GE) into another (ODM v2 or v3). These YAML files are only
+part of the process for mapping between formats; data must first be
+preprocessed, mapped, and then postprocessed for the full mapping to be
+complete. The outputs of the PHES-ODM Map Generator are used by the [PHES-ODM
+Mapper](https://github.com/PHES-ODM/PHES-ODM-Mapper), which also implements all
+other necessary steps for mapping.
 
 ## Generate the mappers
 
-The three mappings the repository exists to produce. After
-[installing](../README.md#install), each config file already holds every option
-needed, so no other arguments are required:
+After [installing](../README.md#install), each config file already holds every
+option needed, so no other arguments are required:
 
 ```console
 # ODM v1 → ODM v3
@@ -25,8 +29,7 @@ python odm_map_maker/make_mappers_cli.py \
     --config odm_map_maker/configs/pha4ge_to_odm.yaml
 ```
 
-Output goes to a `gen/` directory *beside* the repository, one sub-directory per
-mapping — `../gen/odm-v1-to-v3`, `../gen/nwss-reporting-to-v3`, and
+Output goes to `../gen/odm-v1-to-v3`, `../gen/nwss-reporting-to-v3`, and
 `../gen/pha4ge-to-v3`. The LinkML Map YAML files land in `mappers/`; the tables
 extracted from the workbook land in `configs/`.
 

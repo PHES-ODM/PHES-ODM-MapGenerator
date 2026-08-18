@@ -10,15 +10,16 @@ generator also accepts plain CSV, which is easier to type and easier to see.
 
 Budget about 20 minutes. You need a working install from the first tutorial.
 
-## Step 1 — Create the output directory
+## Step 1 — Create a working directory
 
 ```console
-mkdir -p ../gen/my-first-mapping/configs
+mkdir -p ../gen/my-first-mapping
 ```
 
-The generator writes into `configs/` and `mappers/` under the output directory.
-It creates `mappers/` for you, but when you supply your own CSV rather than an
-Excel workbook it expects `configs/` to already exist — hence the `mkdir`.
+This one directory holds both the mapping CSV you are about to write and
+everything the generator produces from it. The generator creates its own
+`configs/` and `mappers/` subdirectories underneath, so there is nothing else to
+set up.
 
 ## Step 2 — Write four mapping rows
 
