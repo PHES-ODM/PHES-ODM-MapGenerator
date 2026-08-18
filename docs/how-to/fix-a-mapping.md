@@ -54,5 +54,4 @@ diff -r ../gen/nwss-reporting-to-v3-before/mappers \
         ../gen/nwss-reporting-to-v3/mappers
 ```
 
-The diff should show your change and nothing else. An unexpectedly large diff
-usually means the `--selectors` differed between the two runs.
+The diff should show your change and nothing else.
