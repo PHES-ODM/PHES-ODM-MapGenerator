@@ -273,7 +273,7 @@ def main(
 
     configs_dir = output_dir / "configs"
     mapper_dir = output_dir / "mappers"
-    configs_dir.mkdir(parents = True, exist_ok = True)
+    configs_dir.mkdir(parents=True, exist_ok=True)
 
     # Clean up directories (ie. delete old csv, tsv, and yaml files)
     clear_dirs([configs_dir, mapper_dir])
