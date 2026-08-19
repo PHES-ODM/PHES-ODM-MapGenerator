@@ -35,6 +35,11 @@ row it produces:
 
 Values here take precedence over anything the `maps` tab set for the same slot.
 
+One row is one output row as long as each row names a different `sourceSlot`.
+Rows that name the same one are combined (provided `sourceClass`,
+`targetClass`, `targetSlot`, and `wideGroup` are the same); see [step
+4](#4-pivot-the-same-column-more-than-once).
+
 ## 3. Handle slots that only one row needs
 
 Do not add a `_value` column to the whole sheet for the sake of one row —
@@ -50,10 +55,69 @@ columns for that row.
 
 ## 4. Pivot the same column more than once
 
-Give the rows different **`wideGroup`** values. Rows sharing a `wideGroup` — for
-one `sourceClass`, `sourceSlot`, and `targetClass` — form a single wide-to-long
-specification; a different `wideGroup` is a separate output row. This is also
-how you apply different enumeration mappings to the same source column.
+### What makes an output row
+
+Rows of a wide tab are grouped by `sourceClass` + `sourceSlot` + `targetClass` +
+`wideGroup`, and **each group** — not each row — becomes one output row and one
+mapper file. So two rows that agree on `sourceClass`, `sourceSlot`, and
+`targetClass`, both with `wideGroup` blank, are one group and produce a single
+output row, with the `_value` columns read from the first row of the group only.
+
+That default is what enumeration mappings rely on. The rows below are one group,
+mapping the source values of `influent_equilibrated` onto ODM values and
+producing one `measures` row:
+
+| sourceClass | sourceSlot | sourceValue | targetClass | targetValue | specimen_value | measure_value | value_value |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| nwss | influent_equilibrated | yes | measures | true | sit | influEqui | `{{influent_equilibrated}}` |
+| nwss | influent_equilibrated | no | measures | false | | | |
+| nwss | influent_equilibrated | `<empty>` | measures | nr | | | |
+
+### Splitting a column into two output rows
+
+To get two output rows out of one source column, put the rows in different
+groups by giving them different `wideGroup` values. Here one
+storage-temperature column produces two `measures` rows, one per protocol stage
+the temperature applies to:
+
+| wideGroup | sourceClass | sourceSlot | targetClass | specimen_value | measure_value | unit_value | value_value |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| preConc | nwss | collection_storage_temp | measures | sa | preConcTemp | cel | `{{collection_storage_temp}}` |
+| preExtract | nwss | collection_storage_temp | measures | sa | preExtractTemp | cel | `{{collection_storage_temp}}` |
+
+The names are arbitrary labels; they only have to differ. Delete them and you are
+back to one output row.
+
+A group can still span several rows, so the two features combine: repeat the
+same `wideGroup` on every row of an enumeration mapping, and each distinct
+`wideGroup` gets its own enumeration mapping for the same source column.
+
+### Why the bundled workbooks have no wideGroup column
+
+The workbooks in
+[mapping_config_files/](../../odm_map_maker/data/mapping_config_files/) do not
+define a `wideGroup` column at all, because none of them needs to pivot one
+column twice. When the column is absent it is treated as blank on every row,
+and since a wide tab holds one `sourceClass` and `targetClass` throughout,
+groups are determined by `sourceSlot` alone — and each source column is listed
+once per tab. Where those tabs do repeat a source column across several rows,
+it is an enumeration mapping that is meant to collapse into one output row, or
+a pair of rows separated by `selectors` (see below). Either way, a tab's row
+count is an upper bound on the number of mappers it produces, not the number
+itself.
+
+Two consequences are worth knowing about:
+
+- **Rows with a blank `sourceSlot`** would otherwise all land in one group. Each
+  such row is instead given its own generated `wideGroup`, so it becomes its own
+  output row. Tabs that pivot no source column at all — pha4ge's
+  `protocolRelationships_wide`, for example — depend on this.
+- **`selectors` is not part of the group key**, but selector filtering happens
+  first, so rows that differ only by `selectors` never meet. `wide_measures`
+  lists `rec_eff_percent` under both `odm<3` and `odm>=3`, and exactly one
+  survives any given run. If you ever need two such variants in the same run,
+  they will silently merge into one output row unless you also give them
+  different `wideGroup` values.
 
 ## 5. Regenerate and confirm
 
