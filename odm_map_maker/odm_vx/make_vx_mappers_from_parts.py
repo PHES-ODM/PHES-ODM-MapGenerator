@@ -64,14 +64,6 @@ SOURCE_SCHEMA_HELP = """The LinkML schema for the source of the
 TARGET_SCHEMA_HELP = """The LinkML schema for the target of the
                      mapping."""
 
-MAX_MAPPING_ONLY_HELP = """If True then for each source table we only make
-                        derivations to a single vx table. That vx table is
-                        chosen by selecting the vx table that would result in
-                        copying over the most columns from the source table. If
-                        False then we create derivations to all vx tables.
-                        (Some of these derivations might be useless, for
-                        example if we only copy over a single column)."""
-
 CUSTOM_WIDE_DIR_HELP = """Directory or list of directories that contain CSV
                        files for custom mapping details for mapping wide-like
                        source columns to long ODM vx."""
@@ -83,7 +75,6 @@ def make_mappers(
     prepared_parts_file: Path,
     source_schema: Path,
     target_schema: Path,
-    max_mapping_only: bool | None = False,
     custom_wide_dir: list[Path] | None = None,
 ) -> list[dict]:
     """Make the LinkML mapper specifications for mapping from all source tables to all ODM vx tables
@@ -99,10 +90,6 @@ def make_mappers(
             by odm_vx.prepare_parts.prepare_parts.
         source_schema (Union[str, Path]): The LinkML schema for the source of the mapping.
         target_schema (Union[str, Path]): The LinkML schema for the target of the mapping.
-        max_mapping_only (Optional[bool]): If True then for each source table we only make derivations to a
-            single vx table. That vx table is chosen by selecting the vx table that would result in copying over
-            the most columns from the source table. If False then we create derivations to all vx tables. (Some of
-            these derivations might be useless, for example if we only copy over a single column). Defaults to True.
         custom_wide_dir (List[Path]): Directory or list of directories
             that contain CSV files for custom mapping details for mapping wide-like source columns to long
             ODM vx. Defaults to None.
@@ -202,7 +189,6 @@ def make_mappers(
         for cur_results in make_class_derivations(
             df,
             source_table_name,
-            max_mapping_only=max_mapping_only,
             custom_wide_dfs=custom_wide_dfs,
             source_schema=source_schema,
             target_schema=target_schema,
@@ -370,7 +356,6 @@ def make_enum_derivations(df: pd.DataFrame, source_enum_name: str) -> dict[str, 
 def make_class_derivations(
     df: pd.DataFrame,
     source_table_name: str,
-    max_mapping_only: bool,
     custom_wide_dfs: list[pd.DataFrame] | None,
     source_schema: SchemaView,
     target_schema: SchemaView,
@@ -383,11 +368,6 @@ def make_class_derivations(
     Args:
         df (pd.DataFrame): The ODM vx data dictionary parts list, after being prepared by prepare_parts.py.
         source_table_name (str): The source class name to create the class_derivation for.
-        max_mapping_only (bool): If True then we only make derivations to vx tables that would result
-            in copying over the most columns from the source table. If multiple mappings have the
-            same maximum number of copied columns, then we make derivations for all of them. If False then we
-            create derivations to all vx tables. (Some of these derivations might be useless, for example if
-            we only copy over a single column).
         source_schema (SchemaView): The source schema of the mapping.
         target_schema (SchemaView): The target schema of the mapping.
         custom_wide_dfs (Optional[List[pd.DataFrame]]): Optional list of DataFrames containing information
@@ -425,17 +405,6 @@ def make_class_derivations(
         class_name: vx_get_header_rows(variables_df, class_name)
         for class_name in class_names
     }
-
-    if max_mapping_only:
-        # Most of these mappings are useless (eg. if there's only one variable/header row to map,
-        # such as "siteID"). To get the most useful one, we pick the mapping where we have the most variables
-        # to map (ie. where mappings_df has to most rows).
-        max_rows = max(
-            *[len(mappings_df.index) for mappings_df in mapping_rows.values()]
-        )
-        mapping_rows = {
-            k: v for k, v in mapping_rows.items() if len(v.index) == max_rows
-        }
 
     # Using each of the vx target tables and the DataFrame rows that define the mapping from
     # source_table_name to the vx table, create all of the slot derivations for each mapping.
@@ -601,9 +570,6 @@ def main(
     target_schema: Annotated[
         Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
     ],
-    max_mapping_only: Annotated[
-        bool | None, typer.Option(help=MAX_MAPPING_ONLY_HELP)
-    ] = False,
     custom_wide_dir: Annotated[
         list[Path] | None, typer.Option(help=CUSTOM_WIDE_DIR_HELP)
     ] = None,
@@ -614,7 +580,6 @@ def main(
         prepared_parts_file=prepared_parts_file,
         source_schema=source_schema,
         target_schema=target_schema,
-        max_mapping_only=max_mapping_only,
         custom_wide_dir=custom_wide_dir,
     )
 

@@ -56,13 +56,6 @@ TARGET_SCHEMA_HELP = """The path to the target (ODM vx) LinkML schema."""
 WIDE_DIR_HELP = """Directory that contains all wide-column information. All CSV
                 files in this directory are used."""
 
-MAX_MAPPING_ONLY_HELP = """If True then for each source (ODM v1) table, only
-                        create the mapping config files that map to the ODM vx
-                        table where the maximum number of columns are copied
-                        over from ODM v1. This helps eliminate useless mappings
-                        (eg. ones where a single column such as an identifier
-                        is copied over)."""
-
 
 @app.command(help=MAIN_HELP)
 def main(
@@ -78,7 +71,6 @@ def main(
         Path, typer.Option(show_default=False, help=TARGET_SCHEMA_HELP)
     ],
     wide_dir: Annotated[Path | None, typer.Option(help=WIDE_DIR_HELP)] = None,
-    max_mapping_only: Annotated[bool, typer.Option(help=MAX_MAPPING_ONLY_HELP)] = False,
 ):
     """Make the LinkML mapper configuration (YAML) files required for mapping from ODM v1 to ODM vx.
 
@@ -100,10 +92,6 @@ def main(
         target_schema (Union[str, Path]): The path to the target (ODM vx) LinkML schema.
         wide_dir (Union[str, Path]): Directory that contains all wide-column information. All CSV
             files in this directory are used.
-        max_mapping_only (bool): If True then for each source (ODM v1) table, only create the
-            mapping config files that map to the ODM vx table where the maximum number of columns
-            are copied over from ODM v1. This helps eliminate useless mappings (eg. ones where
-            a single column such as an identifier is copied over).
     """
     # Some paths, best to use the defaults
     output_dir = Path(output_dir)
@@ -137,7 +125,6 @@ def main(
         prepared_parts_file=prepared_parts_file,
         source_schema=source_schema,
         target_schema=target_schema,
-        max_mapping_only=max_mapping_only,
         custom_wide_dir=wide_dir,
     )
 

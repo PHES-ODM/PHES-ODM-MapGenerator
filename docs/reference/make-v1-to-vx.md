@@ -24,8 +24,7 @@ python odm_map_maker/make_v1_to_vx.py \
     --vx-data-dictionary <vx-data-dictionary> \
     --source-schema <source-schema> \
     --target-schema <target-schema> \
-    [--wide-dir <wide-dir>] \
-    [--max-mapping-only]
+    [--wide-dir <wide-dir>]
 ```
 
 ## Arguments
@@ -38,7 +37,6 @@ python odm_map_maker/make_v1_to_vx.py \
 | `--source-schema` | Yes | Path to the source (ODM v1) LinkML schema. |
 | `--target-schema` | Yes | Path to the target (ODM vx) LinkML schema. |
 | `--wide-dir` | No | Directory containing CSV files that describe wide-column configurations. All CSV files in this directory are used. |
-| `--max-mapping-only` | No | If set, only the mapper specification with the most columns copied from each v1 table is kept. This filters out low-value mappings where only a single identifier column is transferred. |
 
 ## Processing Steps
 
