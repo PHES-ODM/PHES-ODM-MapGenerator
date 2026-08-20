@@ -179,6 +179,8 @@ class SlotDerivationChecker:
         ):
             for msg in log:
                 log_func(msg)
+        if len(self.warnings) == 0 and len(self.errors) == 0:
+            logger.info("No warnings or errors found")
 
     @abstractmethod
     def check_derivation(
