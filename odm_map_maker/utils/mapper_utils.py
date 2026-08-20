@@ -660,7 +660,9 @@ def format_slot_name(val: str, format_options: str | list[str]) -> str:
             elif option == "remove_special":
                 val = re.sub(r"[^A-Za-z0-9\s]", "", val)
             else:
-                raise ValueError(f"Unrecognized option '{option}' for slot formatter: '{options}'")
+                raise ValueError(
+                    f"Unrecognized option '{option}' for slot formatter: '{options}'"
+                )
 
     return val
 
