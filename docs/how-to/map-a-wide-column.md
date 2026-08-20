@@ -33,7 +33,10 @@ row it produces:
 - **`{targetSlot}_expr`** columns — the same, but the cell holds LinkML
   expression code instead of a value.
 
-Values here take precedence over anything the `maps` tab set for the same slot.
+The output row is built in two layers. Every value is set first from the `maps`
+tab, then the `wide` tab row overwrites the slots it sets. Only non-blank cells
+overwrite — a blank cell leaves whatever the `maps` tab put there, and `<empty>`
+is how you overwrite it with a blank.
 
 One row is one output row as long as each row names a different `sourceSlot`.
 Rows that name the same one are combined (provided `sourceClass`,

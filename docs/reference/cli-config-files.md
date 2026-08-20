@@ -241,13 +241,12 @@ Available operations:
 | `remove_special` | Remove all non-alphanumeric, non-space characters |
 | `{ remove_chars: "xyz" }` | Remove each listed character (removes `x`, `y`, `z`) |
 
-The `remove_chars` operation is specified as a YAML mapping rather than a plain
-string. Wrap it in quotes so that it is parsed correctly:
+An example configuration is provided below:
 
 ```yaml
 source-slot-format-operations:
   - lowercase
-  - "{ remove_chars: '-'}"
+  - remove_chars: '-'
   - alpha_numeric_underscore
   - single_underscores
   - trim_trailing_underscores

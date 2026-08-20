@@ -77,7 +77,7 @@ and apply the same sequence of transformations:
 
 1. strip whitespace and drop fully empty rows;
 2. `drop_incomplete_rows` — if the sheet has a `Complete` column, keep only rows
-   where it equals `1`;
+   where it equals `1` or `TRUE`;
 3. `SelectorFilter.apply` against the `--selectors` given on the command line,
    which also removes the `selectors` column
    (see [selectors](../reference/mapping-config-files.md#selectors));

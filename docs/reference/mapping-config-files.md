@@ -237,8 +237,8 @@ An optional column. When the `Complete` column is present in a tab, only rows
 where `Complete` equals `1` or `TRUE` are processed; all other rows are
 ignored. This is useful for incrementally building a mapping configuration,
 allowing you to mark rows as complete as they are finalized. Rows where
-`Complete` is blank or any value other than `1` are dropped. If the `Complete`
-column is not present, all rows are processed.
+`Complete` is blank or any value other than `1`/`TRUE` are dropped. If the
+`Complete` column is not present, all rows are processed.
 
 ## Wide tabs
 
@@ -248,6 +248,13 @@ Example](../explanation/wide-columns.md) document.
 
 There can be multiple `wide` tabs, which are specified on the command-line when
 running the appropriate scripts. Any row that is completely empty is ignored.
+
+All values in the output row are first set using the values from the `maps`
+tab. Any values set in the `wide` tab then overwrite those `maps` tab values.
+Blank values in the `wide` tab are ignored, so they never overwrite a value
+coming from the `maps` tab. To explicitly overwrite a `maps` tab value with a
+blank, use the string `<empty>` (see [Target Value Columns
+(_value)](#target-value-columns-_value) below).
 
 ### selectors
 
@@ -317,7 +324,7 @@ If a `_value` column has a blank value then it is ignored for that row. Because
 it is ignored it will not overwrite values specified in a `maps` tab with a
 blank string. If you would like to explicitly set a blank value (in which case
 it would overwrite a value in the `maps` tab, if one exists), then use the
-string '\<empty\>'.
+string `<empty>`.
 
 For example, given the wide-column spec table below:
 
@@ -329,18 +336,9 @@ Each output row will have columns `unit` and `measure` set to the constants
 `hours` and `sewTrTi` (respectively), and the output column `value` will be
 copied from the `sewage_travel_time` slot.
 
-Note that all the columns in the example configuration above will apply to
-every row specified in the configuration. However, it's possible that a target
-column does not exist for a particular target class (eg. if we also had a row
-where `targetClass` is equal to `samples` instead of `measures`). There are two
-ways to deal with this. Either specify additional slots specific to a target
-class in `wideOtherSlots`, or create multiple `wide` tabs in the mapping file,
-with each tab having different target columns. One good approach to organizing
-your `wide` tabs is to have a different `wide` tab for each `targetClass`.
-
 All of these columns specified will take precedence over any values set/copied
 in the `maps` tab, but not over any values set/copied in the `wideOtherSlots`
-column for the current row.
+column for the current row (see below).
 
 ### Target Expression Columns (_expr)
 
