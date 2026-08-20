@@ -68,6 +68,6 @@ generation:
 
 ### Step 4 — Generate Mapper Specifications
 
-Using the prepared parts data, a separate LinkML Mapping specification (YAML) file
-is created for each v1-to-vx table pair. The resulting files can be used directly
-with the `linkml-tr` command-line tool or through the LinkML-Map Python API.
+Using the prepared parts data, a separate LinkML Mapping specification (YAML)
+file is created for each v1-to-vx table pair. The resulting files can be used
+by the [PHES-ODM-Mapper](https://github.com/PHES-ODM/PHES-ODM-Mapper).
