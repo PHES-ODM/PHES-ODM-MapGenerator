@@ -85,8 +85,8 @@ the temperature applies to:
 | preConc | nwss | collection_storage_temp | measures | sa | preConcTemp | cel | `{{collection_storage_temp}}` |
 | preExtract | nwss | collection_storage_temp | measures | sa | preExtractTemp | cel | `{{collection_storage_temp}}` |
 
-The names are arbitrary labels; they only have to differ. Delete them and you are
-back to one output row.
+The `wideGroup` names are arbitrary labels; they only have to differ. Delete
+them and you are back to one output row.
 
 A group can still span several rows, so the two features combine: repeat the
 same `wideGroup` on every row of an enumeration mapping, and each distinct
@@ -98,13 +98,13 @@ The workbooks in
 [mapping_config_files/](../../odm_map_maker/data/mapping_config_files/) do not
 define a `wideGroup` column at all, because none of them needs to pivot one
 column twice. When the column is absent it is treated as blank on every row,
-and since a wide tab holds one `sourceClass` and `targetClass` throughout,
-groups are determined by `sourceSlot` alone — and each source column is listed
-once per tab. Where those tabs do repeat a source column across several rows,
-it is an enumeration mapping that is meant to collapse into one output row, or
-a pair of rows separated by `selectors` (see below). Either way, a tab's row
-count is an upper bound on the number of mappers it produces, not the number
-itself.
+and therefore equal on every row, and since a wide tab holds one `sourceClass`
+and `targetClass` throughout, groups are determined by `sourceSlot` alone — and
+each source column is listed once per tab. Where those tabs do repeat a source
+column across several rows, it is an enumeration mapping that is meant to
+collapse into one output row, or a pair of rows separated by `selectors` (see
+below). Either way, a tab's row count is an upper bound on the number of
+mappers it produces, not the number itself.
 
 Two consequences are worth knowing about:
 
