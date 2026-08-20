@@ -31,8 +31,8 @@ Syntax reference: [selectors](../reference/mapping-config-files.md#selectors).
 
 ## 3. The `Complete` column
 
-If a sheet has a `Complete` column, **only rows where it equals `1` are
-processed.** A new row added to such a sheet is ignored until you set it.
+If a sheet has a `Complete` column, **only rows where it equals `1` OR `TRUE`
+are processed.** A new row added to such a sheet is ignored until you set it.
 
 Reference: [Complete](../reference/mapping-config-files.md#complete).
 

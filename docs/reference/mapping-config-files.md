@@ -234,11 +234,11 @@ range: string
 ### Complete
 
 An optional column. When the `Complete` column is present in a tab, only rows
-where `Complete` equals `1` are processed; all other rows are ignored. This is
-useful for incrementally building a mapping configuration, allowing you to mark
-rows as complete as they are finalized. Rows where `Complete` is blank or any
-value other than `1` are dropped. If the `Complete` column is not present, all
-rows are processed.
+where `Complete` equals `1` or `TRUE` are processed; all other rows are
+ignored. This is useful for incrementally building a mapping configuration,
+allowing you to mark rows as complete as they are finalized. Rows where
+`Complete` is blank or any value other than `1` are dropped. If the `Complete`
+column is not present, all rows are processed.
 
 ## Wide tabs
 
