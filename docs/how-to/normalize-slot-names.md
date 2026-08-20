@@ -40,10 +40,15 @@ Regenerate, then look at what the mapper actually contains:
 grep -n 'populated_from' ../gen/nwss-reporting-to-v3/mappers/mapper*-nwss-samples.yaml
 ```
 
-The names there are post-normalization. If one still does not match the schema,
-add or reorder an operation — order matters, since
-`alpha_numeric_underscore` turns punctuation into underscores that
-`single_underscores` then collapses.
+Read the lines under `slot_derivations` — those are source slot names, and they
+are post-normalization. `populated_from` also appears under `enum_derivations`
+and `permissible_value_derivations`, holding source enumeration names and
+source enumeration values. Slot format operations never touch those, so ignore
+them here.
+
+If a slot name still does not match the schema, add or reorder an operation —
+order matters, since `alpha_numeric_underscore` turns punctuation into
+underscores that `single_underscores` then collapses.
 
 ## What is never transformed
 
@@ -55,5 +60,4 @@ do not exist in the target schema — see
 
 Format operations apply uniformly. If a handful of names differ in ways no rule
 captures — a genuine rename rather than a casing difference — fix those cells in
-the workbook instead. Contorting the operation list to accommodate three
-exceptions will silently mangle the other three hundred names.
+the workbook instead.
