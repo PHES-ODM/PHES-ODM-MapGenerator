@@ -3,13 +3,15 @@
 Run both checking tools after every generation run. They look for different
 classes of problem and neither subsumes the other.
 
-Pass the **same two schemas** you generated the mappers with. Checking v2
-mappers against the v3 schema produces a wall of meaningless errors.
+Pass the **same two source and target schemas** you generated the mappers with.
+Checking v2 mappers against the v3 schema produces a wall of meaningless
+errors.
 
 ## Check enumeration mappings
 
-`mapper_validator.py` finds source values with no mapping, mapped values that
-exist in neither schema, empty derivations, and invalid constants.
+`mapper_validator.py` ensures all enumerations have a mapping, that all source
+and target enumeration values actually exist in the LinkML schemas, and that
+all constants are valid permissible values.
 
 ```console
 python odm_map_maker/validate_mappers/mapper_validator.py \
@@ -29,7 +31,8 @@ Full option list and output-file descriptions:
 ## Check slot derivation structure
 
 `slot_derivations_checker.py` finds mappings that are syntactically valid but
-likely to produce bad data. **One check runs per invocation**, so run it twice:
+likely to produce bad data. **One check runs per invocation**, so run it twice
+to perform the two types of checks (`multi_to_single` and `free_text_to_enum`):
 
 ```console
 python odm_map_maker/validate_mappers/slot_derivations_checker.py \
