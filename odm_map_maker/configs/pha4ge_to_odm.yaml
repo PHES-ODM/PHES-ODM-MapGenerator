@@ -60,7 +60,7 @@ excel-enums-sheets:
 
 source-slot-format-operations:
   - lowercase
-  - "{ remove_chars: '-'}"
+  - remove_chars: '-'
   - alpha_numeric_underscore
   - single_underscores
   - trim_trailing_underscores

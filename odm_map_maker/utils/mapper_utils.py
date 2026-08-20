@@ -623,6 +623,9 @@ def format_slot_name(val: str, format_options: str | list[str]) -> str:
             Multiple operations can be specified, and the operations are performed in the same order as specified
             in the list.
 
+    Raises:
+        ValueError: An unrecognized format option name was found.
+
     Returns:
         str: The formatted slot name (val), after all formatting operations are performed.
     """
@@ -640,22 +643,24 @@ def format_slot_name(val: str, format_options: str | list[str]) -> str:
         for option, param in options.items():
             if option == "lowercase":
                 val = val.lower()
-            if option == "uppercase":
+            elif option == "uppercase":
                 val = val.upper()
-            if option == "alpha_numeric_underscore":
+            elif option == "alpha_numeric_underscore":
                 val = re.sub("[^A-Za-z0-9]", "_", val)
-            if option == "single_underscores":
+            elif option == "single_underscores":
                 val = re.sub("__+", "_", val)
-            if option == "trim_trailing_underscores":
+            elif option == "trim_trailing_underscores":
                 val = val.rstrip("_")
-            if option == "trim_whitespace":
+            elif option == "trim_whitespace":
                 val = re.sub(r"^\s*", "", val)
                 val = re.sub(r"\s*$", "", val)
-            if option == "remove_chars":
+            elif option == "remove_chars":
                 for ch in param:
                     val = val.replace(ch, "")
-            if option == "remove_special":
+            elif option == "remove_special":
                 val = re.sub(r"[^A-Za-z0-9\s]", "", val)
+            else:
+                raise ValueError(f"Unrecognized option '{option}' for slot formatter: '{options}'")
 
     return val
 

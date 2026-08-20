@@ -14,14 +14,11 @@ workbook:
 ```yaml
 source-slot-format-operations:
   - lowercase
-  - "{ remove_chars: '-'}"
+  - remove_chars: '-'
   - alpha_numeric_underscore
   - single_underscores
   - trim_trailing_underscores
 ```
-
-`remove_chars` is a YAML mapping rather than a plain string, so wrap it in
-quotes as shown or it will not parse.
 
 The available operations are listed in
 [CLI Configuration Files — Slot format operations](../reference/cli-config-files.md#slot-format-operations).
