@@ -1,4 +1,3 @@
-# %%
 """
 Makes mapper configs for mapping from ODM v1 to ODM vx.
 

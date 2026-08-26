@@ -1,4 +1,3 @@
-# %%
 """
 Creates the LinkML mapper config files for mapping from one database format (eg. NWSS) to
 another (eg. ODM v2). This is configured with CSV files (usually extracted from Excel files) that
