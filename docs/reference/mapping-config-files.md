@@ -16,7 +16,7 @@ concepts behind them — what a class, slot, enumeration, or selector is — sta
 with [Concepts and vocabulary](../explanation/concepts.md). To edit an existing
 mapping, see [Fix an incorrect mapping](../how-to/fix-a-mapping.md). For a
 worked example workbook, see
-[odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx](../../odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx).
+[odm_map_maker/data/mapping_config_files/nwss_to_odm_v3_mapping.xlsx](../../odm_map_maker/data/mapping_config_files/nwss_to_odm_v3_mapping.xlsx).
 
 ## Which tab do I need?
 

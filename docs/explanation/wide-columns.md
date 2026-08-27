@@ -72,5 +72,5 @@ reading the mapper alone.
 - [Map a wide column](../how-to/map-a-wide-column.md) — the recipe.
 - [Mapping Configuration Files — Wide tabs](../reference/mapping-config-files.md#wide-tabs)
   — every column of the `wide` tab.
-- [nwss_to_odm_v2_mapping.xlsx](../../odm_map_maker/data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx)
+- [nwss_to_odm_v3_mapping.xlsx](../../odm_map_maker/data/mapping_config_files/nwss_to_odm_v3_mapping.xlsx)
   — a worked example workbook.

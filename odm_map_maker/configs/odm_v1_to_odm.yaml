@@ -18,7 +18,7 @@
 
 source-schema: ../data/odm_v1/linkml/odm_v1.yaml
 target-schema: ../data/odm_v3/linkml/odm_v3.yaml
-mapping-excel-file: ../data/mapping_config_files/odm_v1_to_v2_mapping.xlsx
+mapping-excel-file: ../data/mapping_config_files/odm_v1_to_v3_mapping.xlsx
 output-dir: ../../../gen/odm-v1-to-v3
 
 selectors:

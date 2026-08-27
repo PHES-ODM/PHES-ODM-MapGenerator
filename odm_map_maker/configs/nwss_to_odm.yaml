@@ -24,7 +24,7 @@
 
 source-schema: ../data/nwss_reporting/linkml/nwss_reporting.yaml
 target-schema: ../data/odm_v3/linkml/odm_v3.yaml
-mapping-excel-file: ../data/mapping_config_files/nwss_to_odm_v2_mapping.xlsx
+mapping-excel-file: ../data/mapping_config_files/nwss_to_odm_v3_mapping.xlsx
 output-dir: ../../../gen/nwss-reporting-to-v3
 
 selectors:

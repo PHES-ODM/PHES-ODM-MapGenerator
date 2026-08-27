@@ -7,7 +7,7 @@ untranslated. Almost always this is a workbook edit, not a code change.
 
 1. Open the workbook for that mapping in
    `odm_map_maker/data/mapping_config_files/` — for example
-   `nwss_to_odm_v2_mapping.xlsx`.
+   `nwss_to_odm_v3_mapping.xlsx`.
 2. Go to the `maps` tab and find the row by searching the `sourceSlot` column
    for the source column name.
 3. Correct `targetClass` and/or `targetSlot`. If the value should be copied
