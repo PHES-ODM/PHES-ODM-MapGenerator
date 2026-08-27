@@ -397,10 +397,6 @@ def select_required_enum_derivations(
                     derivations += [
                         k for k, v in d.items() if v["populated_from"] == enum_name
                     ]
-                if len(derivations) > 1:
-                    raise RuntimeError(
-                        f"Found multiple target enum derivations {derivations} populating from the same source enum {enum_name} (from source slot {source_class}.{source_slot_name} to target slot {target_class}.{target_slot_name}). This is not allowed by LinkML Mapper!"
-                    )
                 if len(derivations) == 0:
                     # No enum derivation found, so we create our own with mirror_source = mirror_missing_enum_derivations
                     logger.warning(
@@ -418,13 +414,47 @@ def select_required_enum_derivations(
                         "populated_from": enum_name,
                     }
                 else:
+                    # derivations is a list of names of derivations that we have selected that have a populated_from
+                    # equal to enum_name. From this list, we create a dictionary cur_selected_derivations, where the
+                    # keys are the names and the values are the actual LinkML-Map derivations. This will be
+                    # the format that gets saved to the LinkML-Map schema
+                    cur_selected_derivations = {}
                     for derivation_name in derivations:
                         matching_derivations = [
                             e for e in cur_enum_derivations if derivation_name in e
                         ]
-                        selected_derivations[derivation_name] = matching_derivations[0][
+                        cur_selected_derivations[derivation_name] = matching_derivations[0][
                             derivation_name
                         ]
+
+                    # Merge the cur_selected_derivations. LinkML-Map does not allow two or more enum derivations
+                    # that have the same populated_from fields. Because of this, we want to merge derivations
+                    # that have the same populated_from field. While this is not ideal, it does work. We merge
+                    # them by combining the permissible_value_derivations.
+                    if len(cur_selected_derivations.keys()) > 1:
+                        logger.error(f"Found multiple derivations that have the same populated_from field equal to '{enum_name}' for mapping from class '{source_class}' to class '{target_class}'. The derivation names are: {list(cur_selected_derivations.keys())}. These derivations will get their permissible_value_derivations merged.")
+                    merged_selected_derivations = {}
+                    # Go through all derivations in cur_selected_derivations and merge them into
+                    # merged_selected_derivations
+                    for new_derivation_name, new_derivation in cur_selected_derivations.items():
+                        merged = False
+                        # Find the existing derivation in merge_selected_derivations that has the
+                        # same populated_from field as new_derivation
+                        for cur_derivation in merged_selected_derivations.values():
+                            if cur_derivation["populated_from"] == new_derivation["populated_from"]:
+                                if cur_derivation["mirror_source"] != new_derivation["mirror_source"]:
+                                    raise ValueError(f"While merging two enum derivations with the same populated_from fields, a mismatch in the value of 'mirror_source' between the two derivations occurred. This is not allowed.")
+                                # Merge the derivations, giving priority to the keys that are already in
+                                # cur_derivation
+                                cur_derivation["permissible_value_derivations"] = new_derivation["permissible_value_derivations"] | cur_derivation["permissible_value_derivations"]
+                                merged = True
+                                break
+                        # If we haven't merged with another derivation, then add new_derivation to
+                        # merged_selected_derivations unchanged
+                        if not merged:
+                            merged_selected_derivations[new_derivation_name] = new_derivation
+                        
+                    selected_derivations.update(merged_selected_derivations)
 
     return selected_derivations
 
