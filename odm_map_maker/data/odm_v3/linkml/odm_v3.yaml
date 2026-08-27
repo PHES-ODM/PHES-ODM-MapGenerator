@@ -507,12 +507,12 @@ enums:
     title: Boolean value set
     from_schema: https://onto.phes-odm.org/odm/v3
     permissible_values:
-      'True':
+      'TRUE':
         description: Boolean data type = TRUE
-        title: 'True'
-      'False':
+        title: 'TRUE'
+      'FALSE':
         description: Boolean data type = FALSE
-        title: 'False'
+        title: 'FALSE'
   calcTypeSet:
     description: The set of valid inputs for the calculation type field.
     title: Calculation type set
@@ -10443,12 +10443,12 @@ enums:
       zymoWatRNA:
         description: zymo environ water rna kit (cat. r2042)
         title: zymo environ water rna kit/ zymo environ water rna kit (cat. r2042)
-      'False':
+      'FALSE':
         description: Boolean data type = FALSE
-        title: 'False'
-      'True':
+        title: 'FALSE'
+      'TRUE':
         description: Boolean data type = TRUE
-        title: 'True'
+        title: 'TRUE'
       overlap:
         description: Locations/polygon have overlapping portions.
         title: Overlapping relationship
