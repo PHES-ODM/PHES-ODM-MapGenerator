@@ -24,7 +24,7 @@ hyphens or underscores:
 ```yaml
 source-schema: ../data/nwss_reporting/linkml/nwss_reporting.yaml
 target-schema: ../data/odm_v3/linkml/odm_v3.yaml
-output-dir: ../../../gen/nwss-reporting-to-v3
+output-dir: ../../gen/nwss-reporting-to-v3
 ```
 
 Options that accept multiple values (such as `--excel-maps-sheets`) are written
@@ -57,14 +57,14 @@ use paths like:
 
 ```yaml
 source-schema: ../data/nwss_reporting/linkml/nwss_reporting.yaml
-output-dir: ../../../gen/nwss-reporting-to-v3
+output-dir: ../../gen/nwss-reporting-to-v3
 ```
 
 The path `../data/nwss_reporting/linkml/nwss_reporting.yaml` resolves from
 `odm_map_maker/configs/` to `odm_map_maker/data/nwss_reporting/linkml/nwss_reporting.yaml`.
-The path `../../../gen/nwss-reporting-to-v3` resolves up three levels (past
-`configs/`, past `odm_map_maker/`, past the project root) to place output in
-the sibling `gen/` directory.
+The path `../../gen/nwss-reporting-to-v3` resolves up two levels (past
+`configs/`, past `odm_map_maker/`) to place output in the `gen/` directory at
+the project root.
 
 Path options affected by this rule: `--source-schema`, `--target-schema`,
 `--mapping-excel-file`, `--output-dir`, `--maps-files`, `--wide-files`,
@@ -168,7 +168,7 @@ python odm_map_maker/make_mappers_cli.py \
 python odm_map_maker/make_mappers_cli.py \
     --config odm_map_maker/configs/odm_v1_to_odm.yaml \
     --target-schema odm_map_maker/data/odm_v2/linkml/odm_v2.yaml \
-    --output-dir ../gen/odm-v1-to-v2 \
+    --output-dir gen/odm-v1-to-v2 \
     --selectors odm=2
 ```
 
@@ -188,14 +188,14 @@ python odm_map_maker/make_mappers_cli.py \
 python odm_map_maker/make_mappers_cli.py \
     --config odm_map_maker/configs/nwss_to_odm.yaml \
     --target-schema odm_map_maker/data/odm_v2/linkml/odm_v2.yaml \
-    --output-dir ../gen/nwss-reporting-to-v2 \
+    --output-dir gen/nwss-reporting-to-v2 \
     --selectors odm=2
 
 # Map a different NWSS dictionary type to ODM v3
 python odm_map_maker/make_mappers_cli.py \
     --config odm_map_maker/configs/nwss_to_odm.yaml \
     --source-schema odm_map_maker/data/nwss_public_concentration/linkml/nwss_public_concentration.yaml \
-    --output-dir ../gen/nwss-public_concentration-to-v3
+    --output-dir gen/nwss-public_concentration-to-v3
 ```
 
 ### PHA4GE to ODM
@@ -212,7 +212,7 @@ python odm_map_maker/make_mappers_cli.py \
 python odm_map_maker/make_mappers_cli.py \
     --config odm_map_maker/configs/pha4ge_to_odm.yaml \
     --target-schema odm_map_maker/data/odm_v2/linkml/odm_v2.yaml \
-    --output-dir ../gen/pha4ge-to-v2 \
+    --output-dir gen/pha4ge-to-v2 \
     --selectors odm=2
 ```
 

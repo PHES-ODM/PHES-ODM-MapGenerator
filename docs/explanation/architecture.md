@@ -28,7 +28,8 @@ PHES-ODM-MapGenerator/
 │   ├── odm_vx/                   # Helpers used only by the legacy make_v1_to_vx.py
 │   └── utils/                    # Shared helpers (see table below)
 ├── tests/                        # pytest suite
-└── docs/                         # This documentation
+├── docs/                         # This documentation
+└── gen/                          # Generated output (git-ignored, created on first run)
 ```
 
 There are no `__init__.py` files; `odm_map_maker` is an implicit namespace

@@ -26,13 +26,13 @@ One check runs per invocation. To run both, invoke the script twice:
 # ODM v1 → ODM v3
 python odm_map_maker/validate_mappers/slot_derivations_checker.py \
     --checker multi_to_single \
-    --mapper-dir ../gen/odm-v1-to-v3/mappers \
+    --mapper-dir gen/odm-v1-to-v3/mappers \
     --source-schema odm_map_maker/data/odm_v1/linkml/odm_v1.yaml \
     --target-schema odm_map_maker/data/odm_v3/linkml/odm_v3.yaml
 
 python odm_map_maker/validate_mappers/slot_derivations_checker.py \
     --checker free_text_to_enum \
-    --mapper-dir ../gen/odm-v1-to-v3/mappers \
+    --mapper-dir gen/odm-v1-to-v3/mappers \
     --source-schema odm_map_maker/data/odm_v1/linkml/odm_v1.yaml \
     --target-schema odm_map_maker/data/odm_v3/linkml/odm_v3.yaml
 ```

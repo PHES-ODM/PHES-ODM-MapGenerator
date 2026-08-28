@@ -29,8 +29,8 @@ python odm_map_maker/make_mappers_cli.py \
     --config odm_map_maker/configs/pha4ge_to_odm.yaml
 ```
 
-Output goes to `../gen/odm-v1-to-v3`, `../gen/nwss-reporting-to-v3`, and
-`../gen/pha4ge-to-v3`. The LinkML Map YAML files land in `mappers/`; the tables
+Output goes to `gen/odm-v1-to-v3`, `gen/nwss-reporting-to-v3`, and
+`gen/pha4ge-to-v3`. The LinkML Map YAML files land in `mappers/`; the tables
 extracted from the workbook land in `configs/`.
 
 Then check the result — see

@@ -11,7 +11,7 @@
 #   python odm_map_maker/make_mappers_cli.py \
 #       --config odm_map_maker/configs/odm_v1_to_odm.yaml \
 #       --target-schema odm_map_maker/data/odm_v2/linkml/odm_v2.yaml \
-#       --output-dir ../gen/odm-v1-to-v2 \
+#       --output-dir gen/odm-v1-to-v2 \
 #       --selectors odm=2
 #
 # Command-line arguments take precedence over values in this file.
@@ -19,7 +19,7 @@
 source-schema: ../data/odm_v1/linkml/odm_v1.yaml
 target-schema: ../data/odm_v3/linkml/odm_v3.yaml
 mapping-excel-file: ../data/mapping_config_files/odm_v1_to_v3_mapping.xlsx
-output-dir: ../../../gen/odm-v1-to-v3
+output-dir: ../../gen/odm-v1-to-v3
 
 selectors:
   - odm=3

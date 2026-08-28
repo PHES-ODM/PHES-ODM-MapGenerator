@@ -31,7 +31,7 @@ and sheet names:
 source-schema: ../data/<source>/linkml/<source>.yaml
 target-schema: ../data/odm_v3/linkml/odm_v3.yaml
 mapping-excel-file: ../data/mapping_config_files/<source>_to_odm_mapping.xlsx
-output-dir: ../../../gen/<source>-to-v3
+output-dir: ../../gen/<source>-to-v3
 
 selectors:
   - odm=3

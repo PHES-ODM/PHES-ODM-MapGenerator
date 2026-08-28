@@ -48,10 +48,10 @@ Regenerate, then diff the mappers against the previous output:
 ```console
 python odm_map_maker/make_mappers_cli.py \
     --config odm_map_maker/configs/nwss_to_odm.yaml \
-    --output-dir ../gen/nwss-reporting-to-v3
+    --output-dir gen/nwss-reporting-to-v3
 
-diff -r ../gen/nwss-reporting-to-v3-before/mappers \
-        ../gen/nwss-reporting-to-v3/mappers
+diff -r gen/nwss-reporting-to-v3-before/mappers \
+        gen/nwss-reporting-to-v3/mappers
 ```
 
 The diff should show your change and nothing else.

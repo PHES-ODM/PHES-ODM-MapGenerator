@@ -1,6 +1,9 @@
 .DS_Store
 .vscode
 
+# Generated mapper output
+/gen/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

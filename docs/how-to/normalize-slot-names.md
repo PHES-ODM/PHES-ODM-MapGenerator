@@ -37,7 +37,7 @@ source-slot-format-operations:
 Regenerate, then look at what the mapper actually contains:
 
 ```console
-grep -n 'populated_from' ../gen/nwss-reporting-to-v3/mappers/mapper*-nwss-samples.yaml
+grep -n 'populated_from' gen/nwss-reporting-to-v3/mappers/mapper*-nwss-samples.yaml
 ```
 
 Read the lines under `slot_derivations` — those are source slot names, and they

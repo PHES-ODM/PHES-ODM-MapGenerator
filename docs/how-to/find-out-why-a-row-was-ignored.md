@@ -9,7 +9,7 @@ Every run writes each Excel sheet verbatim to `<output-dir>/configs/` as
 `maps0.csv`, `wide0.csv`, `enums0.csv`, and so on, **before** any filtering.
 
 ```console
-grep -n 'my_source_column' ../gen/nwss-reporting-to-v3/configs/maps0.csv
+grep -n 'my_source_column' gen/nwss-reporting-to-v3/configs/maps0.csv
 ```
 
 - **Not there** → the tool did not read the sheet you edited. Check that the
@@ -48,7 +48,7 @@ If the row survives all four, it is being read but is not producing what you
 expect. Look at the generated mapper directly:
 
 ```console
-grep -rn 'targetSlotName' ../gen/nwss-reporting-to-v3/mappers/
+grep -rn 'targetSlotName' gen/nwss-reporting-to-v3/mappers/
 ```
 
 If the target slot is present but its `populated_from` is missing or wrong, the

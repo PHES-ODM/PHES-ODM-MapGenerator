@@ -13,7 +13,7 @@ Budget about 20 minutes. You need a working install from the first tutorial.
 ## Step 1 — Create a working directory
 
 ```console
-mkdir -p ../gen/my-first-mapping
+mkdir -p gen/my-first-mapping
 ```
 
 This one directory holds both the mapping CSV you are about to write and
@@ -23,7 +23,7 @@ set up.
 
 ## Step 2 — Write four mapping rows
 
-Create `../gen/my-first-mapping/my_maps.csv` with exactly this content:
+Create `gen/my-first-mapping/my_maps.csv` with exactly this content:
 
 ```csv
 sourceClass,sourceSlot,sourceValue,targetClass,targetSlot,targetValue,targetExpr
@@ -56,10 +56,10 @@ explicitly:
 
 ```console
 python odm_map_maker/make_mappers_cli.py \
-    --maps-files ../gen/my-first-mapping/my_maps.csv \
+    --maps-files gen/my-first-mapping/my_maps.csv \
     --source-schema odm_map_maker/data/nwss_reporting/linkml/nwss_reporting.yaml \
     --target-schema odm_map_maker/data/odm_v3/linkml/odm_v3.yaml \
-    --output-dir ../gen/my-first-mapping
+    --output-dir gen/my-first-mapping
 ```
 
 The last line of the output tells you what was written:
@@ -74,7 +74,7 @@ One source class mapped to one target class, so you got exactly one file.
 ## Step 4 — Compare your rows with the result
 
 ```console
-cat ../gen/my-first-mapping/mappers/mapper-0000000000-nwss-samples.yaml
+cat gen/my-first-mapping/mappers/mapper-0000000000-nwss-samples.yaml
 ```
 
 ```yaml
@@ -133,7 +133,7 @@ tools you ran in the first tutorial:
 ```console
 python odm_map_maker/validate_mappers/slot_derivations_checker.py \
     --checker multi_to_single \
-    --mapper-dir ../gen/my-first-mapping/mappers \
+    --mapper-dir gen/my-first-mapping/mappers \
     --source-schema odm_map_maker/data/nwss_reporting/linkml/nwss_reporting.yaml \
     --target-schema odm_map_maker/data/odm_v3/linkml/odm_v3.yaml
 ```

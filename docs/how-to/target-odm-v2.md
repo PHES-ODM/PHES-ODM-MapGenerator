@@ -7,7 +7,7 @@ v2, override three options on the command line.
 python odm_map_maker/make_mappers_cli.py \
     --config odm_map_maker/configs/nwss_to_odm.yaml \
     --target-schema odm_map_maker/data/odm_v2/linkml/odm_v2.yaml \
-    --output-dir ../gen/nwss-reporting-to-v2 \
+    --output-dir gen/nwss-reporting-to-v2 \
     --selectors odm=2
 ```
 
@@ -27,14 +27,14 @@ The same three overrides work for the other configs:
 python odm_map_maker/make_mappers_cli.py \
     --config odm_map_maker/configs/odm_v1_to_odm.yaml \
     --target-schema odm_map_maker/data/odm_v2/linkml/odm_v2.yaml \
-    --output-dir ../gen/odm-v1-to-v2 \
+    --output-dir gen/odm-v1-to-v2 \
     --selectors odm=2
 
 # PHA4GE → ODM v2
 python odm_map_maker/make_mappers_cli.py \
     --config odm_map_maker/configs/pha4ge_to_odm.yaml \
     --target-schema odm_map_maker/data/odm_v2/linkml/odm_v2.yaml \
-    --output-dir ../gen/pha4ge-to-v2 \
+    --output-dir gen/pha4ge-to-v2 \
     --selectors odm=2
 ```
 

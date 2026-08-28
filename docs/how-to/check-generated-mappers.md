@@ -15,10 +15,10 @@ all constants are valid permissible values.
 
 ```console
 python odm_map_maker/validate_mappers/mapper_validator.py \
-    --mappers-dir ../gen/nwss-reporting-to-v3/mappers \
+    --mappers-dir gen/nwss-reporting-to-v3/mappers \
     --source-schema odm_map_maker/data/nwss_reporting/linkml/nwss_reporting.yaml \
     --target-schema odm_map_maker/data/odm_v3/linkml/odm_v3.yaml \
-    --output-dir ../gen/validate/nwss-reporting-to-v3 \
+    --output-dir gen/validate/nwss-reporting-to-v3 \
     --tag nwss-reporting-to-v3
 ```
 
@@ -37,13 +37,13 @@ to perform the two types of checks (`multi_to_single` and `free_text_to_enum`):
 ```console
 python odm_map_maker/validate_mappers/slot_derivations_checker.py \
     --checker multi_to_single \
-    --mapper-dir ../gen/nwss-reporting-to-v3/mappers \
+    --mapper-dir gen/nwss-reporting-to-v3/mappers \
     --source-schema odm_map_maker/data/nwss_reporting/linkml/nwss_reporting.yaml \
     --target-schema odm_map_maker/data/odm_v3/linkml/odm_v3.yaml
 
 python odm_map_maker/validate_mappers/slot_derivations_checker.py \
     --checker free_text_to_enum \
-    --mapper-dir ../gen/nwss-reporting-to-v3/mappers \
+    --mapper-dir gen/nwss-reporting-to-v3/mappers \
     --source-schema odm_map_maker/data/nwss_reporting/linkml/nwss_reporting.yaml \
     --target-schema odm_map_maker/data/odm_v3/linkml/odm_v3.yaml
 ```

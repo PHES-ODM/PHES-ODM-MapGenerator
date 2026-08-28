@@ -59,9 +59,9 @@ python odm_map_maker/make_mappers_cli.py \
     --config odm_map_maker/configs/pha4ge_to_odm.yaml
 ```
 
-Output goes to a `gen/` directory *beside* the repository, one sub-directory per
-mapping — `../gen/odm-v1-to-v3`, `../gen/nwss-reporting-to-v3`, and
-`../gen/pha4ge-to-v3`. Each contains `mappers/` (the LinkML Map YAML files, the
+Output goes to a `gen/` directory *inside* the repository, one sub-directory per
+mapping — `gen/odm-v1-to-v3`, `gen/nwss-reporting-to-v3`, and
+`gen/pha4ge-to-v3`. Each contains `mappers/` (the LinkML Map YAML files, the
 artifacts you want) and `configs/` (the extracted maps, wide, and enums tables,
 useful for debugging). Every run clears CSV, TSV, and YAML files from the
 directories it writes to. Pass `--output-dir` to write somewhere else.
@@ -73,28 +73,28 @@ Run the validator against the same schemas the mappers were generated from:
 ```console
 # ODM v1 → ODM v3
 python odm_map_maker/validate_mappers/mapper_validator.py \
-    --mappers-dir ../gen/odm-v1-to-v3/mappers \
+    --mappers-dir gen/odm-v1-to-v3/mappers \
     --source-schema odm_map_maker/data/odm_v1/linkml/odm_v1.yaml \
     --target-schema odm_map_maker/data/odm_v3/linkml/odm_v3.yaml \
-    --output-dir ../gen/validate/odm-v1-to-v3 \
+    --output-dir gen/validate/odm-v1-to-v3 \
     --tag odm-v1-to-v3 \
     --simplify
 
 # NWSS reporting → ODM v3
 python odm_map_maker/validate_mappers/mapper_validator.py \
-    --mappers-dir ../gen/nwss-reporting-to-v3/mappers \
+    --mappers-dir gen/nwss-reporting-to-v3/mappers \
     --source-schema odm_map_maker/data/nwss_reporting/linkml/nwss_reporting.yaml \
     --target-schema odm_map_maker/data/odm_v3/linkml/odm_v3.yaml \
-    --output-dir ../gen/validate/nwss-reporting-to-v3 \
+    --output-dir gen/validate/nwss-reporting-to-v3 \
     --tag nwss-reporting-to-v3 \
     --simplify
 
 # PHA4GE → ODM v3
 python odm_map_maker/validate_mappers/mapper_validator.py \
-    --mappers-dir ../gen/pha4ge-to-v3/mappers \
+    --mappers-dir gen/pha4ge-to-v3/mappers \
     --source-schema odm_map_maker/data/pha4ge/linkml/pha4ge.yaml \
     --target-schema odm_map_maker/data/odm_v3/linkml/odm_v3.yaml \
-    --output-dir ../gen/validate/pha4ge-to-v3 \
+    --output-dir gen/validate/pha4ge-to-v3 \
     --tag pha4ge-to-v3 \
     --simplify
 ```

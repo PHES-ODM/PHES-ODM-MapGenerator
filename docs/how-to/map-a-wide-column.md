@@ -127,9 +127,9 @@ Two consequences are worth knowing about:
 ```console
 python odm_map_maker/make_mappers_cli.py \
     --config odm_map_maker/configs/nwss_to_odm.yaml \
-    --output-dir ../gen/nwss-reporting-to-v3
+    --output-dir gen/nwss-reporting-to-v3
 
-ls ../gen/nwss-reporting-to-v3/mappers/ | grep sewage_travel_time
+ls gen/nwss-reporting-to-v3/mappers/ | grep sewage_travel_time
 ```
 
 Each wide row gets its own mapper file, with the source column named in the

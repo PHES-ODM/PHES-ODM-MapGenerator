@@ -62,7 +62,7 @@ source format to ODM v3 by default. You will use the NWSS one:
 ```console
 python odm_map_maker/make_mappers_cli.py \
     --config odm_map_maker/configs/nwss_to_odm.yaml \
-    --output-dir ../gen/nwss-reporting-to-v3
+    --output-dir gen/nwss-reporting-to-v3
 ```
 
 The `--config` file supplies the source schema, target schema, Excel workbook,
@@ -70,8 +70,8 @@ sheet names, selectors, and slot-name formatting rules. Anything you pass on the
 command line overrides it — here you set `--output-dir` explicitly, though the
 config file already has a default.
 
-Output goes to `../gen/`, a sibling of the repository, so nothing you generate
-ends up inside your clone.
+Output goes to `gen/` at the root of your clone. That directory is git-ignored,
+so nothing you generate shows up in `git status`.
 
 > **Point `--output-dir` at a scratch location.** Both output subdirectories are
 > **cleared of existing CSV, TSV, and YAML files** at the start of every run.
@@ -79,13 +79,13 @@ ends up inside your clone.
 ## Step 3 — Look at what you generated
 
 ```console
-ls ../gen/nwss-reporting-to-v3
+ls gen/nwss-reporting-to-v3
 ```
 
 You will find two directories:
 
 ```text
-../gen/nwss-reporting-to-v3/
+gen/nwss-reporting-to-v3/
 ├── configs/          # each Excel sheet, extracted verbatim to CSV
 │   ├── maps0.csv
 │   ├── wide0.csv … wide3.csv
@@ -102,7 +102,7 @@ the tool read out of the Excel workbook. `mappers/` is the deliverable.
 Open the `sites` mapper, which is one of the simpler ones:
 
 ```console
-cat ../gen/nwss-reporting-to-v3/mappers/mapper*-nwss-sites.yaml
+cat gen/nwss-reporting-to-v3/mappers/mapper*-nwss-sites.yaml
 ```
 
 Three things are worth finding in what it prints:
@@ -128,14 +128,14 @@ invalid constants:
 
 ```console
 python odm_map_maker/validate_mappers/mapper_validator.py \
-    --mappers-dir ../gen/nwss-reporting-to-v3/mappers \
+    --mappers-dir gen/nwss-reporting-to-v3/mappers \
     --source-schema odm_map_maker/data/nwss_reporting/linkml/nwss_reporting.yaml \
     --target-schema odm_map_maker/data/odm_v3/linkml/odm_v3.yaml \
-    --output-dir ../gen/validate/nwss-reporting-to-v3 \
+    --output-dir gen/validate/nwss-reporting-to-v3 \
     --tag nwss-reporting-to-v3
 ```
 
-Results are written as CSV files under `../gen/validate/nwss-reporting-to-v3`.
+Results are written as CSV files under `gen/validate/nwss-reporting-to-v3`.
 Open one and skim it.
 
 The **slot derivations checker** finds structural problems the validator does
@@ -145,7 +145,7 @@ single-valued target slot:
 ```console
 python odm_map_maker/validate_mappers/slot_derivations_checker.py \
     --checker multi_to_single \
-    --mapper-dir ../gen/nwss-reporting-to-v3/mappers \
+    --mapper-dir gen/nwss-reporting-to-v3/mappers \
     --source-schema odm_map_maker/data/nwss_reporting/linkml/nwss_reporting.yaml \
     --target-schema odm_map_maker/data/odm_v3/linkml/odm_v3.yaml
 ```
