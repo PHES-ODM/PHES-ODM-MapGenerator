@@ -387,7 +387,10 @@ class ValidateMappers:
                     target_permissible_values_info,
                 ) in target_slots_permissible_values.items():
                     target_slot_ranges = get_ranges_of_slot(
-                        target_class, target_slot, self.target_schema
+                        target_class,
+                        target_slot,
+                        self.target_schema,
+                        exception_on_error=False,
                     )
 
                     source_slots = target_permissible_values_info[
